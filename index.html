@@ -6,8 +6,8 @@
   <title>App Suscripciones</title>
   <meta name="description" content="Aplicación para gestionar suscripciones">
   <meta name="theme-color" content="#1B1930">
-  <link rel="manifest" href="/PWA-Suscriptions-2/manifest.json">
-  <link rel="apple-touch-icon" href="/PWA-Suscriptions-2/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
@@ -44,7 +44,7 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/PWA-Suscriptions-2/sw.js')
+        navigator.serviceWorker.register('/sw.js')
           .then(registration => {
             // Solicitar permisos de notificación después del registro
             requestNotificationPermission();
