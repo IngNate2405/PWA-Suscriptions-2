@@ -394,6 +394,75 @@
             }
           }
         }
+
+        // Sincronizar notificaciones guardadas con los checkboxes y campos
+        if (subscription.notifications && Array.isArray(subscription.notifications)) {
+          subscription.notifications.forEach(notif => {
+            if (notif === '1day') {
+              const cb = document.querySelector('input[name="notification_1day"]');
+              if (cb) cb.checked = true;
+            } else if (notif === '2days') {
+              const cb = document.querySelector('input[name="notification_2days"]');
+              if (cb) cb.checked = true;
+            } else if (notif === 'sameday') {
+              const cb = document.querySelector('input[name="notification_sameday"]');
+              if (cb) cb.checked = true;
+            } else if (notif.startsWith('custom_')) {
+              const cb = document.querySelector('input[name="notification_custom"]');
+              const days = notif.split('_')[1];
+              if (cb) cb.checked = true;
+              const daysInput = document.querySelector('input[name="notification_custom_days"]');
+              if (daysInput) daysInput.value = days;
+            } else if (notif.startsWith('customdate_')) {
+              const cb = document.querySelector('input[name="notification_custom_date"]');
+              if (cb) cb.checked = true;
+              const parts = notif.split('_');
+              if (parts.length === 3) {
+                const day = parts[1];
+                const time = parts[2];
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const dayStr = day.toString().padStart(2, '0');
+                const dateInput = document.querySelector('input[name="custom_date"]');
+                const timeInput = document.querySelector('input[name="custom_time"]');
+                if (dateInput) dateInput.value = `${year}-${month}-${dayStr}`;
+                if (timeInput) timeInput.value = time;
+              }
+            } else if (notif === 'trial_1day') {
+              const cb = document.querySelector('input[name="trial_notification_1day"]');
+              if (cb) cb.checked = true;
+            } else if (notif === 'trial_2days') {
+              const cb = document.querySelector('input[name="trial_notification_2days"]');
+              if (cb) cb.checked = true;
+            } else if (notif === 'trial_sameday') {
+              const cb = document.querySelector('input[name="trial_notification_sameday"]');
+              if (cb) cb.checked = true;
+            } else if (notif.startsWith('trial_custom_')) {
+              const cb = document.querySelector('input[name="trial_notification_custom"]');
+              const days = notif.split('_')[2];
+              if (cb) cb.checked = true;
+              const daysInput = document.querySelector('input[name="trial_notification_custom_days"]');
+              if (daysInput) daysInput.value = days;
+            } else if (notif.startsWith('trial_customdate_')) {
+              const cb = document.querySelector('input[name="trial_notification_custom_date"]');
+              if (cb) cb.checked = true;
+              const parts = notif.split('_');
+              if (parts.length === 3) {
+                const day = parts[1];
+                const time = parts[2];
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const dayStr = day.toString().padStart(2, '0');
+                const dateInput = document.querySelector('input[name="trial_custom_date"]');
+                const timeInput = document.querySelector('input[name="trial_custom_time"]');
+                if (dateInput) dateInput.value = `${year}-${month}-${dayStr}`;
+                if (timeInput) timeInput.value = time;
+              }
+            }
+          });
+        }
       }
     }
 
