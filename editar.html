@@ -518,97 +518,36 @@
 
       // Obtener notificaciones seleccionadas con sus horas
       const notifications = [];
-      
-      if (isFreeTrial) {
-        // Notificaciones de prueba gratuita
-        const trialStandardNotifications = [
-          { name: 'trial_notification_1day', value: 'trial_1day' },
-          { name: 'trial_notification_2days', value: 'trial_2days' },
-          { name: 'trial_notification_sameday', value: 'trial_sameday' }
-        ];
-
-        trialStandardNotifications.forEach(notif => {
-          const checkbox = document.querySelector(`input[name="${notif.name}"]`);
-          if (checkbox && checkbox.checked) {
-            notifications.push(notif.value);
+      // Buscar todos los checkboxes de notificaciones estándar y personalizadas
+      document.querySelectorAll('input[type="checkbox"][name^="notification_"]').forEach(checkbox => {
+        if (checkbox.checked) {
+          if (checkbox.name === 'notification_custom') {
+            const customDays = document.querySelector('input[name="notification_custom_days"]');
+            if (customDays && customDays.value) {
+              notifications.push(`custom_${customDays.value}`);
+            }
+          } else if (checkbox.name === 'notification_custom_date') {
+            const customDateInput = document.querySelector('input[name="custom_date"]');
+            const customTimeInput = document.querySelector('input[name="custom_time"]');
+            if (customDateInput && customDateInput.value && customTimeInput && customTimeInput.value) {
+              const dateObj = new Date(customDateInput.value);
+              const day = dateObj.getDate();
+              let [hour, minute] = customTimeInput.value.split(':');
+              hour = hour.padStart(2, '0');
+              minute = minute.padStart(2, '0');
+              const time = `${hour}:${minute}`;
+              const dayStr = String(day).padStart(2, '0');
+              notifications.push(`customdate_${dayStr}_${time}`);
+            }
+          } else if (checkbox.name === 'notification_1day' || checkbox.name === 'notification_2days' || checkbox.name === 'notification_sameday') {
+            // Notificaciones estándar
+            if (checkbox.name === 'notification_1day') notifications.push('1day');
+            if (checkbox.name === 'notification_2days') notifications.push('2days');
+            if (checkbox.name === 'notification_sameday') notifications.push('sameday');
           }
-        });
-
-        // Notificación personalizada de prueba gratuita
-        const trialCustomCheckbox = document.querySelector('input[name="trial_notification_custom"]');
-        const trialCustomDays = document.querySelector('input[name="trial_notification_custom_days"]');
-        if (trialCustomCheckbox && trialCustomCheckbox.checked && trialCustomDays && trialCustomDays.value) {
-          notifications.push(`trial_custom_${trialCustomDays.value}`);
         }
-
-        // Notificación personalizada por fecha de prueba gratuita
-        const trialCustomDateCheckbox = document.querySelector('input[name="trial_notification_custom_date"]');
-        const trialCustomDateInput = document.querySelector('input[name="trial_custom_date"]');
-        const trialCustomTimeInput = document.querySelector('input[name="trial_custom_time"]');
-        
-        if (trialCustomDateCheckbox && trialCustomDateCheckbox.checked && trialCustomDateInput && trialCustomDateInput.value && trialCustomTimeInput && trialCustomTimeInput.value) {
-          const [year, month, day] = trialCustomDateInput.value.split('-');
-          let [hour, minute] = trialCustomTimeInput.value.split(':');
-          hour = hour.padStart(2, '0');
-          minute = minute.padStart(2, '0');
-          const time = `${hour}:${minute}`;
-          const dayStr = day.padStart(2, '0');
-          const notificationString = `trial_customdate_${dayStr}_${time}`;
-          notifications.push(notificationString);
-        }
-      } else {
-        // Notificaciones estándar para suscripciones normales
-        const standardNotifications = [
-          { name: 'notification_1day', value: '1day' },
-          { name: 'notification_2days', value: '2days' },
-          { name: 'notification_sameday', value: 'sameday' }
-        ];
-
-        standardNotifications.forEach(notif => {
-          const checkbox = document.querySelector(`input[name="${notif.name}"]`);
-          if (checkbox && checkbox.checked) {
-            notifications.push(notif.value);
-          }
-        });
-
-        // Notificación personalizada
-        const customCheckbox = document.querySelector('input[name="notification_custom"]');
-        const customDays = document.querySelector('input[name="notification_custom_days"]');
-        if (customCheckbox && customCheckbox.checked && customDays && customDays.value) {
-          notifications.push(`custom_${customDays.value}`);
-        }
-
-        // Obtener los valores de la notificación personalizada por fecha
-        const customDateCheckbox = document.querySelector('input[name="notification_custom_date"]');
-        const customDateInput = document.querySelector('input[name="custom_date"]');
-        const customTimeInput = document.querySelector('input[name="custom_time"]');
-        
-        console.log('Debug notificaciones personalizadas por fecha:');
-        console.log('Checkbox:', customDateCheckbox);
-        console.log('Checkbox checked:', customDateCheckbox?.checked);
-        console.log('Date input:', customDateInput);
-        console.log('Date value:', customDateInput?.value);
-        console.log('Time input:', customTimeInput);
-        console.log('Time value:', customTimeInput?.value);
-        
-        if (customDateCheckbox && customDateCheckbox.checked && customDateInput && customDateInput.value && customTimeInput && customTimeInput.value) {
-          // Guardar solo el día del mes y la hora
-          const dateObj = new Date(customDateInput.value);
-          const day = dateObj.getDate();
-          let [hour, minute] = customTimeInput.value.split(':');
-          hour = hour.padStart(2, '0');
-          minute = minute.padStart(2, '0');
-          const time = `${hour}:${minute}`;
-          const dayStr = String(day).padStart(2, '0');
-          const notificationString = `customdate_${dayStr}_${time}`;
-          notifications.push(notificationString);
-          console.log('Notificación personalizada por fecha agregada:', notificationString);
-        } else {
-          console.log('No se agregó notificación personalizada por fecha - condiciones no cumplidas');
-        }
-      }
-
-      console.log('Todas las notificaciones a guardar:', notifications);
+      });
+      console.log('Notificaciones a guardar (reforzado):', notifications);
 
       // Crear objeto base de suscripción
       const subscriptionData = {
