@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Configuración - App Suscripciones</title>
+  <meta name="description" content="Configuración de la aplicación">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+  </style>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        // Verificar si estamos en un protocolo soportado
+        if (window.location.protocol === 'file:' || window.location.protocol === 'null') {
+          console.log('⚠️ Abriendo desde sistema de archivos - Service Worker no disponible');
+          console.log('Para usar notificaciones, abre la app desde un servidor web (http/https)');
+        } else {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('ServiceWorker registrado:', registration);
+            })
+            .catch(error => {
+              console.log('Error al registrar ServiceWorker:', error);
+            });
+        }
+      });
+    }
+
+    // Función para mostrar notificación en la página
+    function showNotification(title, message) {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `
+        <div class="font-semibold">${title}</div>
+        <div class="text-sm">${message}</div>
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Función para solicitar permisos de notificación
+    async function requestNotificationPermission() {
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          // Guardar el estado inmediatamente
+          localStorage.setItem('notificationPermission', 'granted');
+          document.getElementById('notificationStatus').textContent = 'Permitidas';
+          document.getElementById('notificationStatus').className = 'text-green-400';
+          showNotification('Permisos concedidos', 'Las notificaciones están ahora activas');
+          
+          // Programar notificaciones después de obtener permisos
+          await scheduleNotifications();
+        } else if (permission === 'denied') {
+          localStorage.setItem('notificationPermission', 'denied');
+          document.getElementById('notificationStatus').textContent = 'Denegadas';
+          document.getElementById('notificationStatus').className = 'text-red-400';
+          showNotification('Permisos denegados', 'Las notificaciones no están disponibles');
+        } else {
+          localStorage.setItem('notificationPermission', 'default');
+          document.getElementById('notificationStatus').textContent = 'No solicitadas';
+          document.getElementById('notificationStatus').className = 'text-yellow-400';
+        }
+      }
+    }
+
+    // Función para programar notificaciones
+    async function scheduleNotifications() {
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          if (registration.active) {
+            registration.active.postMessage({
+              type: 'SCHEDULE_NOTIFICATIONS'
+            });
+            console.log('Mensaje enviado al Service Worker para programar notificaciones');
+          } else {
+            console.log('Service Worker no está activo');
+          }
+        } catch (error) {
+          console.error('Error al programar notificaciones:', error);
+        }
+      }
+    }
+
+    // Función para generar opciones de años
+    function generateYearOptions() {
+      const yearSelector = document.getElementById('yearSelector');
+      if (!yearSelector) return;
+      
+      const currentYear = new Date().getFullYear();
+      const selectedYear = localStorage.getItem('selectedYear') || currentYear;
+      
+      // Generar años desde 2020 hasta 10 años en el futuro
+      const startYear = 2024;
+      const endYear = currentYear + 10;
+      
+      yearSelector.innerHTML = '';
+      
+      for (let year = startYear; year <= endYear; year++) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year == selectedYear) {
+          option.selected = true;
+        }
+        yearSelector.appendChild(option);
+      }
+    }
+
+    // Función para guardar el año seleccionado
+    function saveYear() {
+      const yearSelector = document.getElementById('yearSelector');
+      if (!yearSelector) return;
+      
+      const selectedYear = yearSelector.value;
+      localStorage.setItem('selectedYear', selectedYear);
+      
+      showNotification('Año guardado', `El año ${selectedYear} ha sido guardado. El calendario se actualizará.`);
+      
+      console.log('Año guardado:', selectedYear);
+    }
+
+    // Función para obtener el año actual
+    function getCurrentYear() {
+      return localStorage.getItem('selectedYear') || new Date().getFullYear();
+    }
+
+    // Función para verificar el estado de las notificaciones
+    function checkNotificationStatus() {
+      if ('Notification' in window) {
+        const permission = Notification.permission;
+        const statusElement = document.getElementById('notificationStatus');
+        
+        if (statusElement) {
+          switch(permission) {
+            case 'granted':
+              statusElement.textContent = 'Permitidas';
+              statusElement.className = 'text-green-400';
+              // Guardar el estado en localStorage
+              localStorage.setItem('notificationPermission', 'granted');
+              break;
+            case 'denied':
+              statusElement.textContent = 'Denegadas';
+              statusElement.className = 'text-red-400';
+              localStorage.setItem('notificationPermission', 'denied');
+              break;
+            case 'default':
+              statusElement.textContent = 'No solicitadas';
+              statusElement.className = 'text-yellow-400';
+              localStorage.setItem('notificationPermission', 'default');
+              break;
+          }
+        }
+      }
+    }
+
+    // Función para cargar el estado guardado de las notificaciones
+    function loadNotificationStatus() {
+      const savedStatus = localStorage.getItem('notificationPermission');
+      const statusElement = document.getElementById('notificationStatus');
+      
+      if (statusElement && savedStatus) {
+        switch(savedStatus) {
+          case 'granted':
+            statusElement.textContent = 'Permitidas';
+            statusElement.className = 'text-green-400';
+            break;
+          case 'denied':
+            statusElement.textContent = 'Denegadas';
+            statusElement.className = 'text-red-400';
+            break;
+          case 'default':
+            statusElement.textContent = 'No solicitadas';
+            statusElement.className = 'text-yellow-400';
+            break;
+        }
+      } else {
+        // Si no hay estado guardado, verificar el estado actual
+        checkNotificationStatus();
+      }
+    }
+
+    // Función para sincronizar el estado real con el guardado
+    function syncNotificationStatus() {
+      const statusElement = document.getElementById('notificationStatus');
+      const contextWarning = document.getElementById('contextWarning');
+      
+      if (!statusElement) {
+        console.log('❌ Elemento notificationStatus no encontrado');
+        return;
+      }
+      
+      // Verificar contexto primero
+      if (window.location.protocol === 'file:' || window.location.protocol === 'null') {
+        statusElement.textContent = 'Contexto no válido';
+        statusElement.className = 'text-red-400';
+        if (contextWarning) {
+          contextWarning.classList.remove('hidden');
+        }
+        console.log('⚠️ Contexto no válido para notificaciones');
+        return;
+      } else {
+        if (contextWarning) {
+          contextWarning.classList.add('hidden');
+        }
+      }
+      
+      if ('Notification' in window) {
+        const currentPermission = Notification.permission;
+        const savedPermission = localStorage.getItem('notificationPermission');
+        
+        console.log('Estado actual de notificaciones:', currentPermission);
+        console.log('Estado guardado:', savedPermission);
+        console.log('Elemento encontrado:', statusElement);
+        
+        // Si el estado guardado es diferente al actual, puede ser que:
+        // 1. El usuario cambió los permisos manualmente en el navegador
+        // 2. Los permisos se perdieron por alguna razón
+        // 3. Estamos en un contexto diferente (sistema de archivos vs servidor)
+        
+        if (savedPermission && savedPermission !== currentPermission) {
+          console.log('⚠️ Estado inconsistente detectado');
+          console.log('Estado guardado:', savedPermission, 'vs Estado actual:', currentPermission);
+          
+          // Si teníamos permisos pero ahora no, puede ser por el contexto
+          if (savedPermission === 'granted' && currentPermission === 'default') {
+            console.log('Los permisos se perdieron - posiblemente por cambio de contexto');
+          }
+        }
+        
+        // Actualizar el estado guardado con el actual
+        localStorage.setItem('notificationPermission', currentPermission);
+        
+        // Actualizar la interfaz
+        switch(currentPermission) {
+          case 'granted':
+            statusElement.textContent = 'Permitidas';
+            statusElement.className = 'text-green-400';
+            break;
+          case 'denied':
+            statusElement.textContent = 'Denegadas';
+            statusElement.className = 'text-red-400';
+            break;
+          case 'default':
+            statusElement.textContent = 'No solicitadas';
+            statusElement.className = 'text-yellow-400';
+            break;
+        }
+        
+        console.log('Estado actualizado en la interfaz:', currentPermission);
+      } else {
+        console.log('Notifications API no disponible');
+        statusElement.textContent = 'No disponible';
+        statusElement.className = 'text-red-400';
+      }
+    }
+
+    // Función para limpiar datos
+    function clearAllData() {
+      if (confirm('¿Estás seguro de que quieres eliminar todos los datos? Esta acción no se puede deshacer.')) {
+        localStorage.clear();
+        showNotification('Datos eliminados', 'Todos los datos han sido eliminados');
+      }
+    }
+
+    // Inicializar cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM cargado, verificando estado de notificaciones...');
+      
+      // Verificar estado inmediatamente
+      syncNotificationStatus();
+      
+      // Sincronizar estado cuando la página vuelve a estar visible
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          console.log('Página visible, sincronizando estado...');
+          syncNotificationStatus();
+        }
+      });
+      
+      // Generar opciones de años
+      generateYearOptions();
+      
+      // Actualizar contadores
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      
+      document.getElementById('totalSubscriptions').textContent = subscriptions.length;
+      document.getElementById('totalPersonas').textContent = personas.length;
+    });
+  </script>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-extrabold leading-tight">Configuración</h1>
+      <button onclick="window.location.href='index.html'" class="text-gray-400 hover:text-white">
+        <i class="fas fa-arrow-left text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Sección de Notificaciones -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Notificaciones</h2>
+      
+      <!-- Advertencia de contexto -->
+      <div id="contextWarning" class="hidden bg-yellow-600/20 border border-yellow-600/30 rounded-lg p-4 mb-4">
+        <div class="flex items-start space-x-3">
+          <i class="fas fa-exclamation-triangle text-yellow-400 mt-1"></i>
+          <div>
+            <h3 class="font-semibold text-yellow-400 mb-2">Contexto no válido para notificaciones</h3>
+            <p class="text-yellow-300 text-sm mb-3">
+              Estás abriendo la aplicación desde el sistema de archivos. Las notificaciones push requieren un servidor web (http/https).
+            </p>
+            <div class="text-yellow-300 text-sm">
+              <p class="font-semibold mb-1">Para usar notificaciones:</p>
+              <ul class="list-disc list-inside space-y-1">
+                <li>Usa un servidor local como Live Server en VS Code</li>
+                <li>O sube la app a un servidor web</li>
+                <li>O usa herramientas como Python: <code class="bg-yellow-600/30 px-1 rounded">python -m http.server</code></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Estado de notificaciones</h3>
+            <p class="text-gray-400 text-sm">Permisos del navegador</p>
+          </div>
+          <span id="notificationStatus" class="text-yellow-400">Verificando...</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Solicitar permisos</h3>
+            <p class="text-gray-400 text-sm">Activar notificaciones push</p>
+          </div>
+          <button onclick="requestNotificationPermission()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm">
+            Solicitar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Datos -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Datos</h2>
+      
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Limpiar datos</h3>
+            <p class="text-gray-400 text-sm">Eliminar todos los datos</p>
+          </div>
+          <button onclick="clearAllData()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm">
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Información -->
+    <div class="bg-[#1B1930] rounded-xl p-6">
+      <h2 class="text-xl font-bold mb-4">Información</h2>
+      
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Año actual</h3>
+            <p class="text-gray-400 text-sm">Año para el calendario</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <select id="yearSelector" class="bg-[#3f3f46] rounded-md px-3 py-1 text-white text-sm border-none focus:outline-none">
+              <!-- Las opciones se generarán dinámicamente -->
+            </select>
+            <button onclick="saveYear()" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-md text-sm">
+              Guardar
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Versión</h3>
+            <p class="text-gray-400 text-sm">App Suscripciones</p>
+          </div>
+          <span class="text-gray-400">1.0.0</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Suscripciones</h3>
+            <p class="text-gray-400 text-sm">Total de suscripciones</p>
+          </div>
+          <span id="totalSubscriptions" class="text-gray-400">0</span>
+        </div>
+        
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Personas</h3>
+            <p class="text-gray-400 text-sm">Total de personas</p>
+          </div>
+          <span id="totalPersonas" class="text-gray-400">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-xl"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1 text-white" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+</body>
+</html> 

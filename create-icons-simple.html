@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Iconos - App Suscripciones</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0D0A1A;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background: #3f2a6f;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover {
+            background: #4f3a7f;
+        }
+        .preview {
+            margin: 20px 0;
+            padding: 20px;
+            background: #1B1930;
+            border-radius: 10px;
+        }
+        #iconPreview {
+            width: 100px;
+            height: 100px;
+            margin: 10px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Crear Iconos para App Suscripciones</h1>
+        <p>Genera todos los iconos necesarios para tu PWA</p>
+        
+        <div class="preview">
+            <h3>Vista previa del icono:</h3>
+            <svg id="iconPreview" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#1B1930;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#3f2a6f;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <rect width="512" height="512" rx="100" ry="100" fill="url(#gradient)"/>
+                <circle cx="256" cy="256" r="180" fill="none" stroke="white" stroke-width="10" opacity="0.3"/>
+                <text x="256" y="256" font-family="Arial, sans-serif" font-size="200" font-weight="bold" 
+                      text-anchor="middle" dominant-baseline="middle" fill="white">$</text>
+                <circle cx="256" cy="256" r="120" fill="none" stroke="white" stroke-width="8" opacity="0.5"/>
+            </svg>
+        </div>
+        
+        <button onclick="generateAllIcons()">🚀 Generar y Descargar Todos los Iconos</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const iconSizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        
+        function generateIcon(size) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Crear SVG string
+            const svgString = `
+                <svg width="${size}" height="${size}" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1B1930;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#3f2a6f;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <rect width="512" height="512" rx="100" ry="100" fill="url(#gradient)"/>
+                    <circle cx="256" cy="256" r="180" fill="none" stroke="white" stroke-width="10" opacity="0.3"/>
+                    <text x="256" y="256" font-family="Arial, sans-serif" font-size="200" font-weight="bold" 
+                          text-anchor="middle" dominant-baseline="middle" fill="white">$</text>
+                    <circle cx="256" cy="256" r="120" fill="none" stroke="white" stroke-width="8" opacity="0.5"/>
+                </svg>
+            `;
+            
+            // Convertir SVG a imagen
+            const img = new Image();
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            
+            return new Promise((resolve) => {
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0, size, size);
+                    URL.revokeObjectURL(url);
+                    resolve(canvas);
+                };
+                img.src = url;
+            });
+        }
+        
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        async function generateAllIcons() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<p>🔄 Generando iconos...</p>';
+            
+            try {
+                for (let i = 0; i < iconSizes.length; i++) {
+                    const size = iconSizes[i];
+                    status.innerHTML = `<p>🔄 Generando icono ${size}x${size}... (${i + 1}/${iconSizes.length})</p>`;
+                    
+                    const canvas = await generateIcon(size);
+                    downloadCanvas(canvas, `icon-${size}x${size}.png`);
+                    
+                    // Pequeña pausa para evitar problemas con el navegador
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                status.innerHTML = `
+                    <p>✅ ¡Todos los iconos han sido generados y descargados!</p>
+                    <p>📁 Ahora copia los archivos descargados a la carpeta "icons/" de tu aplicación</p>
+                    <p>📋 Archivos necesarios:</p>
+                    <ul style="text-align: left; display: inline-block;">
+                        <li>icon-72x72.png</li>
+                        <li>icon-96x96.png</li>
+                        <li>icon-128x128.png</li>
+                        <li>icon-144x144.png</li>
+                        <li>icon-152x152.png</li>
+                        <li>icon-192x192.png</li>
+                        <li>icon-384x384.png</li>
+                        <li>icon-512x512.png</li>
+                    </ul>
+                `;
+            } catch (error) {
+                status.innerHTML = `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Editar Persona - App Suscripciones</title>
+  <meta name="description" content="Editar información de persona">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    @media (max-width: 640px) {
+      .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="flex justify-between items-center mb-6">
+      <button class="text-white text-base font-normal flex items-center" onclick="window.location.href='personas.html'">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <h1 class="text-3xl font-extrabold leading-tight" id="titulo-pagina">Nueva Persona</h1>
+      <button onclick="guardarPersona()" class="bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+        <i class="fas fa-save"></i>
+        <span>Guardar</span>
+      </button>
+    </div>
+
+    <div class="space-y-6">
+      <!-- Nombre -->
+      <div class="bg-[#1B1930] rounded-xl p-4">
+        <div class="flex justify-between items-center">
+          <div class="flex-1">
+            <label class="block text-gray-400 text-sm mb-2">Nombre</label>
+            <input type="text" id="nombre-input" class="w-full bg-transparent border-none text-white text-lg focus:outline-none" placeholder="Ingrese el nombre">
+          </div>
+          <div class="flex flex-col items-end ml-6">
+            <div class="flex items-center space-x-2">
+              <span class="text-gray-400">Total:</span>
+              <span class="text-white text-xl font-bold" id="total-precio">Q 0.00</span>
+            </div>
+            <div class="relative">
+              <button id="filtro-btn" class="text-gray-400 hover:text-white transition-colors flex items-center space-x-1">
+                <span>Mensual</span>
+                <i class="fas fa-chevron-down text-xs"></i>
+              </button>
+              <div id="filtro-menu" class="absolute right-0 mt-2 w-32 bg-[#2a2736] rounded-lg shadow-lg hidden z-10">
+                <button class="w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors" data-periodo="mensual">Mensual</button>
+                <button class="w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors" data-periodo="trimestral">Trimestral</button>
+                <button class="w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors" data-periodo="semestral">Semestral</button>
+                <button class="w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors" data-periodo="anual">Anual</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plataformas -->
+      <div class="bg-[#1B1930] rounded-xl p-4">
+        <div class="flex justify-between items-center mb-4">
+          <label class="text-gray-400 text-sm">Plataformas</label>
+          <button class="bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2" onclick="agregarPlataforma()">
+            <i class="fas fa-plus"></i>
+            <span>Agregar</span>
+          </button>
+        </div>
+        
+        <div id="plataformas-container" class="space-y-4">
+          <!-- Las plataformas se agregarán aquí dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template para nueva plataforma -->
+  <template id="plataforma-template">
+    <div class="plataforma bg-[#2a2736] rounded-lg p-4">
+      <div class="flex justify-between items-center mb-4 plataforma-resumen-bar cursor-pointer">
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-2">
+            <span class="plataforma-nombre text-gray-400">Nombre de plataforma</span>
+            <span class="text-white">Q</span>
+            <span class="precio-resumen text-white">0.00</span>
+          </div>
+        </div>
+        <button class="text-gray-400" tabindex="-1">
+          <i class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+      
+      <div class="plataforma-detalles hidden space-y-4">
+        <!-- Plataforma -->
+        <div>
+          <div class="relative">
+            <div class="flex items-center space-x-2 cursor-pointer bg-[#2a2736] rounded-lg p-2" onclick="this.nextElementSibling.classList.toggle('hidden')">
+              <span class="plataforma-selector text-gray-400">Seleccionar plataforma</span>
+              <i class="fas fa-chevron-down text-xs"></i>
+            </div>
+            <div class="plataforma-menu absolute left-0 mt-2 w-48 bg-[#2a2736] rounded-lg shadow-lg hidden z-50">
+              <!-- Las plataformas se cargarán aquí dinámicamente -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Precio -->
+        <div>
+          <label class="block text-gray-400 text-sm mb-2">Precio</label>
+          <div class="flex items-center">
+            <span class="text-gray-400 mr-2">Q</span>
+            <input type="number" class="precio-input w-full bg-transparent border-none text-gray-400 text-lg focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="0.00">
+          </div>
+        </div>
+
+        <!-- Cobro -->
+        <div>
+          <label class="block text-gray-400 text-sm mb-2">Cobro</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button class="cobro-btn bg-[#2a2736] text-white py-2 rounded-lg" data-cobro="mensual">Mensual</button>
+            <button class="cobro-btn bg-[#2a2736] text-white py-2 rounded-lg" data-cobro="semestral">Semestral</button>
+            <button class="cobro-btn bg-[#2a2736] text-white py-2 rounded-lg" data-cobro="anual">Anual</button>
+          </div>
+        </div>
+
+        <!-- Período (se muestra/oculta según el tipo de cobro) -->
+        <div id="periodo-container" class="hidden">
+          <label class="block text-gray-400 text-sm mb-2">Período</label>
+          <div id="periodo-mensual" class="grid grid-cols-6 gap-2">
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="1">Ene</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-1" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-1" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="2">Feb</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-2" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-2" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="3">Mar</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-3" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-3" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="4">Abr</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-4" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-4" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="5">May</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-5" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-5" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="6">Jun</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-6" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-6" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="7">Jul</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-7" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-7" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="8">Ago</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-8" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-8" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="9">Sep</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-9" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-9" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="10">Oct</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-10" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-10" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="11">Nov</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-11" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-11" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col space-y-2">
+              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg text-sm" data-mes="12">Dic</button>
+              <div class="pago-info hidden text-xs space-y-1">
+                <div class="flex items-center space-x-1">
+                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Pagado</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-12" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Tarjeta</span>
+                </div>
+                <div class="flex items-center space-x-1">
+                  <input type="radio" name="pago-tipo-12" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+                  <span class="text-gray-400">Efectivo</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="periodo-semestral" class="grid grid-cols-2 gap-2 hidden">
+            <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg" data-semestre="1">Ene-Jun</button>
+            <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg" data-semestre="2">Jul-Dic</button>
+          </div>
+        </div>
+
+        <!-- Pagado (solo visible cuando no es mensual) -->
+        <div id="pagado-general" class="flex flex-col space-y-2">
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="pagado" class="w-4 h-4 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+            <label for="pagado" class="text-white">Pagado</label>
+          </div>
+          <div class="flex flex-col space-y-2 ml-6">
+            <div class="flex items-center space-x-4">
+              <div class="flex items-center space-x-1">
+                <input type="radio" name="pago-tipo-general" class="pago-tipo-general w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]" disabled>
+                <span class="text-gray-400">Efectivo</span>
+              </div>
+              <div class="flex items-center space-x-1">
+                <input type="radio" name="pago-tipo-general" class="pago-tipo-general w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]" disabled>
+                <span class="text-gray-400">Depósito</span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-1">
+              <input type="checkbox" class="en-tarjeta-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]" disabled>
+              <span class="text-gray-400">En tarjeta</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comprobantes -->
+        <div>
+          <label class="block text-gray-400 text-sm mb-2">Comprobantes</label>
+          <div class="flex flex-wrap gap-2 mb-2" id="comprobantes-container">
+            <!-- Las imágenes se agregarán aquí -->
+          </div>
+          <input type="file" accept="image/*" class="hidden" id="comprobante-input">
+          <button onclick="document.getElementById('comprobante-input').click()" class="bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+            <i class="fas fa-plus"></i>
+            <span>Agregar comprobante</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Modal para ver imagen -->
+  <div id="image-modal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50">
+    <button class="absolute top-4 right-4 text-white text-2xl" onclick="closeImageModal()">
+      <i class="fas fa-times"></i>
+    </button>
+    <img id="modal-image" class="max-w-[90%] max-h-[90vh] object-contain" src="" alt="Comprobante">
+  </div>
+
+  <script>
+    // Obtener el ID de la persona de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const personaId = urlParams.get('id');
+
+    // Cargar datos de la persona si existe un ID
+    function cargarPersona() {
+      if (!personaId) return;
+
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const persona = personas.find(p => p.id === parseInt(personaId));
+
+      if (!persona) {
+        window.location.href = 'personas.html';
+        return;
+      }
+
+      // Actualizar título
+      document.getElementById('titulo-pagina').textContent = 'Editar Persona';
+      
+      // Cargar nombre
+      document.getElementById('nombre-input').value = persona.nombre;
+
+      // Cargar plataformas
+      persona.plataformas.forEach(plataforma => {
+        agregarPlataforma();
+        const ultimaPlataforma = document.querySelector('#plataformas-container').lastElementChild;
+        
+        // Establecer plataforma seleccionada
+        const selector = ultimaPlataforma.querySelector('.plataforma-selector');
+        selector.dataset.plataforma = plataforma.nombre;
+        selector.textContent = plataforma.nombre;
+        
+        // Actualizar el nombre en el resumen
+        const nombreResumen = ultimaPlataforma.querySelector('.plataforma-nombre');
+        nombreResumen.textContent = plataforma.nombre;
+        nombreResumen.classList.remove('text-gray-400');
+        nombreResumen.classList.add('text-white');
+
+        // Establecer precio
+        const precioInput = ultimaPlataforma.querySelector('.precio-input');
+        precioInput.value = plataforma.precio;
+        ultimaPlataforma.querySelector('.precio-resumen').textContent = plataforma.precio.toFixed(2);
+
+        // Establecer tipo de cobro
+        const cobroBtn = ultimaPlataforma.querySelector(`.cobro-btn[data-cobro="${plataforma.tipoCobro}"]`);
+        if (cobroBtn) {
+          cobroBtn.click();
+        }
+
+        // Cargar pagos
+        if (plataforma.tipoCobro === 'mensual') {
+          plataforma.pagos?.forEach(pago => {
+            const periodoBtn = ultimaPlataforma.querySelector(`.periodo-btn[data-mes="${pago.mes}"]`);
+            if (periodoBtn) {
+              periodoBtn.click();
+              const pagoInfo = periodoBtn.nextElementSibling;
+              const checkbox = pagoInfo.querySelector('.pago-checkbox');
+              checkbox.checked = pago.pagado;
+              
+              if (pago.pagado && pago.tipoPago) {
+                const radioBtn = Array.from(pagoInfo.querySelectorAll('.pago-tipo')).find(radio => 
+                  radio.nextElementSibling.textContent === pago.tipoPago
+                );
+                if (radioBtn) {
+                  radioBtn.checked = true;
+                }
+              }
+            }
+          });
+        } else {
+          const pagado = plataforma.pagos?.[0];
+          if (pagado) {
+            const checkbox = ultimaPlataforma.querySelector('#pagado');
+            checkbox.checked = pagado.pagado;
+            
+            if (pagado.pagado && pagado.tipoPago) {
+              const radioBtn = Array.from(ultimaPlataforma.querySelectorAll('.pago-tipo-general')).find(radio => 
+                radio.nextElementSibling.textContent === pagado.tipoPago
+              );
+              if (radioBtn) {
+                radioBtn.checked = true;
+              }
+            }
+
+            const enTarjetaCheckbox = ultimaPlataforma.querySelector('.en-tarjeta-checkbox');
+            if (enTarjetaCheckbox) {
+              enTarjetaCheckbox.checked = pagado.enTarjeta || false;
+            }
+          }
+        }
+
+        // Cargar comprobantes
+        if (plataforma.comprobantes?.length > 0) {
+          const container = ultimaPlataforma.querySelector('#comprobantes-container');
+          plataforma.comprobantes.forEach(src => {
+            const imgWrapper = document.createElement('div');
+            imgWrapper.className = 'relative group';
+            
+            const img = document.createElement('img');
+            img.src = src;
+            img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
+            img.onclick = function() {
+              showImageModal(this.src);
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+            deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
+            deleteBtn.onclick = function(e) {
+              e.stopPropagation();
+              imgWrapper.remove();
+            };
+
+            imgWrapper.appendChild(img);
+            imgWrapper.appendChild(deleteBtn);
+            container.appendChild(imgWrapper);
+          });
+        }
+      });
+
+      // Calcular total inicial
+      const periodoActivo = document.querySelector('#filtro-btn span').textContent.toLowerCase();
+      calcularTotal(periodoActivo);
+    }
+
+    function agregarPlataforma() {
+      // Obtener suscripciones de localStorage
+      const suscripciones = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      
+      // Si no hay suscripciones, mostrar alerta y redirigir
+      if (suscripciones.length === 0) {
+        alert('No hay suscripciones disponibles. Por favor, crea al menos una suscripción antes de agregar una persona.');
+        window.location.href = 'suscripciones.html';
+        return;
+      }
+
+      const template = document.getElementById('plataforma-template');
+      const container = document.getElementById('plataformas-container');
+      const clone = template.content.cloneNode(true);
+      container.appendChild(clone);
+      
+      // Agregar opciones al menú de plataformas
+      const nuevaPlataforma = container.lastElementChild;
+      const plataformaMenu = nuevaPlataforma.querySelector('.plataforma-menu');
+      const selector = nuevaPlataforma.querySelector('.plataforma-selector');
+      
+      // Ordenar las suscripciones alfabéticamente
+      const suscripcionesOrdenadas = suscripciones.sort((a, b) => a.name.localeCompare(b.name));
+      
+      // Limpiar y agregar las opciones al menú
+      plataformaMenu.innerHTML = '';
+      // Filtrar suscripciones con cupo disponible
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      let hayDisponible = false;
+      suscripcionesOrdenadas.forEach(suscripcion => {
+        let cupo = suscripcion.numPerfiles || 0;
+        if (cupo > 0) {
+          // Contar cuántas veces está ocupada esta suscripción
+          let ocupados = 0;
+          personas.forEach(persona => {
+            if (persona.plataformas && Array.isArray(persona.plataformas)) {
+              persona.plataformas.forEach(plataforma => {
+                if (plataforma.nombre === suscripcion.name) {
+                  ocupados++;
+                }
+              });
+            }
+          });
+          if (ocupados >= cupo) return; // No mostrar si está lleno
+        }
+        // Mostrar la opción si no está llena o no tiene límite
+        hayDisponible = true;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors';
+        button.dataset.plataforma = suscripcion.name;
+        button.textContent = suscripcion.name;
+        button.onclick = function() {
+          const plataforma = this.closest('.plataforma');
+          const nombreSpan = plataforma.querySelector('.plataforma-nombre');
+          nombreSpan.textContent = suscripcion.name;
+          nombreSpan.classList.remove('text-gray-400');
+          nombreSpan.classList.add('text-white');
+          plataformaMenu.classList.add('hidden');
+          const selectorSpan = plataforma.querySelector('.plataforma-selector');
+          selectorSpan.textContent = suscripcion.name;
+          selectorSpan.dataset.plataforma = suscripcion.name;
+        };
+        plataformaMenu.appendChild(button);
+      });
+      if (!hayDisponible) {
+        const noOption = document.createElement('button');
+        noOption.type = 'button';
+        noOption.disabled = true;
+        noOption.className = 'w-full text-left px-4 py-2 text-gray-400 cursor-not-allowed';
+        noOption.textContent = 'Plataformas llenas';
+        plataformaMenu.appendChild(noOption);
+      }
+      // Abrir el menú automáticamente
+      plataformaMenu.classList.remove('hidden');
+
+      // Manejar clic en el selector dentro del menú de detalles
+      const selectorPlataforma = nuevaPlataforma.querySelector('.plataforma-selector');
+      selectorPlataforma.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        plataformaMenu.classList.toggle('hidden');
+      };
+
+      // Cerrar menú al hacer clic fuera
+      document.addEventListener('click', function(e) {
+        if (!selectorPlataforma.contains(e.target) && !plataformaMenu.contains(e.target)) {
+          plataformaMenu.classList.add('hidden');
+        }
+      });
+
+      // Agregar event listeners a los nuevos elementos
+      const precioInput = nuevaPlataforma.querySelector('.precio-input');
+      const cobroBtns = nuevaPlataforma.querySelectorAll('.cobro-btn');
+
+      // Event listener para el input de precio
+      precioInput.addEventListener('input', function() {
+        const precioResumen = this.closest('.plataforma').querySelector('.precio-resumen');
+        precioResumen.textContent = this.value || '0.00';
+        const periodoActivo = document.querySelector('#filtro-btn span').textContent.toLowerCase();
+        calcularTotal(periodoActivo);
+      });
+
+      // Event listeners para los botones de cobro
+      cobroBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+          const periodoActivo = document.querySelector('#filtro-btn span').textContent.toLowerCase();
+          setTimeout(() => calcularTotal(periodoActivo), 0);
+        });
+      });
+
+      // Calcular total inicial
+      const periodoActivo = document.querySelector('#filtro-btn span').textContent.toLowerCase();
+      calcularTotal(periodoActivo);
+
+      // Después de agregar el template al DOM, agrego el event listener a la barra de resumen
+      const resumenBar = nuevaPlataforma.querySelector('.plataforma-resumen-bar');
+      resumenBar.addEventListener('click', function() {
+        togglePlataforma(this.querySelector('button'));
+      });
+    }
+
+    function togglePlataforma(button) {
+      const detalles = button.closest('.plataforma').querySelector('.plataforma-detalles');
+      detalles.classList.toggle('hidden');
+      const icon = button.querySelector('i');
+      icon.classList.toggle('fa-chevron-down');
+      icon.classList.toggle('fa-chevron-up');
+    }
+
+    // Manejar el cambio de tipo de cobro
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('cobro-btn')) {
+        // Actualizar botones de cobro
+        const buttons = e.target.parentElement.querySelectorAll('.cobro-btn');
+        buttons.forEach(btn => {
+          btn.classList.remove('bg-[#3f2a6f]');
+          btn.classList.add('bg-[#2a2736]');
+        });
+        e.target.classList.remove('bg-[#2a2736]');
+        e.target.classList.add('bg-[#3f2a6f]');
+
+        // Mostrar/ocultar período según el tipo de cobro
+        const periodoContainer = e.target.closest('.plataforma').querySelector('#periodo-container');
+        const periodoMensual = periodoContainer.querySelector('#periodo-mensual');
+        const periodoSemestral = periodoContainer.querySelector('#periodo-semestral');
+        const pagadoGeneral = e.target.closest('.plataforma').querySelector('#pagado-general');
+
+        periodoContainer.classList.remove('hidden');
+        if (e.target.dataset.cobro === 'mensual') {
+          periodoMensual.classList.remove('hidden');
+          periodoSemestral.classList.add('hidden');
+          pagadoGeneral.classList.add('hidden');
+        } else if (e.target.dataset.cobro === 'semestral') {
+          periodoMensual.classList.add('hidden');
+          periodoSemestral.classList.remove('hidden');
+          pagadoGeneral.classList.remove('hidden');
+        } else {
+          periodoContainer.classList.add('hidden');
+          pagadoGeneral.classList.remove('hidden');
+        }
+      }
+
+      // Manejar selección de períodos
+      if (e.target.classList.contains('periodo-btn')) {
+        const mes = e.target.dataset.mes;
+        const pagoInfo = e.target.nextElementSibling;
+        
+        // Toggle el estado del botón
+        e.target.classList.toggle('bg-[#3f2a6f]');
+        e.target.classList.toggle('bg-[#2a2736]');
+        
+        // Mostrar/ocultar información de pago
+        pagoInfo.classList.toggle('hidden');
+        
+        // Si el botón está activo, mostrar la información de pago
+        if (e.target.classList.contains('bg-[#3f2a6f]')) {
+          pagoInfo.classList.remove('hidden');
+        } else {
+          pagoInfo.classList.add('hidden');
+        }
+      }
+    });
+
+    // Manejar cambios en el checkbox de pago
+    document.addEventListener('change', function(e) {
+      if (e.target.classList.contains('pago-checkbox')) {
+        const pagoInfo = e.target.closest('.pago-info');
+        const radioButtons = pagoInfo.querySelectorAll('.pago-tipo');
+        
+        // Habilitar/deshabilitar radio buttons según el estado del checkbox
+        radioButtons.forEach(radio => {
+          radio.disabled = !e.target.checked;
+        });
+        
+        // Si se desmarca el checkbox, desmarcar los radio buttons
+        if (!e.target.checked) {
+          radioButtons.forEach(radio => {
+            radio.checked = false;
+          });
+        }
+      }
+    });
+
+    // Manejar cambios en el checkbox de pago general
+    document.addEventListener('change', function(e) {
+      if (e.target.id === 'pagado') {
+        const pagadoGeneral = e.target.closest('#pagado-general');
+        const radioButtons = pagadoGeneral.querySelectorAll('.pago-tipo-general');
+        const enTarjetaCheckbox = pagadoGeneral.querySelector('.en-tarjeta-checkbox');
+        
+        // Habilitar/deshabilitar radio buttons y checkbox según el estado del checkbox
+        radioButtons.forEach(radio => {
+          radio.disabled = !e.target.checked;
+        });
+        enTarjetaCheckbox.disabled = !e.target.checked;
+        
+        // Si se desmarca el checkbox, desmarcar los radio buttons y el checkbox de tarjeta
+        if (!e.target.checked) {
+          radioButtons.forEach(radio => {
+            radio.checked = false;
+          });
+          enTarjetaCheckbox.checked = false;
+        }
+      }
+    });
+
+    // Manejar la subida de imágenes
+    document.addEventListener('change', function(e) {
+      if (e.target.id === 'comprobante-input') {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          const plataforma = e.target.closest('.plataforma');
+          reader.onload = function(event) {
+            const container = plataforma.querySelector('#comprobantes-container');
+            const imgWrapper = document.createElement('div');
+            imgWrapper.className = 'relative group';
+            
+            const img = document.createElement('img');
+            img.src = event.target.result;
+            img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
+            img.onclick = function() {
+              showImageModal(this.src);
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+            deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
+            deleteBtn.onclick = function(e) {
+              e.stopPropagation();
+              imgWrapper.remove();
+            };
+
+            imgWrapper.appendChild(img);
+            imgWrapper.appendChild(deleteBtn);
+            container.appendChild(imgWrapper);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    });
+
+    // Sincronizar el precio del input con el resumen
+    document.addEventListener('input', function(e) {
+      if (e.target.classList.contains('precio-input')) {
+        const plataforma = e.target.closest('.plataforma');
+        const precioResumen = plataforma.querySelector('.precio-resumen');
+        precioResumen.textContent = e.target.value || '0.00';
+      }
+    });
+
+    function showImageModal(src) {
+      const modal = document.getElementById('image-modal');
+      const modalImg = document.getElementById('modal-image');
+      modalImg.src = src;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeImageModal() {
+      const modal = document.getElementById('image-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Cerrar modal al hacer clic fuera de la imagen
+    document.getElementById('image-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeImageModal();
+      }
+    });
+
+    // Función para actualizar el estilo de los botones de período
+    function actualizarBotonesPeriodo(periodoSeleccionado) {
+      const filtroBtn = document.getElementById('filtro-btn');
+      const filtroMenu = document.getElementById('filtro-menu');
+      const botones = filtroMenu.querySelectorAll('[data-periodo]');
+      
+      // Actualizar texto del botón principal
+      filtroBtn.querySelector('span').textContent = periodoSeleccionado.charAt(0).toUpperCase() + periodoSeleccionado.slice(1);
+      
+      // Actualizar estilo de los botones del menú
+      botones.forEach(boton => {
+        if (boton.dataset.periodo === periodoSeleccionado) {
+          boton.classList.remove('text-gray-400');
+          boton.classList.add('text-white', 'bg-[#3f2a6f]');
+        } else {
+          boton.classList.remove('text-white', 'bg-[#3f2a6f]');
+          boton.classList.add('text-gray-400');
+        }
+      });
+    }
+
+    // Manejar clic en el botón de filtro
+    document.getElementById('filtro-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const filtroMenu = document.getElementById('filtro-menu');
+      filtroMenu.classList.toggle('hidden');
+    });
+
+    // Cerrar menú al hacer clic fuera
+    document.addEventListener('click', function(e) {
+      const filtroMenu = document.getElementById('filtro-menu');
+      const filtroBtn = document.getElementById('filtro-btn');
+      
+      if (!filtroBtn.contains(e.target) && !filtroMenu.contains(e.target)) {
+        filtroMenu.classList.add('hidden');
+      }
+    });
+
+    // Manejar selección de período
+    document.getElementById('filtro-menu').addEventListener('click', function(e) {
+      if (e.target.hasAttribute('data-periodo')) {
+        const periodo = e.target.dataset.periodo;
+        actualizarBotonesPeriodo(periodo);
+        calcularTotal(periodo);
+        this.classList.add('hidden');
+      }
+    });
+
+    // Función para calcular el total según el período seleccionado
+    function calcularTotal(periodoSeleccionado) {
+      const plataformas = document.querySelectorAll('.plataforma');
+      let total = 0;
+
+      plataformas.forEach(plataforma => {
+        const precio = parseFloat(plataforma.querySelector('.precio-input').value) || 0;
+        const cobroBtns = plataforma.querySelectorAll('.cobro-btn');
+        let tipoCobro = null;
+        
+        // Buscar el botón de cobro seleccionado
+        cobroBtns.forEach(btn => {
+          if (btn.classList.contains('bg-[#3f2a6f]')) {
+            tipoCobro = btn.dataset.cobro;
+          }
+        });
+        
+        if (tipoCobro) {
+          switch(periodoSeleccionado) {
+            case 'mensual':
+              if (tipoCobro === 'mensual') total += precio;
+              else if (tipoCobro === 'semestral') total += precio / 6;
+              else if (tipoCobro === 'anual') total += precio / 12;
+              break;
+            case 'trimestral':
+              if (tipoCobro === 'mensual') total += precio * 3;
+              else if (tipoCobro === 'semestral') total += precio / 2;
+              else if (tipoCobro === 'anual') total += precio / 4;
+              break;
+            case 'semestral':
+              if (tipoCobro === 'mensual') total += precio * 6;
+              else if (tipoCobro === 'semestral') total += precio;
+              else if (tipoCobro === 'anual') total += precio / 2;
+              break;
+            case 'anual':
+              if (tipoCobro === 'mensual') total += precio * 12;
+              else if (tipoCobro === 'semestral') total += precio * 2;
+              else if (tipoCobro === 'anual') total += precio;
+              break;
+          }
+        }
+      });
+
+      document.getElementById('total-precio').textContent = `Q ${total.toFixed(2)}`;
+    }
+
+    // Actualizar total cuando cambia el precio
+    document.addEventListener('input', function(e) {
+      if (e.target.classList.contains('precio-input')) {
+        const plataforma = e.target.closest('.plataforma');
+        const precioResumen = plataforma.querySelector('.precio-resumen');
+        precioResumen.textContent = e.target.value || '0.00';
+        const periodoActivo = document.querySelector('#filtro-btn span').textContent.toLowerCase();
+        calcularTotal(periodoActivo);
+      }
+    });
+
+    // Actualizar total cuando cambia el tipo de cobro
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('cobro-btn')) {
+        const periodoActivo = document.querySelector('#filtro-btn span').textContent.toLowerCase();
+        setTimeout(() => calcularTotal(periodoActivo), 0);
+      }
+    });
+
+    // Inicializar con mensual seleccionado
+    document.addEventListener('DOMContentLoaded', function() {
+      actualizarBotonesPeriodo('mensual');
+      calcularTotal('mensual');
+    });
+
+    // Función para guardar la persona
+    function guardarPersona() {
+      const nombre = document.getElementById('nombre-input').value;
+      if (!nombre) {
+        alert('Por favor ingrese el nombre de la persona');
+        return;
+      }
+
+      const plataformas = [];
+      document.querySelectorAll('.plataforma').forEach(plataforma => {
+        const nombrePlataforma = plataforma.querySelector('.plataforma-nombre').textContent;
+        if (!nombrePlataforma || nombrePlataforma === 'Nombre de plataforma') {
+          alert('Por favor seleccione una plataforma para cada suscripción');
+          return;
+        }
+
+        const precio = parseFloat(plataforma.querySelector('.precio-input').value) || 0;
+        const cobroBtns = plataforma.querySelectorAll('.cobro-btn');
+        let tipoCobro = null;
+        
+        cobroBtns.forEach(btn => {
+          if (btn.classList.contains('bg-[#3f2a6f]')) {
+            tipoCobro = btn.dataset.cobro;
+          }
+        });
+
+        const comprobantes = [];
+        plataforma.querySelectorAll('#comprobantes-container img').forEach(img => {
+          comprobantes.push(img.src);
+        });
+
+        let pagos = [];
+        if (tipoCobro === 'mensual') {
+          plataforma.querySelectorAll('.periodo-btn').forEach(btn => {
+            if (btn.classList.contains('bg-[#3f2a6f]')) {
+              const mes = btn.dataset.mes;
+              const pagoInfo = btn.nextElementSibling;
+              const pagado = pagoInfo.querySelector('.pago-checkbox').checked;
+              const tipoPago = pagoInfo.querySelector('.pago-tipo:checked')?.nextElementSibling.textContent || '';
+              
+              pagos.push({
+                mes,
+                pagado,
+                tipoPago
+              });
+            }
+          });
+        } else {
+          const pagado = plataforma.querySelector('#pagado').checked;
+          const tipoPago = plataforma.querySelector('.pago-tipo-general:checked')?.nextElementSibling.textContent || '';
+          const enTarjeta = plataforma.querySelector('.en-tarjeta-checkbox').checked;
+          
+          pagos.push({
+            pagado,
+            tipoPago,
+            enTarjeta
+          });
+        }
+
+        plataformas.push({
+          nombre: nombrePlataforma,
+          precio,
+          tipoCobro,
+          comprobantes,
+          pagos
+        });
+      });
+
+      const persona = {
+        id: personaId ? parseInt(personaId) : Date.now(),
+        nombre,
+        plataformas,
+        fechaCreacion: new Date().toISOString()
+      };
+
+      // Obtener personas existentes
+      let personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      
+      if (personaId) {
+        // Actualizar persona existente
+        const index = personas.findIndex(p => p.id === parseInt(personaId));
+        if (index !== -1) {
+          personas[index] = persona;
+        }
+      } else {
+        // Agregar nueva persona
+        personas.push(persona);
+      }
+      
+      localStorage.setItem('personas', JSON.stringify(personas));
+
+      // Redirigir a la página de personas
+      window.location.href = 'personas.html';
+    }
+
+    // Cargar datos al iniciar
+    document.addEventListener('DOMContentLoaded', cargarPersona);
+  </script>
+</body>
+</html> 

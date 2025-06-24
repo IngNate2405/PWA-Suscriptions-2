@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Personas - App Suscripciones</title>
+  <meta name="description" content="Lista de personas">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    @media (max-width: 640px) {
+      .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="relative mt-6 flex justify-center">
+      <img alt="Glowing orange and pink planet with purple orbit ring and 5 white orbiting dots on dark starry background" class="rounded-full w-40 h-40 sm:w-48 sm:h-48" src="https://storage.googleapis.com/a1aa/image/85d1ed06-6f91-43ac-0142-27216447cc22.jpg"/>
+      <svg class="absolute inset-0 m-auto w-[180px] h-[180px] sm:w-[220px] sm:h-[220px]" fill="none" viewbox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="90" cy="90" r="88" stroke="#6B4F9A" stroke-opacity="0.5" stroke-width="1.5"></circle>
+        <circle cx="90" cy="20" fill="#D9D4F1" r="6"></circle>
+        <circle cx="150" cy="90" fill="#D9D4F1" r="6"></circle>
+        <circle cx="90" cy="160" fill="#D9D4F1" r="10"></circle>
+        <circle cx="30" cy="90" fill="#D9D4F1" r="6"></circle>
+        <circle cx="50" cy="40" fill="#D9D4F1" r="6"></circle>
+      </svg>
+      <button aria-label="Add person" class="absolute top-0 right-0 mt-2 mr-2 w-12 h-12 rounded-full bg-gradient-to-b from-[#3E3A5E] to-[#1B1A2B] flex items-center justify-center text-white text-3xl shadow-[0_4px_10px_rgba(0,0,0,0.3)]" onclick="window.location.href='editar-persona.html'">
+        <i class="fas fa-plus"></i>
+      </button>
+    </div>
+
+    <div class="mt-8 flex justify-between items-center px-1">
+      <div>
+        <div class="relative">
+          <button id="filtro-plataformas-btn" class="text-gray-400 text-sm font-normal flex items-center space-x-1">
+            <span>Todas las plataformas</span>
+            <i class="fas fa-chevron-down text-xs"></i>
+          </button>
+          <div id="filtro-plataformas-menu" class="absolute left-0 mt-2 w-48 bg-[#2a2736] rounded-lg shadow-lg hidden z-10">
+            <button class="w-full text-left px-4 py-2 text-white bg-[#3f2a6f] transition-colors" data-plataforma="todas">Todas las plataformas</button>
+            <!-- Las plataformas se cargarán aquí dinámicamente -->
+          </div>
+        </div>
+      </div>
+      <div class="text-right">
+        <div class="mb-4">
+          <h2 class="text-2xl font-extrabold leading-none" id="total-mensual">Q0.00</h2>
+          <div class="flex justify-between items-center mb-6">
+            <span class="text-[#6b6b7b] text-base mr-4">Total
+              <select id="periodo-total-select" class="bg-transparent text-[#6b6b7b] border-none focus:outline-none">
+                <option value="mensual">Mensual</option>
+                <option value="trimestral">Trimestral</option>
+                <option value="semestral">Semestral</option>
+                <option value="anual">Anual</option>
+              </select>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-extrabold leading-tight">Personas</h1>
+    </div>
+
+    <div class="mt-4 space-y-3" id="personas-container">
+      <!-- Las personas se cargarán aquí dinámicamente -->
+    </div>
+  </div>
+
+  <script>
+    let plataformaSeleccionada = 'todas';
+    let periodoTotalSeleccionado = 'mensual';
+
+    function cargarPersonas() {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const suscripciones = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      const container = document.getElementById('personas-container');
+      const totalMensual = document.getElementById('total-mensual');
+      
+      container.innerHTML = '';
+
+      if (personas.length === 0) {
+        container.innerHTML = `
+          <div class="text-center text-gray-400 py-8">
+            No hay personas registradas
+          </div>
+        `;
+        totalMensual.textContent = 'Q0.00';
+        return;
+      }
+
+      // Obtener todas las plataformas únicas desde las suscripciones
+      const plataformas = new Set();
+      suscripciones.forEach(suscripcion => {
+        plataformas.add(suscripcion.name);
+      });
+
+      // Actualizar menú de filtro de plataformas
+      const filtroMenu = document.getElementById('filtro-plataformas-menu');
+      filtroMenu.innerHTML = `
+        <button class="w-full text-left px-4 py-2 ${plataformaSeleccionada === 'todas' ? 'text-white bg-[#3f2a6f]' : 'text-gray-400 hover:text-white hover:bg-[#3f2a6f]'} transition-colors" data-plataforma="todas">Todas las plataformas</button>
+        ${Array.from(plataformas).sort().map(plataforma => `
+          <button class="w-full text-left px-4 py-2 ${plataformaSeleccionada === plataforma ? 'text-white bg-[#3f2a6f]' : 'text-gray-400 hover:text-white hover:bg-[#3f2a6f]'} transition-colors" data-plataforma="${plataforma}">${plataforma}</button>
+        `).join('')}
+      `;
+
+      // Filtrar personas según la plataforma seleccionada
+      const personasFiltradas = plataformaSeleccionada === 'todas' 
+        ? personas 
+        : personas.filter(persona => 
+            persona.plataformas.some(p => p.nombre === plataformaSeleccionada)
+          );
+
+      let totalMensualCalculado = 0;
+
+      personasFiltradas.forEach(persona => {
+        const totalPeriodoPersona = persona.plataformas.reduce((total, plataforma) => {
+          const precio = plataforma.precio;
+          switch(periodoTotalSeleccionado) {
+            case 'mensual':
+              switch(plataforma.tipoCobro) {
+                case 'mensual': return total + precio;
+                case 'trimestral': return total + (precio / 3);
+                case 'semestral': return total + (precio / 6);
+                case 'anual': return total + (precio / 12);
+                default: return total;
+              }
+            case 'trimestral':
+              switch(plataforma.tipoCobro) {
+                case 'mensual': return total + (precio * 3);
+                case 'trimestral': return total + precio;
+                case 'semestral': return total + (precio / 2);
+                case 'anual': return total + (precio / 4);
+                default: return total;
+              }
+            case 'semestral':
+              switch(plataforma.tipoCobro) {
+                case 'mensual': return total + (precio * 6);
+                case 'trimestral': return total + (precio * 2);
+                case 'semestral': return total + precio;
+                case 'anual': return total + (precio / 2);
+                default: return total;
+              }
+            case 'anual':
+              switch(plataforma.tipoCobro) {
+                case 'mensual': return total + (precio * 12);
+                case 'trimestral': return total + (precio * 4);
+                case 'semestral': return total + (precio * 2);
+                case 'anual': return total + precio;
+                default: return total;
+              }
+            default:
+              return total;
+          }
+        }, 0);
+        totalMensualCalculado += totalPeriodoPersona;
+
+        const personaElement = document.createElement('div');
+        personaElement.className = 'bg-[#1B1930] rounded-xl p-4 cursor-pointer hover:bg-[#2a2736] transition-colors';
+        personaElement.onclick = () => editarPersona(persona.id);
+        personaElement.innerHTML = `
+          <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-full bg-[#3f2a6f] flex items-center justify-center">
+                <i class="fas fa-user text-white"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold">${persona.nombre}</h3>
+                <p class="text-gray-400 text-sm">${persona.plataformas.length} plataforma${persona.plataformas.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-gray-400 text-sm capitalize">${periodoTotalSeleccionado}</p>
+              <p class="text-white text-lg font-bold">Q ${totalPeriodoPersona.toFixed(2)}</p>
+            </div>
+          </div>
+        `;
+        container.appendChild(personaElement);
+      });
+
+      totalMensual.textContent = `Q${totalMensualCalculado.toFixed(2)}`;
+    }
+
+    // Manejar clic en el botón de filtro de plataformas
+    document.getElementById('filtro-plataformas-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      const filtroMenu = document.getElementById('filtro-plataformas-menu');
+      filtroMenu.classList.toggle('hidden');
+    });
+
+    // Cerrar menú al hacer clic fuera
+    document.addEventListener('click', function(e) {
+      const filtroMenu = document.getElementById('filtro-plataformas-menu');
+      const filtroBtn = document.getElementById('filtro-plataformas-btn');
+      
+      if (!filtroBtn.contains(e.target) && !filtroMenu.contains(e.target)) {
+        filtroMenu.classList.add('hidden');
+      }
+    });
+
+    // Manejar selección de plataforma
+    document.getElementById('filtro-plataformas-menu').addEventListener('click', function(e) {
+      if (e.target.hasAttribute('data-plataforma')) {
+        plataformaSeleccionada = e.target.dataset.plataforma;
+        document.getElementById('filtro-plataformas-btn').querySelector('span').textContent = 
+          plataformaSeleccionada === 'todas' ? 'Todas las plataformas' : plataformaSeleccionada;
+        this.classList.add('hidden');
+        cargarPersonas();
+      }
+    });
+
+    function editarPersona(id) {
+      window.location.href = `persona.html?id=${id}`;
+    }
+
+    // Manejar cambio de período
+    document.getElementById('periodo-total-select').addEventListener('change', function() {
+      periodoTotalSeleccionado = this.value;
+      cargarPersonas();
+    });
+
+    // Cargar personas al iniciar
+    document.addEventListener('DOMContentLoaded', cargarPersonas);
+  </script>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-xl"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1 text-white" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+</body>
+</html> 

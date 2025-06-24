@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Calendario - App Suscripciones</title>
+  <meta name="description" content="Calendario de suscripciones">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow: hidden;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    @media (max-width: 640px) {
+      .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+    }
+  </style>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+          })
+          .catch(error => {
+          });
+      });
+    }
+
+    let currentDate = new Date();
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+    // Función para obtener el año seleccionado
+    function getSelectedYear() {
+      return parseInt(localStorage.getItem('selectedYear')) || new Date().getFullYear();
+    }
+
+    // Función para obtener la fecha actual con el año seleccionado
+    function getCurrentDateWithSelectedYear() {
+      const selectedYear = getSelectedYear();
+      const now = new Date();
+      return new Date(selectedYear, now.getMonth(), now.getDate());
+    }
+
+    // Función para inicializar el calendario
+    function initializeCalendar() {
+      const selectedYear = getSelectedYear();
+      const now = new Date();
+      
+      // Si no hay año guardado, usar el año actual
+      if (!localStorage.getItem('selectedYear')) {
+        localStorage.setItem('selectedYear', now.getFullYear().toString());
+      }
+      
+      // Establecer la fecha actual con el año seleccionado
+      currentDate = new Date(selectedYear, now.getMonth(), now.getDate());
+    }
+
+    // Función para formatear la fecha
+    function formatDate(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    // Función para obtener el primer día del mes
+    function getFirstDayOfMonth(year, month) {
+      return new Date(year, month, 1);
+    }
+
+    // Función para obtener el último día del mes
+    function getLastDayOfMonth(year, month) {
+      return new Date(year, month + 1, 0);
+    }
+
+    // Función para cargar las suscripciones desde localStorage
+    function loadSubscriptions() {
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
+      const subscriptionDates = {};
+      const selectedYear = getSelectedYear();
+      const currentMonth = currentDate.getMonth();
+
+      subscriptions.forEach(sub => {
+        // Solo mostrar suscripciones activas
+        if (sub.status !== 'paused') {
+          let paymentDate;
+          let isTrial = false;
+          
+          // Verificar si es una prueba gratuita
+          if (sub.free_trial && sub.trial_end_date) {
+            paymentDate = new Date(sub.trial_end_date);
+            isTrial = true;
+          } else if (sub.nextPayment) {
+            paymentDate = new Date(sub.nextPayment);
+          } else {
+            return; // Saltar si no tiene fecha de pago ni fecha de fin de prueba
+          }
+          
+          // Solo agregar si la fecha está en el año y mes seleccionados
+          if (paymentDate.getFullYear() === selectedYear && paymentDate.getMonth() === currentMonth) {
+            const dateStr = formatDate(paymentDate);
+            
+            if (!subscriptionDates[dateStr]) {
+              subscriptionDates[dateStr] = [];
+            }
+            
+            subscriptionDates[dateStr].push({
+              id: sub.id,
+              name: sub.name,
+              image: sub.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png',
+              price: sub.price,
+              currency: sub.currency,
+              billingCycle: sub.billingCycle,
+              nextPayment: sub.nextPayment,
+              isTrial: isTrial,
+              trialEndDate: sub.trial_end_date
+            });
+          }
+        }
+      });
+
+      return subscriptionDates;
+    }
+
+    // Función para generar el calendario
+    function generateCalendar() {
+      const selectedYear = getSelectedYear();
+      const month = currentDate.getMonth();
+      
+      const firstDay = getFirstDayOfMonth(selectedYear, month);
+      const lastDay = getLastDayOfMonth(selectedYear, month);
+      
+      const calendarGrid = document.querySelector('.grid.grid-cols-7.gap-1');
+      const monthTitle = document.querySelector('main h1');
+      calendarGrid.innerHTML = '';
+      monthTitle.textContent = `${months[month]} ${selectedYear}`;
+
+      const firstDayOfWeek = firstDay.getDay();
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        const emptyDay = document.createElement('div');
+        calendarGrid.appendChild(emptyDay);
+      }
+
+      const subscriptionDates = loadSubscriptions();
+
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(selectedYear, month, day);
+        const dateStr = formatDate(date);
+        const dayElement = document.createElement('div');
+        dayElement.className = 'bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1';
+        
+        if (subscriptionDates[dateStr]) {
+          const subs = subscriptionDates[dateStr];
+          
+          // Mostrar solo el primer logo y el contador
+          const firstSub = subs[0];
+          const remainingCount = subs.length - 1;
+          
+          dayElement.innerHTML = `
+            <span class="text-base">${day}</span>
+            <div class="flex flex-wrap justify-center gap-1 mt-1">
+              ${firstSub ? `
+                <img src="${firstSub.image}" 
+                     class="w-6 h-6 rounded object-contain" 
+                     alt="${firstSub.name}"
+                     onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png'">
+              ` : ''}
+              ${remainingCount > 0 ? `
+                <div class="w-6 h-6 rounded bg-[#3e2e6f] flex items-center justify-center text-xs text-purple-400">
+                  +${remainingCount}
+                </div>
+              ` : ''}
+            </div>
+          `;
+
+          // Agregar evento de clic para mostrar las suscripciones
+          dayElement.addEventListener('click', () => {
+            showSubscriptionsForDay(dateStr, subs);
+          });
+        } else {
+          dayElement.innerHTML = `
+            <span class="text-base">${day}</span>
+            <div class="flex flex-wrap justify-center gap-1 mt-1">
+            </div>
+          `;
+        }
+
+        // Marcar el día actual (solo si estamos en el año actual)
+        const now = new Date();
+        if (day === now.getDate() && month === now.getMonth() && selectedYear === now.getFullYear()) {
+          dayElement.classList.add('bg-[#3e2e6f]', 'text-purple-400', 'font-semibold');
+        }
+
+        calendarGrid.appendChild(dayElement);
+      }
+    }
+
+    // Función para mostrar las suscripciones del día
+    function showSubscriptionsForDay(dateStr, subscriptions) {
+      const date = new Date(dateStr);
+      const formattedDate = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+      
+      const subscriptionsPanel = document.createElement('div');
+      subscriptionsPanel.className = 'fixed bottom-0 left-0 right-0 bg-[#1f1b2b] rounded-t-3xl p-4 pb-8 text-white select-none transform transition-transform duration-300 ease-in-out';
+      subscriptionsPanel.style.transform = 'translateY(0)';
+      
+      subscriptionsPanel.innerHTML = `
+        <div class="text-center mb-4 font-semibold text-lg">
+          ${formattedDate}
+        </div>
+        <div class="bg-[#2f2a4a] rounded-xl p-2 space-y-2">
+          ${subscriptions.map(sub => {
+            let statusText = '';
+            let statusClass = '';
+            
+            if (sub.isTrial) {
+              statusText = 'Vence';
+              statusClass = 'text-orange-400';
+            } else {
+              statusText = 'Renueva';
+              statusClass = 'text-blue-400';
+            }
+            
+            return `
+              <div class="flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer hover:bg-[#3f3a5a]" onclick="window.location.href='card.html?id=${sub.id}'">
+                <div class="flex items-center space-x-3">
+                  <img src="${sub.image}" 
+                       class="w-8 h-8 rounded" 
+                       alt="${sub.name}"
+                       onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png'">
+                  <div class="flex flex-col">
+                    <span class="font-semibold text-white">${sub.name}</span>
+                    <span class="text-xs ${statusClass}">${statusText}</span>
+                  </div>
+                </div>
+                <i class="fas fa-chevron-right text-white"></i>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
+      // Agregar evento para cerrar el panel al hacer clic fuera
+      const overlay = document.createElement('div');
+      overlay.className = 'fixed inset-0 bg-black/50';
+      overlay.addEventListener('click', () => {
+        closePanel(overlay, subscriptionsPanel);
+      });
+
+      // Variables para el swipe
+      let touchStartY = 0;
+      let touchEndY = 0;
+      let isSwiping = false;
+
+      // Agregar eventos de swipe
+      subscriptionsPanel.addEventListener('touchstart', e => {
+        touchStartY = e.touches[0].clientY;
+        isSwiping = true;
+        subscriptionsPanel.style.transition = 'transform 0.3s ease-out';
+      }, { passive: true });
+
+      subscriptionsPanel.addEventListener('touchmove', e => {
+        if (!isSwiping) return;
+        
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - touchStartY;
+        
+        // Solo permitir swipe hacia abajo
+        if (diff > 0) {
+          subscriptionsPanel.style.transform = `translateY(${diff}px)`;
+        }
+      }, { passive: true });
+
+      subscriptionsPanel.addEventListener('touchend', e => {
+        if (!isSwiping) return;
+        
+        touchEndY = e.changedTouches[0].clientY;
+        const diff = touchEndY - touchStartY;
+        
+        // Si el swipe fue lo suficientemente largo hacia abajo, cerrar el panel
+        const swipeThreshold = 100;
+        if (diff > swipeThreshold) {
+          closePanel(overlay, subscriptionsPanel);
+        } else {
+          // Si no, volver a la posición original
+          subscriptionsPanel.style.transform = 'translateY(0)';
+        }
+        
+        isSwiping = false;
+      }, { passive: true });
+
+      document.body.appendChild(overlay);
+      document.body.appendChild(subscriptionsPanel);
+    }
+
+    // Función para cerrar el panel con animación
+    function closePanel(overlay, panel) {
+      panel.style.transform = 'translateY(100%)';
+      setTimeout(() => {
+        overlay.remove();
+        panel.remove();
+      }, 300);
+    }
+
+    // Función para cambiar de mes
+    function changeMonth(delta) {
+      const selectedYear = getSelectedYear();
+      const currentMonth = currentDate.getMonth();
+      let newMonth = currentMonth + delta;
+      let newYear = selectedYear;
+      
+      // Manejar el cambio de año
+      if (newMonth < 0) {
+        newMonth = 11;
+        newYear = selectedYear - 1;
+      } else if (newMonth > 11) {
+        newMonth = 0;
+        newYear = selectedYear + 1;
+      }
+      
+      // Actualizar la fecha actual
+      currentDate = new Date(newYear, newMonth, 1);
+      
+      // Guardar el nuevo año si cambió
+      if (newYear !== selectedYear) {
+        localStorage.setItem('selectedYear', newYear.toString());
+      }
+      
+      generateCalendar();
+    }
+
+    // Agregar eventos cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeCalendar();
+      generateCalendar();
+
+      // Agregar botones de navegación
+      const mainContent = document.querySelector('main');
+      const monthNavButtons = document.createElement('div');
+      monthNavButtons.className = 'flex justify-between items-center mb-4';
+      monthNavButtons.innerHTML = `
+        <button class="text-white text-base font-normal flex items-center space-x-2" id="prevMonth">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="text-white text-base font-normal flex items-center space-x-2" id="nextMonth">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      `;
+      mainContent.insertBefore(monthNavButtons, mainContent.firstChild);
+
+      // Agregar eventos a los botones de navegación
+      document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
+      document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+
+      // Variables para el swipe
+      let touchStartX = 0;
+      let touchEndX = 0;
+      let isSwiping = false;
+      const calendarGrid = document.querySelector('.grid.grid-cols-7.gap-1');
+      
+      // Agregar eventos de deslizamiento solo al área del calendario
+      calendarGrid.addEventListener('touchstart', e => {
+        touchStartX = e.touches[0].clientX;
+        isSwiping = true;
+        calendarGrid.style.transition = 'transform 0.3s ease-out';
+      }, { passive: true });
+
+      calendarGrid.addEventListener('touchmove', e => {
+        if (!isSwiping) return;
+        
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - touchStartX;
+        
+        // Limitar el movimiento a un máximo de 100px
+        const moveX = Math.max(Math.min(diff, 100), -100);
+        calendarGrid.style.transform = `translateX(${moveX}px)`;
+      }, { passive: true });
+
+      calendarGrid.addEventListener('touchend', e => {
+        if (!isSwiping) return;
+        
+        touchEndX = e.changedTouches[0].clientX;
+        const diff = touchEndX - touchStartX;
+        
+        // Resetear la transformación
+        calendarGrid.style.transform = '';
+        
+        // Determinar si el swipe fue lo suficientemente largo
+        const swipeThreshold = 50;
+        if (Math.abs(diff) > swipeThreshold) {
+          if (diff > 0) {
+            // Swipe a la derecha - mes anterior
+            changeMonth(-1);
+          } else {
+            // Swipe a la izquierda - siguiente mes
+            changeMonth(1);
+          }
+        }
+        
+        isSwiping = false;
+      }, { passive: true });
+
+      // Navegación inferior
+      const navButtons = document.querySelectorAll('nav button');
+      navButtons[0].addEventListener('click', () => window.location.href = 'index.html');
+      navButtons[1].addEventListener('click', () => window.location.href = 'calendar.html');
+      navButtons[2].addEventListener('click', () => window.location.href = 'personas.html');
+      navButtons[3].addEventListener('click', () => window.location.href = 'settings.html');
+    });
+  </script>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-24">
+   <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-extrabold leading-tight"></h1>
+   </div>
+
+  <!-- Main Content -->
+  <main class="px-6 pt-12 flex-grow">
+    <h1 class="text-3xl font-extrabold mb-4">May</h1>
+    <div class="grid grid-cols-7 text-sm font-normal text-white/90 mb-2">
+      <div class="text-center">Dom</div>
+      <div class="text-center">Lun</div>
+      <div class="text-center">Mar</div>
+      <div class="text-center">Mié</div>
+      <div class="text-center">Jue</div>
+      <div class="text-center">Vie</div>
+      <div class="text-center">Sáb</div>
+    </div>
+
+    <div class="grid grid-cols-7 gap-1 text-white text-sm font-semibold">
+      <!-- Empty Mon, Tue, Wed for first row -->
+      <div></div>
+      <div></div>
+      <div></div>
+      <!-- Thu 1 -->
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">1</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <!-- Fri 2 -->
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">2</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <!-- Sat 3 -->
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">3</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <!-- Sun 4 -->
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">4</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+
+      <!-- 2nd row -->
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">5</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">6</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">7</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">8</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">9</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <img src="https://storage.googleapis.com/a1aa/image/b6dca4b3-7ed3-4ff6-99bf-52b3e114a6d7.jpg" class="w-7 h-7 rounded" alt="Netflix">
+          <img src="https://storage.googleapis.com/a1aa/image/b6dca4b3-7ed3-4ff6-99bf-52b3e114a6d7.jpg" class="w-7 h-7 rounded" alt="Netflix">
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">10</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">11</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+
+      <!-- 3rd row -->
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">12</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">13</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <img src="https://storage.googleapis.com/a1aa/image/1b37f838-db42-4c8e-56d4-7d0530af2b14.jpg" class="w-7 h-7 rounded" alt="Apple TV+">
+          <img src="https://storage.googleapis.com/a1aa/image/ff14f4c4-5892-491e-4125-b12c5fdc542a.jpg" class="w-7 h-7 rounded" alt="Disney+">
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">14</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">15</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">16</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">17</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">18</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+
+      <!-- 4th row -->
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">19</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">20</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">21</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">22</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-20 p-1">
+        <span class="text-base">23</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#3e2e6f] rounded-lg flex flex-col items-center justify-start h-20 p-1 text-purple-400 font-semibold">
+        <span class="text-base">24</span>
+        <div class="flex flex-wrap justify-center gap-1 mt-1">
+          <!-- Aquí irán los iconos -->
+      <div class="bg-[#3e2e6f] rounded-lg flex flex-col items-center justify-start h-28 p-1 text-purple-400 font-semibold">
+        <span class="text-base mb-1">24</span>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-28 p-1">
+        <span class="text-base mb-1">25</span>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+
+      <!-- 5th row -->
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-28 p-1">
+        <span class="text-base mb-1">26</span>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-28 p-1">
+        <span class="text-base mb-1">27</span>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-28 p-1">
+        <span class="text-base mb-1">28</span>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-28 p-1">
+        <span class="text-base mb-1">29</span>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-28 p-1">
+        <span class="text-base mb-1">30</span>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div class="bg-[#1c1929] rounded-lg flex flex-col items-center justify-start h-28 p-1">
+        <span class="text-base mb-1">31</span>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-1">
+          <!-- Aquí irán los iconos -->
+        </div>
+      </div>
+      <div></div>
+    </div>
+  </main>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1 text-white" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-xl"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+</body>
+</html>
