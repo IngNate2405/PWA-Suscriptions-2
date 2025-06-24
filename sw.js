@@ -20,14 +20,9 @@ const urlsToCache = [
   '/PWA-Suscriptions-2/icons/icon-192x192.png',
   '/PWA-Suscriptions-2/icons/icon-384x384.png',
   '/PWA-Suscriptions-2/icons/icon-512x512.png',
-  '/PWA-Suscriptions-2/css/tailwind.min.css',
-  '/PWA-Suscriptions-2/css/all.min.css',
-  '/PWA-Suscriptions-2/css/inter.css',
-  '/PWA-Suscriptions-2/fonts/fa-solid-900.woff2',
-  '/PWA-Suscriptions-2/fonts/fa-regular-400.woff2',
-  '/PWA-Suscriptions-2/fonts/fa-brands-400.woff2',
-  '/PWA-Suscriptions-2/fonts/Inter-Regular.woff2',
-  '/PWA-Suscriptions-2/fonts/Inter-Bold.woff2'
+  'https://cdn.tailwindcss.com',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'
 ];
 
 self.addEventListener('install', event => {
