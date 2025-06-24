@@ -1,25 +1,25 @@
 const CACHE_NAME = 'subs-app-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/card.html',
-  '/calendar.html',
-  '/calendar2.html',
-  '/editar.html',
-  '/editar-persona.html',
-  '/personas.html',
-  '/persona.html',
-  '/settings.html',
-  '/manifest.json',
-  '/sw.js',
-  '/icons/icon-72x72.png',
-  '/icons/icon-96x96.png',
-  '/icons/icon-128x128.png',
-  '/icons/icon-144x144.png',
-  '/icons/icon-152x152.png',
-  '/icons/icon-192x192.png',
-  '/icons/icon-384x384.png',
-  '/icons/icon-512x512.png',
+  './',
+  'index.html',
+  'card.html',
+  'calendar.html',
+  'calendar2.html',
+  'editar.html',
+  'editar-persona.html',
+  'personas.html',
+  'persona.html',
+  'settings.html',
+  'manifest.json',
+  'sw.js',
+  'icons/icon-72x72.png',
+  'icons/icon-96x96.png',
+  'icons/icon-128x128.png',
+  'icons/icon-144x144.png',
+  'icons/icon-152x152.png',
+  'icons/icon-192x192.png',
+  'icons/icon-384x384.png',
+  'icons/icon-512x512.png',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'
@@ -48,8 +48,8 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
   const options = {
     body: event.data ? event.data.text() : 'Tienes una suscripción por pagar',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
+    icon: 'icons/icon-192x192.png',
+    badge: 'icons/icon-192x192.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -59,12 +59,12 @@ self.addEventListener('push', event => {
       {
         action: 'explore',
         title: 'Ver detalles',
-        icon: '/icons/icon-192x192.png'
+        icon: 'icons/icon-192x192.png'
       },
       {
         action: 'close',
         title: 'Cerrar',
-        icon: '/icons/icon-192x192.png'
+        icon: 'icons/icon-192x192.png'
       }
     ]
   };
@@ -81,7 +81,7 @@ self.addEventListener('notificationclick', event => {
   if (event.action === 'explore') {
     // Abrir la aplicación
     event.waitUntil(
-      clients.openWindow('/index.html')
+      clients.openWindow('index.html')
     );
   }
 });
@@ -139,8 +139,8 @@ async function scheduleNotifications() {
           const timeoutId = setTimeout(() => {
             self.registration.showNotification('Recordatorio de Pago', {
               body: `Tu suscripción a ${subscription.name} vence el ${formatDate(subscription.nextPayment)}`,
-              icon: '/icons/icon-192x192.png',
-              badge: '/icons/icon-192x192.png',
+              icon: 'icons/icon-192x192.png',
+              badge: 'icons/icon-192x192.png',
               vibrate: [100, 50, 100],
               data: {
                 subscriptionId: subscription.id,
@@ -150,12 +150,12 @@ async function scheduleNotifications() {
                 {
                   action: 'view',
                   title: 'Ver detalles',
-                  icon: '/icons/icon-192x192.png'
+                  icon: 'icons/icon-192x192.png'
                 },
                 {
                   action: 'close',
                   title: 'Cerrar',
-                  icon: '/icons/icon-192x192.png'
+                  icon: 'icons/icon-192x192.png'
                 }
               ]
             });
@@ -208,19 +208,19 @@ self.addEventListener('message', event => {
   } else if (event.data && event.data.type === 'TEST_NOTIFICATION') {
     self.registration.showNotification(event.data.data.title, {
       body: event.data.data.body,
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-192x192.png',
+      icon: 'icons/icon-192x192.png',
+      badge: 'icons/icon-192x192.png',
       vibrate: [100, 50, 100],
       actions: [
         {
           action: 'view',
           title: 'Ver detalles',
-          icon: '/icons/icon-192x192.png'
+          icon: 'icons/icon-192x192.png'
         },
         {
           action: 'close',
           title: 'Cerrar',
-          icon: '/icons/icon-192x192.png'
+          icon: 'icons/icon-192x192.png'
         }
       ]
     });
@@ -291,8 +291,8 @@ async function checkAndSendNotifications() {
         if (minutesDiff <= 5 && notificationDate > now) {
           await self.registration.showNotification('Recordatorio de Pago', {
             body: `Tu suscripción a ${subscription.name} vence el ${formatDate(subscription.nextPayment)}`,
-            icon: '/icons/icon-192x192.png',
-            badge: '/icons/icon-192x192.png',
+            icon: 'icons/icon-192x192.png',
+            badge: 'icons/icon-192x192.png',
             vibrate: [100, 50, 100],
             data: {
               subscriptionId: subscription.id,
@@ -302,12 +302,12 @@ async function checkAndSendNotifications() {
               {
                 action: 'view',
                 title: 'Ver detalles',
-                icon: '/icons/icon-192x192.png'
+                icon: 'icons/icon-192x192.png'
               },
               {
                 action: 'close',
                 title: 'Cerrar',
-                icon: '/icons/icon-192x192.png'
+                icon: 'icons/icon-192x192.png'
               }
             ]
           });
@@ -364,8 +364,8 @@ async function reloadNotifications() {
         if (minutesDiff <= 5 && notificationDate > now) {
           await self.registration.showNotification('Recordatorio de Pago', {
             body: `Tu suscripción a ${subscription.name} vence el ${formatDate(subscription.nextPayment)}`,
-            icon: '/icons/icon-192x192.png',
-            badge: '/icons/icon-192x192.png',
+            icon: 'icons/icon-192x192.png',
+            badge: 'icons/icon-192x192.png',
             vibrate: [100, 50, 100],
             data: {
               subscriptionId: subscription.id,
@@ -375,12 +375,12 @@ async function reloadNotifications() {
               {
                 action: 'view',
                 title: 'Ver detalles',
-                icon: '/icons/icon-192x192.png'
+                icon: 'icons/icon-192x192.png'
               },
               {
                 action: 'close',
                 title: 'Cerrar',
-                icon: '/icons/icon-192x192.png'
+                icon: 'icons/icon-192x192.png'
               }
             ]
           });
