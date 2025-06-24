@@ -6,12 +6,11 @@
   <title>Detalles de Suscripción - App Suscripciones</title>
   <meta name="description" content="Detalles de suscripción">
   <meta name="theme-color" content="#1B1930">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
-  <script src="https://cdn.tailwindcss.com">
-  </script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <link rel="stylesheet" href="/PWA-Suscriptions-2/css/tailwind.min.css">
+  <link rel="stylesheet" href="/PWA-Suscriptions-2/css/all.min.css">
+  <link rel="stylesheet" href="/PWA-Suscriptions-2/css/inter.css">
   <style>
    @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Text&display=swap');
     body, html {
@@ -260,19 +259,31 @@
         if (notificationsContainer) {
           if (subscription.notifications && subscription.notifications.length > 0) {
             const notificationsList = subscription.notifications.map(notif => {
-              if (notif.startsWith('custom_')) {
-                const days = notif.split('_')[1];
-                return `${days} días antes`;
+              if (notif.startsWith('trial_custom_')) {
+                const days = notif.split('_')[2];
+                return `Prueba gratuita: ${days} días antes`;
               }
-              if (notif.startsWith('customdate_')) {
+              if (notif.startsWith('trial_customdate_')) {
                 const [, day, time] = notif.split('_');
-                return `Día ${day} a las ${time}`;
+                return `Prueba gratuita: Día ${day} a las ${time}`;
               }
               switch(notif) {
+                case 'trial_1day': return 'Prueba gratuita: 1 día antes';
+                case 'trial_2days': return 'Prueba gratuita: 2 días antes';
+                case 'trial_sameday': return 'Prueba gratuita: El mismo día';
                 case '1day': return '1 día antes';
                 case '2days': return '2 días antes';
                 case 'sameday': return 'El mismo día';
-                default: return notif;
+                default:
+                  if (notif.startsWith('custom_')) {
+                    const days = notif.split('_')[1];
+                    return `${days} días antes`;
+                  }
+                  if (notif.startsWith('customdate_')) {
+                    const [, day, time] = notif.split('_');
+                    return `Día ${day} a las ${time}`;
+                  }
+                  return notif;
               }
             }).join(', ');
             notificationsContainer.textContent = notificationsList;
