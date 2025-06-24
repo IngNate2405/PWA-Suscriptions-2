@@ -115,28 +115,25 @@ async function scheduleNotifications() {
       for (const notification of subscription.notifications) {
         let notificationDate = new Date(nextPayment);
         
-        if (notification.startsWith('customdate_')) {
-          const [, day, time] = notification.split('_');
+        // Procesar notificaciones de prueba gratuita igual que las normales
+        if (notification.startsWith('customdate_') || notification.startsWith('trial_customdate_')) {
+          const parts = notification.split('_');
+          const day = parts[1];
+          const time = parts[2];
           const [hours, minutes] = time.split(':');
           notificationDate.setDate(parseInt(day));
           notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else if (notification.startsWith('custom_')) {
-          const days = parseInt(notification.split('_')[1]);
+        } else if (notification.startsWith('custom_') || notification.startsWith('trial_custom_')) {
+          const days = parseInt(notification.split('_')[2] || notification.split('_')[1]);
           notificationDate.setDate(nextPayment.getDate() - days);
+        } else if (notification === '1day' || notification === 'trial_1day') {
+          notificationDate.setDate(nextPayment.getDate() - 1);
+        } else if (notification === '2days' || notification === 'trial_2days') {
+          notificationDate.setDate(nextPayment.getDate() - 2);
+        } else if (notification === 'sameday' || notification === 'trial_sameday') {
+          // Ya está configurado para el mismo día
         } else {
-          switch(notification) {
-            case '1day':
-              notificationDate.setDate(nextPayment.getDate() - 1);
-              break;
-            case '2days':
-              notificationDate.setDate(nextPayment.getDate() - 2);
-              break;
-            case 'sameday':
-              // Ya está configurado para el mismo día
-              break;
-            default:
-              continue;
-          }
+          continue;
         }
         
         // Solo programar si la fecha es futura
@@ -266,28 +263,25 @@ async function checkAndSendNotifications() {
       for (const notification of subscription.notifications) {
         let notificationDate = new Date(nextPayment);
         
-        if (notification.startsWith('customdate_')) {
-          const [, day, time] = notification.split('_');
+        // Procesar notificaciones de prueba gratuita igual que las normales
+        if (notification.startsWith('customdate_') || notification.startsWith('trial_customdate_')) {
+          const parts = notification.split('_');
+          const day = parts[1];
+          const time = parts[2];
           const [hours, minutes] = time.split(':');
           notificationDate.setDate(parseInt(day));
           notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else if (notification.startsWith('custom_')) {
-          const days = parseInt(notification.split('_')[1]);
+        } else if (notification.startsWith('custom_') || notification.startsWith('trial_custom_')) {
+          const days = parseInt(notification.split('_')[2] || notification.split('_')[1]);
           notificationDate.setDate(nextPayment.getDate() - days);
+        } else if (notification === '1day' || notification === 'trial_1day') {
+          notificationDate.setDate(nextPayment.getDate() - 1);
+        } else if (notification === '2days' || notification === 'trial_2days') {
+          notificationDate.setDate(nextPayment.getDate() - 2);
+        } else if (notification === 'sameday' || notification === 'trial_sameday') {
+          // Ya está configurado para el mismo día
         } else {
-          switch(notification) {
-            case '1day':
-              notificationDate.setDate(nextPayment.getDate() - 1);
-              break;
-            case '2days':
-              notificationDate.setDate(nextPayment.getDate() - 2);
-              break;
-            case 'sameday':
-              // Ya está configurado para el mismo día
-              break;
-            default:
-              continue;
-          }
+          continue;
         }
         
         // Verificar si es hora de enviar la notificación
@@ -339,28 +333,25 @@ async function reloadNotifications() {
       for (const notification of subscription.notifications) {
         let notificationDate = new Date(nextPayment);
         
-        if (notification.startsWith('customdate_')) {
-          const [, day, time] = notification.split('_');
+        // Procesar notificaciones de prueba gratuita igual que las normales
+        if (notification.startsWith('customdate_') || notification.startsWith('trial_customdate_')) {
+          const parts = notification.split('_');
+          const day = parts[1];
+          const time = parts[2];
           const [hours, minutes] = time.split(':');
           notificationDate.setDate(parseInt(day));
           notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        } else if (notification.startsWith('custom_')) {
-          const days = parseInt(notification.split('_')[1]);
+        } else if (notification.startsWith('custom_') || notification.startsWith('trial_custom_')) {
+          const days = parseInt(notification.split('_')[2] || notification.split('_')[1]);
           notificationDate.setDate(nextPayment.getDate() - days);
+        } else if (notification === '1day' || notification === 'trial_1day') {
+          notificationDate.setDate(nextPayment.getDate() - 1);
+        } else if (notification === '2days' || notification === 'trial_2days') {
+          notificationDate.setDate(nextPayment.getDate() - 2);
+        } else if (notification === 'sameday' || notification === 'trial_sameday') {
+          // Ya está configurado para el mismo día
         } else {
-          switch(notification) {
-            case '1day':
-              notificationDate.setDate(nextPayment.getDate() - 1);
-              break;
-            case '2days':
-              notificationDate.setDate(nextPayment.getDate() - 2);
-              break;
-            case 'sameday':
-              // Ya está configurado para el mismo día
-              break;
-            default:
-              continue;
-          }
+          continue;
         }
         
         // Verificar si es hora de enviar la notificación
