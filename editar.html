@@ -314,6 +314,9 @@
           } else {
             console.log('No es suscripción compartida, tipo:', subscription.list);
           }
+          
+          // Disparar el evento change para activar los event listeners
+          // listSelect.dispatchEvent(new Event('change'));
         }
         
         // Verificar si es una prueba gratuita
@@ -1080,6 +1083,16 @@
           seccionCompartida.classList.remove('hidden');
           actualizarPerfiles();
         } else {
+          // Solo ocultar si no es una suscripción compartida existente
+          const subscriptionId = getSubscriptionId();
+          if (subscriptionId) {
+            const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+            const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+            if (subscription && subscription.list === 'compartido') {
+              // Es una suscripción compartida existente, no ocultar
+              return;
+            }
+          }
           seccionCompartida.classList.add('hidden');
         }
       });
@@ -1115,6 +1128,16 @@
           seccionCompartida.classList.remove('hidden');
           actualizarPerfiles();
         } else {
+          // Solo ocultar si no es una suscripción compartida existente
+          const subscriptionId = getSubscriptionId();
+          if (subscriptionId) {
+            const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+            const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+            if (subscription && subscription.list === 'compartido') {
+              // Es una suscripción compartida existente, no ocultar
+              return;
+            }
+          }
           seccionCompartida.classList.add('hidden');
         }
       });
