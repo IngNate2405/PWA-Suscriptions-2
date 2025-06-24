@@ -41,7 +41,7 @@
           console.log('⚠️ Abriendo desde sistema de archivos - Service Worker no disponible');
           console.log('Para usar notificaciones, abre la app desde un servidor web (http/https)');
         } else {
-          navigator.serviceWorker.register('./sw.js')
+          navigator.serviceWorker.register('/PWA-Suscriptions-2/sw.js')
             .then(registration => {
               console.log('ServiceWorker registrado:', registration);
             })
