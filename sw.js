@@ -33,13 +33,23 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  // Si el recurso es externo, dejar que el navegador lo maneje normalmente
+  if (url.origin !== self.location.origin) {
+    return;
+  }
   event.respondWith(
     caches.match(event.request)
       .then(response => {
         if (response) {
           return response;
         }
-        return fetch(event.request);
+        return fetch(event.request).catch(() => {
+          return new Response('Recurso no disponible', {
+            status: 404,
+            statusText: 'Not Found'
+          });
+        });
       })
   );
 });
