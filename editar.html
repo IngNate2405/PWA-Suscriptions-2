@@ -203,7 +203,12 @@
       document.getElementById('charge_price_display').textContent = totalCobro.toFixed(2);
       
       // Calcular ganancia
-      const profit = totalCobro - debitPriceGTQ;
+      let profit = 0;
+      if (totalCobro > 0) {
+        profit = totalCobro - debitPriceGTQ;
+      } else {
+        profit = convertedPrice - debitPriceGTQ;
+      }
       document.getElementById('profit_display').textContent = profit.toFixed(2);
     }
 
@@ -500,9 +505,9 @@
         const trialCustomTimeInput = document.querySelector('input[name="trial_custom_time"]');
         
         if (trialCustomDateCheckbox && trialCustomDateCheckbox.checked && trialCustomDateInput && trialCustomDateInput.value && trialCustomTimeInput && trialCustomTimeInput.value) {
-          const dateObj = new Date(trialCustomDateInput.value);
-          const day = dateObj.getDate();
-          const notificationString = `trial_customdate_${day}_${trialCustomTimeInput.value}`;
+          const [year, month, day] = trialCustomDateInput.value.split('-');
+          const time = trialCustomTimeInput.value;
+          const notificationString = `trial_customdate_${parseInt(day)}_${time}`;
           notifications.push(notificationString);
         }
       } else {
@@ -936,12 +941,6 @@
             // Mostrar también la sección de precios
             if (pricesSection) pricesSection.classList.remove('hidden');
             
-            // Restaurar a "Personal" por defecto
-            const tipoSelect = document.querySelector('select[name="list"]');
-            if (tipoSelect) {
-              tipoSelect.value = 'personal';
-            }
-            
             // Reorganizar notificaciones después de mostrar la sección
             updateNotificationsPosition();
             addNotificationEventListeners();
@@ -975,12 +974,6 @@
         if (sharedSubscriptionSection) sharedSubscriptionSection.classList.add('hidden'); // Mantener oculto hasta que se seleccione "compartido"
         // Mostrar también la sección de precios
         if (pricesSection) pricesSection.classList.remove('hidden');
-        
-        // Restaurar a "Personal" por defecto
-        const tipoSelect = document.querySelector('select[name="list"]');
-        if (tipoSelect) {
-          tipoSelect.value = 'personal';
-        }
         
         // Reorganizar notificaciones después de mostrar la sección
         updateNotificationsPosition();
