@@ -292,6 +292,11 @@
             console.log('Elemento seccion-compartida encontrado:', !!seccionCompartida);
             if (seccionCompartida) {
               seccionCompartida.classList.remove('hidden');
+              // Forzar remoción de la clase hidden por si algún otro código la vuelve a agregar
+              setTimeout(() => {
+                seccionCompartida.classList.remove('hidden');
+                console.log('Clase hidden forzada a removerse de seccion-compartida');
+              }, 100);
               console.log('Clase hidden removida de seccion-compartida');
             } else {
               console.error('No se encontró el elemento seccion-compartida');
