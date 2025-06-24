@@ -284,20 +284,35 @@
         if (categoryInput) categoryInput.value = subscription.category || '';
         if (listSelect) {
           listSelect.value = subscription.list || 'personal';
+          console.log('Tipo de suscripción cargado:', subscription.list);
           // Si es compartida, mostrar la sección y cargar el número de perfiles
           if (subscription.list === 'compartido') {
+            console.log('Es suscripción compartida, buscando sección...');
             const seccionCompartida = document.getElementById('seccion-compartida');
-            seccionCompartida.classList.remove('hidden');
+            console.log('Elemento seccion-compartida encontrado:', !!seccionCompartida);
+            if (seccionCompartida) {
+              seccionCompartida.classList.remove('hidden');
+              console.log('Clase hidden removida de seccion-compartida');
+            } else {
+              console.error('No se encontró el elemento seccion-compartida');
+            }
             const perfilesInput = document.getElementById('perfiles-input');
+            console.log('Elemento perfiles-input encontrado:', !!perfilesInput);
             if (perfilesInput) {
               perfilesInput.value = subscription.numPerfiles || '';
+              console.log('Número de perfiles cargado:', subscription.numPerfiles);
               if (subscription.numPerfiles) {
                 // Generar los iconos después de establecer el valor
+                console.log('Generando iconos para', subscription.numPerfiles, 'perfiles');
                 generarIconosPerfiles(subscription.numPerfiles);
                 // Actualizar el estado de los perfiles
                 actualizarPerfiles();
               }
+            } else {
+              console.error('No se encontró el elemento perfiles-input');
             }
+          } else {
+            console.log('No es suscripción compartida, tipo:', subscription.list);
           }
         }
         
@@ -349,6 +364,25 @@
               const dayStr = day.toString().padStart(2, '0');
               customDateInput.value = `${year}-${month}-${dayStr}`;
               customTimeInput.value = time;
+            }
+          }
+          
+          // Si hay notificación personalizada por fecha para prueba gratuita
+          const trialCustomDateNotif = subscription.notifications.find(n => n.startsWith('trial_customdate_'));
+          if (trialCustomDateNotif) {
+            const [, day, time] = trialCustomDateNotif.split('_');
+            const trialCustomDateCheckbox = document.querySelector('input[name="trial_notification_custom_date"]');
+            const trialCustomDateInput = document.querySelector('input[name="trial_custom_date"]');
+            const trialCustomTimeInput = document.querySelector('input[name="trial_custom_time"]');
+            if (trialCustomDateCheckbox && trialCustomDateInput && trialCustomTimeInput) {
+              trialCustomDateCheckbox.checked = true;
+              // Setear la fecha al mes y año actual, pero con el día guardado
+              const now = new Date();
+              const year = now.getFullYear();
+              const month = (now.getMonth() + 1).toString().padStart(2, '0');
+              const dayStr = day.toString().padStart(2, '0');
+              trialCustomDateInput.value = `${year}-${month}-${dayStr}`;
+              trialCustomTimeInput.value = time;
             }
           }
         }
