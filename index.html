@@ -475,6 +475,90 @@
       navButtons[2].addEventListener('click', () => navigateTo('personas.html'));
       navButtons[3].addEventListener('click', () => navigateTo('settings.html'));
     });
+
+    // Función para manejar la instalación de PWA
+    let deferredPrompt;
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevenir que Chrome muestre el prompt automático
+      e.preventDefault();
+      // Guardar el evento para usarlo después
+      deferredPrompt = e;
+      
+      // Mostrar banner de instalación personalizado
+      showInstallBanner();
+    });
+    
+    // Función para mostrar banner de instalación
+    function showInstallBanner() {
+      // Verificar si ya existe un banner
+      if (document.getElementById('pwa-install-banner')) return;
+      
+      const banner = document.createElement('div');
+      banner.id = 'pwa-install-banner';
+      banner.className = 'fixed top-0 left-0 right-0 bg-[#3f2a6f] text-white p-4 z-50 flex items-center justify-between';
+      banner.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-download text-xl"></i>
+          <div>
+            <div class="font-semibold">Instalar App Suscripciones</div>
+            <div class="text-sm opacity-80">Acceso rápido desde tu pantalla de inicio</div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="installPWA()" class="bg-white text-[#3f2a6f] px-4 py-2 rounded-lg font-semibold">
+            Instalar
+          </button>
+          <button onclick="dismissInstallBanner()" class="text-white opacity-70 hover:opacity-100">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(banner);
+      
+      // Ajustar el contenido principal para el banner
+      document.body.style.paddingTop = '80px';
+    }
+    
+    // Función para instalar PWA
+    async function installPWA() {
+      if (!deferredPrompt) {
+        console.log('No se puede instalar la PWA');
+        return;
+      }
+      
+      // Mostrar el prompt de instalación
+      deferredPrompt.prompt();
+      
+      // Esperar la respuesta del usuario
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('PWA instalada exitosamente');
+        dismissInstallBanner();
+      } else {
+        console.log('Usuario rechazó la instalación');
+      }
+      
+      // Limpiar el prompt
+      deferredPrompt = null;
+    }
+    
+    // Función para cerrar el banner
+    function dismissInstallBanner() {
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) {
+        banner.remove();
+        document.body.style.paddingTop = '0';
+      }
+    }
+    
+    // Detectar si la app ya está instalada
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA instalada');
+      dismissInstallBanner();
+    });
   </script>
  </head>
  <body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
