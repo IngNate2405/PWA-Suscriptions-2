@@ -187,7 +187,12 @@
         document.getElementById('charge_price_display').textContent = totalCobro.toFixed(2);
         
         // Calcular y mostrar ganancia
-        const profit = totalCobro - debitPriceGTQ;
+        let profit = 0;
+        if (totalCobro > 0) {
+          profit = totalCobro - debitPriceGTQ;
+        } else {
+          profit = convertedPrice - debitPriceGTQ;
+        }
         document.getElementById('profit_display').textContent = profit.toFixed(2);
 
         // Actualizar los valores en localStorage
@@ -266,7 +271,7 @@
               }
               if (notif.startsWith('trial_customdate_')) {
                 const parts = notif.split('_');
-                if (parts.length === 3 && !isNaN(parts[1]) && /^\d{2}:\d{2}$/.test(parts[2])) {
+                if (parts.length === 3 && !isNaN(parts[1]) && /^\d{1,2}:\d{2}$/.test(parts[2])) {
                   return `Prueba gratuita: Día ${parts[1]} a las ${parts[2]}`;
                 } else {
                   return 'Prueba gratuita: Notificación personalizada inválida';
@@ -286,7 +291,7 @@
                   }
                   if (notif.startsWith('customdate_')) {
                     const parts = notif.split('_');
-                    if (parts.length === 3 && !isNaN(parts[1]) && /^\d{2}:\d{2}$/.test(parts[2])) {
+                    if (parts.length === 3 && !isNaN(parts[1]) && /^\d{1,2}:\d{2}$/.test(parts[2])) {
                       return `Día ${parts[1]} a las ${parts[2]}`;
                     } else {
                       return 'Notificación personalizada inválida';
