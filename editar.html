@@ -507,7 +507,8 @@
         if (trialCustomDateCheckbox && trialCustomDateCheckbox.checked && trialCustomDateInput && trialCustomDateInput.value && trialCustomTimeInput && trialCustomTimeInput.value) {
           const [year, month, day] = trialCustomDateInput.value.split('-');
           const time = trialCustomTimeInput.value;
-          const notificationString = `trial_customdate_${parseInt(day)}_${time}`;
+          const dayStr = day.padStart(2, '0');
+          const notificationString = `trial_customdate_${dayStr}_${time}`;
           notifications.push(notificationString);
         }
       } else {
@@ -549,7 +550,8 @@
           // Guardar solo el día del mes y la hora
           const dateObj = new Date(customDateInput.value);
           const day = dateObj.getDate();
-          const notificationString = `customdate_${day}_${customTimeInput.value}`;
+          const dayStr = String(day).padStart(2, '0');
+          const notificationString = `customdate_${dayStr}_${customTimeInput.value}`;
           notifications.push(notificationString);
           console.log('Notificación personalizada por fecha agregada:', notificationString);
         } else {

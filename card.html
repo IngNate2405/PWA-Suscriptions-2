@@ -266,9 +266,11 @@
               }
               if (notif.startsWith('trial_customdate_')) {
                 const parts = notif.split('_');
-                const day = parts[2] ? parts[1] : '';
-                const time = parts[2] ? parts[2] : parts[1];
-                return `Prueba gratuita: Día ${day} a las ${time}`;
+                if (parts.length === 3 && !isNaN(parts[1]) && /^\d{2}:\d{2}$/.test(parts[2])) {
+                  return `Prueba gratuita: Día ${parts[1]} a las ${parts[2]}`;
+                } else {
+                  return 'Prueba gratuita: Notificación personalizada inválida';
+                }
               }
               switch(notif) {
                 case 'trial_1day': return 'Prueba gratuita: 1 día antes';
@@ -284,9 +286,11 @@
                   }
                   if (notif.startsWith('customdate_')) {
                     const parts = notif.split('_');
-                    const day = parts[2] ? parts[1] : '';
-                    const time = parts[2] ? parts[2] : parts[1];
-                    return `Día ${day} a las ${time}`;
+                    if (parts.length === 3 && !isNaN(parts[1]) && /^\d{2}:\d{2}$/.test(parts[2])) {
+                      return `Día ${parts[1]} a las ${parts[2]}`;
+                    } else {
+                      return 'Notificación personalizada inválida';
+                    }
                   }
                   return notif;
               }
