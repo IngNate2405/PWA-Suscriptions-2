@@ -19,10 +19,7 @@ const urlsToCache = [
   'icons/icon-152x152.png',
   'icons/icon-192x192.png',
   'icons/icon-384x384.png',
-  'icons/icon-512x512.png',
-  'https://cdn.tailwindcss.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap'
+  'icons/icon-512x512.png'
 ];
 
 self.addEventListener('install', event => {
