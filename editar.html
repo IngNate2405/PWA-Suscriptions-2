@@ -609,7 +609,9 @@
         subscriptionData.id = Date.now().toString();
         subscriptions.push(subscriptionData);
         console.log('Nueva suscripción agregada al array');
+        console.log('Array de suscripciones antes de guardar:', subscriptions);
         localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        console.log('Guardado en localStorage:', localStorage.getItem('subscriptions'));
       } else {
         const index = subscriptions.findIndex(sub => sub.id === subscriptionId);
         if (index === -1) {
@@ -618,7 +620,9 @@
         }
         subscriptions[index] = { ...subscriptions[index], ...subscriptionData };
         console.log('Suscripción existente actualizada en el array');
+        console.log('Array de suscripciones antes de guardar:', subscriptions);
         localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        console.log('Guardado en localStorage:', localStorage.getItem('subscriptions'));
       }
 
       // Intentar reprogramar notificaciones, pero no bloquear el guardado si falla
