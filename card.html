@@ -265,7 +265,9 @@
                 return `Prueba gratuita: ${days} días antes`;
               }
               if (notif.startsWith('trial_customdate_')) {
-                const [, day, time] = notif.split('_');
+                const parts = notif.split('_');
+                const day = parts[2] ? parts[1] : '';
+                const time = parts[2] ? parts[2] : parts[1];
                 return `Prueba gratuita: Día ${day} a las ${time}`;
               }
               switch(notif) {
@@ -281,7 +283,9 @@
                     return `${days} días antes`;
                   }
                   if (notif.startsWith('customdate_')) {
-                    const [, day, time] = notif.split('_');
+                    const parts = notif.split('_');
+                    const day = parts[2] ? parts[1] : '';
+                    const time = parts[2] ? parts[2] : parts[1];
                     return `Día ${day} a las ${time}`;
                   }
                   return notif;
