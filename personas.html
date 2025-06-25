@@ -146,45 +146,90 @@
       let totalMensualCalculado = 0;
 
       personasFiltradas.forEach(persona => {
-        const totalPeriodoPersona = persona.plataformas.reduce((total, plataforma) => {
-          const precio = plataforma.precio;
-          switch(periodoTotalSeleccionado) {
-            case 'mensual':
-              switch(plataforma.tipoCobro) {
-                case 'mensual': return total + precio;
-                case 'trimestral': return total + (precio / 3);
-                case 'semestral': return total + (precio / 6);
-                case 'anual': return total + (precio / 12);
-                default: return total;
-              }
-            case 'trimestral':
-              switch(plataforma.tipoCobro) {
-                case 'mensual': return total + (precio * 3);
-                case 'trimestral': return total + precio;
-                case 'semestral': return total + (precio / 2);
-                case 'anual': return total + (precio / 4);
-                default: return total;
-              }
-            case 'semestral':
-              switch(plataforma.tipoCobro) {
-                case 'mensual': return total + (precio * 6);
-                case 'trimestral': return total + (precio * 2);
-                case 'semestral': return total + precio;
-                case 'anual': return total + (precio / 2);
-                default: return total;
-              }
-            case 'anual':
-              switch(plataforma.tipoCobro) {
-                case 'mensual': return total + (precio * 12);
-                case 'trimestral': return total + (precio * 4);
-                case 'semestral': return total + (precio * 2);
-                case 'anual': return total + precio;
-                default: return total;
-              }
-            default:
-              return total;
-          }
-        }, 0);
+        let totalPeriodoPersona = 0;
+        if (plataformaSeleccionada === 'todas') {
+          totalPeriodoPersona = persona.plataformas.reduce((total, plataforma) => {
+            const precio = plataforma.precio;
+            switch(periodoTotalSeleccionado) {
+              case 'mensual':
+                switch(plataforma.tipoCobro) {
+                  case 'mensual': return total + precio;
+                  case 'trimestral': return total + (precio / 3);
+                  case 'semestral': return total + (precio / 6);
+                  case 'anual': return total + (precio / 12);
+                  default: return total;
+                }
+              case 'trimestral':
+                switch(plataforma.tipoCobro) {
+                  case 'mensual': return total + (precio * 3);
+                  case 'trimestral': return total + precio;
+                  case 'semestral': return total + (precio / 2);
+                  case 'anual': return total + (precio / 4);
+                  default: return total;
+                }
+              case 'semestral':
+                switch(plataforma.tipoCobro) {
+                  case 'mensual': return total + (precio * 6);
+                  case 'trimestral': return total + (precio * 2);
+                  case 'semestral': return total + precio;
+                  case 'anual': return total + (precio / 2);
+                  default: return total;
+                }
+              case 'anual':
+                switch(plataforma.tipoCobro) {
+                  case 'mensual': return total + (precio * 12);
+                  case 'trimestral': return total + (precio * 4);
+                  case 'semestral': return total + (precio * 2);
+                  case 'anual': return total + precio;
+                  default: return total;
+                }
+              default:
+                return total;
+            }
+          }, 0);
+        } else {
+          // Solo sumar la plataforma filtrada
+          totalPeriodoPersona = persona.plataformas.reduce((total, plataforma) => {
+            if (plataforma.nombre !== plataformaSeleccionada) return total;
+            const precio = plataforma.precio;
+            switch(periodoTotalSeleccionado) {
+              case 'mensual':
+                switch(plataforma.tipoCobro) {
+                  case 'mensual': return total + precio;
+                  case 'trimestral': return total + (precio / 3);
+                  case 'semestral': return total + (precio / 6);
+                  case 'anual': return total + (precio / 12);
+                  default: return total;
+                }
+              case 'trimestral':
+                switch(plataforma.tipoCobro) {
+                  case 'mensual': return total + (precio * 3);
+                  case 'trimestral': return total + precio;
+                  case 'semestral': return total + (precio / 2);
+                  case 'anual': return total + (precio / 4);
+                  default: return total;
+                }
+              case 'semestral':
+                switch(plataforma.tipoCobro) {
+                  case 'mensual': return total + (precio * 6);
+                  case 'trimestral': return total + (precio * 2);
+                  case 'semestral': return total + precio;
+                  case 'anual': return total + (precio / 2);
+                  default: return total;
+                }
+              case 'anual':
+                switch(plataforma.tipoCobro) {
+                  case 'mensual': return total + (precio * 12);
+                  case 'trimestral': return total + (precio * 4);
+                  case 'semestral': return total + (precio * 2);
+                  case 'anual': return total + precio;
+                  default: return total;
+                }
+              default:
+                return total;
+            }
+          }, 0);
+        }
         totalMensualCalculado += totalPeriodoPersona;
 
         const personaElement = document.createElement('div');
