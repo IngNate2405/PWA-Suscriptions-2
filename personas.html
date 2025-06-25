@@ -91,7 +91,7 @@
     </div>
 
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-extrabold leading-tight">Personas</h1>
+      <h1 class="text-3xl font-extrabold leading-tight">Personas <span id="personas-count" class="text-base font-normal text-[#6b6b7b]"></span></h1>
     </div>
 
     <div class="mt-4 space-y-3" id="personas-container">
@@ -118,6 +118,7 @@
           </div>
         `;
         totalMensual.textContent = 'Q0.00';
+        document.getElementById('personas-count').textContent = '(0)';
         return;
       }
 
@@ -256,6 +257,7 @@
       });
 
       totalMensual.textContent = `Q${totalMensualCalculado.toFixed(2)}`;
+      document.getElementById('personas-count').textContent = `(${personasFiltradas.length})`;
     }
 
     // Manejar clic en el botón de filtro de plataformas
