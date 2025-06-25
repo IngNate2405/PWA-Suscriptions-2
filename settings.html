@@ -318,6 +318,37 @@
       document.getElementById('totalSubscriptions').textContent = subscriptions.length;
       document.getElementById('totalPersonas').textContent = personas.length;
     });
+
+    function showClearOptions() {
+      const choice = prompt('¿Qué deseas borrar?\n1 = Solo caché\n2 = Solo datos\n3 = Caché y datos\n(Cancelar para no hacer nada)');
+      if (!choice) return;
+      if (choice === '1') {
+        clearCacheAndUpdate(false);
+      } else if (choice === '2') {
+        clearCacheAndUpdate(true, true);
+      } else if (choice === '3') {
+        clearCacheAndUpdate(true);
+      } else {
+        alert('Opción no válida.');
+      }
+    }
+
+    async function clearCacheAndUpdate(clearData = false, onlyData = false) {
+      if (clearData) {
+        localStorage.clear();
+      }
+      if (!onlyData && 'caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+      }
+      if (!onlyData && 'serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let reg of registrations) {
+          await reg.unregister();
+        }
+      }
+      window.location.reload(true);
+    }
   </script>
 </head>
 <body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
@@ -378,6 +409,9 @@
           </div>
           <span id="appVersion" class="text-gray-400">1.0.1</span>
         </div>
+        <div class="flex justify-between items-center mt-4">
+          <button onclick="showClearOptions()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm w-full">Eliminar caché/datos y actualizar app</button>
+        </div>
       </div>
     </div>
 
@@ -399,7 +433,7 @@
     </div>
 
     <!-- Sección de Información -->
-    <div class="bg-[#1B1930] rounded-xl p-6">
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
       <h2 class="text-xl font-bold mb-4">Información</h2>
       
       <div class="space-y-4">
@@ -423,7 +457,7 @@
             <h3 class="font-semibold">Versión</h3>
             <p class="text-gray-400 text-sm">App Suscripciones</p>
           </div>
-          <span class="text-gray-400">1.0.0</span>
+          <span class="text-gray-400 font-semibold">1.0.1</span>
         </div>
         
         <div class="flex justify-between items-center">
