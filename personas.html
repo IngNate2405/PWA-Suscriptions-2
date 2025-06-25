@@ -190,7 +190,7 @@
         } else {
           // Solo sumar la plataforma filtrada
           totalPeriodoPersona = persona.plataformas.reduce((total, plataforma) => {
-            if (plataforma.nombre !== plataformaSeleccionada) return total;
+            if (plataforma.nombre.toLowerCase().trim() !== plataformaSeleccionada.toLowerCase().trim()) return total;
             const precio = plataforma.precio;
             switch(periodoTotalSeleccionado) {
               case 'mensual':
