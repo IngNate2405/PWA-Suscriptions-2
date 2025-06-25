@@ -104,33 +104,32 @@
     function loadSubscriptions() {
       const subscriptions = JSON.parse(localStorage.getItem('subscriptions')) || [];
       const subscriptionDates = {};
-      const selectedYear = getSelectedYear();
-      const currentMonth = currentDate.getMonth();
+      // Mostrar pagos para todos los años y meses posibles (hasta 10 años en el futuro)
+      const maxYears = 10;
+      const now = new Date();
+      const endYear = now.getFullYear() + maxYears;
 
       subscriptions.forEach(sub => {
-        // Solo mostrar suscripciones activas
         if (sub.status !== 'paused') {
           let paymentDate;
           let isTrial = false;
-          
-          // Verificar si es una prueba gratuita
+
           if (sub.free_trial && sub.trial_end_date) {
             paymentDate = new Date(sub.trial_end_date);
             isTrial = true;
           } else if (sub.nextPayment) {
             paymentDate = new Date(sub.nextPayment);
           } else {
-            return; // Saltar si no tiene fecha de pago ni fecha de fin de prueba
+            return;
           }
-          
-          // Solo agregar si la fecha está en el año y mes seleccionados
-          if (paymentDate.getFullYear() === selectedYear && paymentDate.getMonth() === currentMonth) {
-            const dateStr = formatDate(paymentDate);
-            
+
+          // Calcular todas las fechas futuras según el ciclo de facturación
+          let currentDate = new Date(paymentDate);
+          while (currentDate.getFullYear() <= endYear) {
+            const dateStr = formatDate(currentDate);
             if (!subscriptionDates[dateStr]) {
               subscriptionDates[dateStr] = [];
             }
-            
             subscriptionDates[dateStr].push({
               id: sub.id,
               name: sub.name,
@@ -138,10 +137,29 @@
               price: sub.price,
               currency: sub.currency,
               billingCycle: sub.billingCycle,
-              nextPayment: sub.nextPayment,
+              nextPayment: currentDate.toISOString(),
               isTrial: isTrial,
               trialEndDate: sub.trial_end_date
             });
+
+            // Avanzar al siguiente pago según el ciclo
+            switch (sub.billing || sub.billingCycle || 'mensual') {
+              case 'mensual':
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                break;
+              case 'trimestral':
+                currentDate.setMonth(currentDate.getMonth() + 3);
+                break;
+              case 'semestral':
+                currentDate.setMonth(currentDate.getMonth() + 6);
+                break;
+              case 'anual':
+                currentDate.setFullYear(currentDate.getFullYear() + 1);
+                break;
+              default:
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                break;
+            }
           }
         }
       });
