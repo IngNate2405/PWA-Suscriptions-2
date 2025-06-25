@@ -118,7 +118,12 @@
     function sortSubscriptions(subscriptions, sortBy) {
       switch(sortBy) {
         case 'next':
-          return subscriptions.sort((a, b) => new Date(a.nextPayment) - new Date(b.nextPayment));
+          // Calcular el próximo pago real para cada suscripción antes de ordenar
+          subscriptions.forEach(sub => {
+            const result = calculateDaysRemaining(sub.nextPayment, sub.billing);
+            sub._nextPaymentForSort = result.nextDate;
+          });
+          return subscriptions.sort((a, b) => new Date(a._nextPaymentForSort) - new Date(b._nextPaymentForSort));
         case 'name':
           return subscriptions.sort((a, b) => a.name.localeCompare(b.name));
         case 'price-low':
