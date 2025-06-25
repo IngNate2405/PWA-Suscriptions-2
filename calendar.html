@@ -242,7 +242,10 @@
 
     // Función para mostrar las suscripciones del día
     function showSubscriptionsForDay(dateStr, subscriptions) {
-      const date = new Date(dateStr);
+      // Parsear correctamente la fecha para evitar problemas de zona horaria
+      // dateStr es 'yyyy-mm-dd'
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day); // mes base 0
       const formattedDate = `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
       
       const subscriptionsPanel = document.createElement('div');
