@@ -2,7 +2,7 @@
 <html lang="es">
  <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
   <title>App Suscripciones</title>
   <meta name="description" content="Aplicación para gestionar suscripciones">
   <meta name="theme-color" content="#1B1930">
@@ -13,13 +13,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
   <style>
     html, body {
-      overflow-y: scroll;
-      scrollbar-width: none;
+      overflow: hidden !important;
+      height: 100%;
+      max-height: 100vh;
       overscroll-behavior: none;
-      touch-action: pan-x pan-y;
+      touch-action: none;
+      scrollbar-width: none !important;
+      -webkit-overflow-scrolling: auto !important;
     }
     body::-webkit-scrollbar, html::-webkit-scrollbar {
-      display: none;
+      display: none !important;
     }
     /* Prevenir zoom por doble tap */
     body {
@@ -574,9 +577,13 @@
       navButtons[3].addEventListener('click', () => navigateTo('settings.html'));
     });
 
-    // Prevenir zoom por doble tap
+    // Bloquear pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+    // Bloquear doble tap zoom
     let lastTouchEnd = 0;
-    document.addEventListener('touchend', function(event) {
+    document.addEventListener('touchend', function (event) {
       const now = (new Date()).getTime();
       if (now - lastTouchEnd <= 300) {
         event.preventDefault();
