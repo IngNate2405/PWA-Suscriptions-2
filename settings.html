@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
   <title>Configuración - App Suscripciones</title>
   <meta name="description" content="Configuración de la aplicación">
   <meta name="theme-color" content="#1B1930">
@@ -20,17 +20,21 @@
     }
     /* Ocultar scrollbars en móvil */
     body::-webkit-scrollbar, html::-webkit-scrollbar {
-      display: none;
+      display: none !important;
     }
     body {
       -ms-overflow-style: none;
-      scrollbar-width: none;
+      scrollbar-width: none !important;
       font-family: 'Inter', sans-serif;
       min-height: 100vh;
       min-height: -webkit-fill-available;
     }
     html {
       height: -webkit-fill-available;
+    }
+    html, body {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
     }
   </style>
   <script>
@@ -349,6 +353,20 @@
       }
       window.location.reload(true);
     }
+
+    // Bloquear pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+    // Bloquear doble tap zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
   </script>
 </head>
 <body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
@@ -451,7 +469,7 @@
             <h3 class="font-semibold">Versión</h3>
             <p class="text-gray-400 text-sm">App Suscripciones</p>
           </div>
-          <span class="text-gray-400 font-semibold">1.0.18</span>
+          <span class="text-gray-400 font-semibold">1.0.19</span>
         </div>
         
         <div class="flex justify-between items-center">

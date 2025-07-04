@@ -19,13 +19,9 @@
   />
   <style>
     html, body {
-      overflow: hidden !important;
-      height: 100%;
-      max-height: 100vh;
-      overscroll-behavior: none;
-      touch-action: none;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
       scrollbar-width: none !important;
-      -webkit-overflow-scrolling: auto !important;
     }
     body::-webkit-scrollbar, html::-webkit-scrollbar {
       display: none !important;
