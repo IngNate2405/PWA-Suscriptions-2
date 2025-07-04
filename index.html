@@ -190,7 +190,44 @@
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            subscriptions = parsed;
+            // Validar y reparar cada suscripción sin eliminarlas
+            subscriptions = parsed.map(sub => {
+              if (!sub || typeof sub !== 'object') {
+                // Si es completamente inválido, crear uno básico
+                return {
+                  id: Date.now() + Math.random(),
+                  name: 'Suscripción sin nombre',
+                  ganancia: 0,
+                  billing: 'mensual',
+                  status: 'active'
+                };
+              }
+              
+              // Asegurar que tenga los campos básicos
+              if (!sub.id) sub.id = Date.now() + Math.random();
+              if (!sub.name) sub.name = 'Suscripción sin nombre';
+              
+              // Asegurar que ganancia sea un número válido
+              if (sub.ganancia !== undefined && sub.ganancia !== null) {
+                sub.ganancia = parseFloat(sub.ganancia) || 0;
+              } else {
+                sub.ganancia = 0;
+              }
+              
+              // Asegurar que billing sea válido
+              if (!sub.billing || !['mensual', 'trimestral', 'semestral', 'anual'].includes(sub.billing.toLowerCase())) {
+                sub.billing = 'mensual';
+              }
+              
+              // Asegurar otros campos importantes
+              if (!sub.status) sub.status = 'active';
+              if (!sub.list) sub.list = 'personal';
+              
+              return sub;
+            });
+            
+            // Guardar las suscripciones reparadas de vuelta al localStorage
+            localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
           } else {
             // Si no es un array, limpiar localStorage
             localStorage.removeItem('subscriptions');
@@ -209,6 +246,10 @@
       
       const currentPeriod = document.getElementById('currentPeriod').textContent;
       const currentProfitPeriod = document.getElementById('currentProfitPeriod').textContent;
+      
+      // Debug: mostrar períodos actuales
+      console.log('Período actual (ganancias):', currentPeriod);
+      console.log('Período actual (débito):', currentProfitPeriod);
       let sortBy;
       
       // Convertir el texto del botón al valor de ordenamiento
@@ -330,7 +371,12 @@
           default:
             months = 1;
         }
-        totalProfit += (ganancia / months) * profitMultiplier;
+        
+        const gananciaCalculada = (ganancia / months) * profitMultiplier;
+        totalProfit += gananciaCalculada;
+        
+        // Debug: mostrar información de la suscripción
+        console.log(`Suscripción: ${sub.name}, Ganancia: ${ganancia}, Billing: ${sub.billing}, Months: ${months}, ProfitMultiplier: ${profitMultiplier}, GananciaCalculada: ${gananciaCalculada}`);
       });
 
       // Actualizar el contador de suscripciones
@@ -339,6 +385,10 @@
       // Actualizar las ganancias según el período
       const formattedProfit = `Q${totalProfit.toFixed(2)}`;
       document.getElementById('totalAmount').textContent = formattedProfit;
+      
+      // Debug: mostrar totales calculados
+      console.log('Total ganancias calculado:', totalProfit);
+      console.log('Total débito calculado:', totalMonthly);
       
       // Actualizar débito según el período
       const formattedDebit = `Q${totalMonthly.toFixed(2)}`;
@@ -514,6 +564,10 @@
       navButtons[2].addEventListener('click', () => navigateTo('personas.html'));
       navButtons[3].addEventListener('click', () => navigateTo('settings.html'));
     });
+
+
+
+
 
     // Función para manejar la instalación de PWA
     let deferredPrompt;
