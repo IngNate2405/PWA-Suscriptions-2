@@ -296,8 +296,26 @@
         }
         totalMonthly += debitPrice * debitMultiplier;
 
-        // Calcular las ganancias como mensual promedio según el ciclo de facturación
+        // Calcular las ganancias según el período seleccionado
         const ganancia = parseFloat(sub.ganancia) || 0;
+        let profitMultiplier = 1;
+        
+        switch(currentPeriod) {
+          case 'Mensual':
+            profitMultiplier = 1;
+            break;
+          case 'Trimestral':
+            profitMultiplier = 3;
+            break;
+          case 'Seis meses':
+            profitMultiplier = 6;
+            break;
+          case 'Anual':
+            profitMultiplier = 12;
+            break;
+        }
+        
+        // Calcular ganancia mensual promedio y multiplicar por el período
         let months = 1;
         switch ((sub.billing || '').toLowerCase()) {
           case 'anual':
@@ -312,7 +330,7 @@
           default:
             months = 1;
         }
-        totalProfit += ganancia / months;
+        totalProfit += (ganancia / months) * profitMultiplier;
       });
 
       // Actualizar el contador de suscripciones
