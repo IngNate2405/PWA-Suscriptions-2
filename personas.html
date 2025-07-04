@@ -91,7 +91,18 @@
     </div>
 
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-extrabold leading-tight">Personas <span id="personas-count" class="text-base font-normal text-[#6b6b7b]"></span></h1>
+      <div class="flex items-center space-x-4">
+        <h1 class="text-3xl font-extrabold leading-tight">Personas <span id="personas-count" class="text-base font-normal text-[#6b6b7b]"></span></h1>
+        <div class="relative">
+          <input 
+            type="text" 
+            id="search-personas" 
+            placeholder="Buscar personas..." 
+            class="bg-[#2a2736] text-white placeholder-gray-400 rounded-lg px-4 py-2 pl-10 w-64 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f] transition-all"
+          >
+          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+      </div>
     </div>
 
     <div class="mt-4 space-y-3" id="personas-container">
@@ -102,6 +113,7 @@
   <script>
     let plataformaSeleccionada = 'todas';
     let periodoTotalSeleccionado = 'mensual';
+    let busquedaPersonas = '';
 
     function cargarPersonas() {
       const personas = JSON.parse(localStorage.getItem('personas') || '[]');
@@ -137,12 +149,22 @@
         `).join('')}
       `;
 
-      // Filtrar personas según la plataforma seleccionada
-      const personasFiltradas = plataformaSeleccionada === 'todas' 
-        ? personas 
-        : personas.filter(persona => 
-            persona.plataformas.some(p => p.nombre === plataformaSeleccionada)
-          );
+      // Filtrar personas según la plataforma seleccionada y búsqueda
+      let personasFiltradas = personas;
+      
+      // Filtrar por plataforma
+      if (plataformaSeleccionada !== 'todas') {
+        personasFiltradas = personasFiltradas.filter(persona => 
+          persona.plataformas.some(p => p.nombre === plataformaSeleccionada)
+        );
+      }
+      
+      // Filtrar por búsqueda
+      if (busquedaPersonas.trim() !== '') {
+        personasFiltradas = personasFiltradas.filter(persona => 
+          persona.nombre.toLowerCase().includes(busquedaPersonas.toLowerCase().trim())
+        );
+      }
 
       let totalMensualCalculado = 0;
 
@@ -295,6 +317,12 @@
     // Manejar cambio de período
     document.getElementById('periodo-total-select').addEventListener('change', function() {
       periodoTotalSeleccionado = this.value;
+      cargarPersonas();
+    });
+
+    // Manejar búsqueda de personas
+    document.getElementById('search-personas').addEventListener('input', function() {
+      busquedaPersonas = this.value;
       cargarPersonas();
     });
 
