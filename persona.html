@@ -64,8 +64,23 @@
             </div>
           </div>
           <div class="text-right">
-            <p class="text-gray-400">Total Mensual</p>
-            <p class="text-white text-xl font-bold" id="total-mensual"></p>
+            <div class="flex flex-col items-end">
+              <div class="flex items-center space-x-2">
+                <span class="text-gray-400" id="texto-total-periodo">
+                  Total <span id="filtro-periodo-btn" class="cursor-pointer hover:text-white transition-colors inline-flex items-center">
+                    <span id="filtro-periodo-text">Mensual</span>
+                    <i class="fas fa-chevron-down text-xs ml-1"></i>
+                  </span>
+                  <div id="filtro-periodo-menu" class="absolute right-0 mt-2 w-32 bg-[#2a2736] rounded-lg shadow-lg hidden z-10">
+                    <button class="w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors" data-periodo="mensual">Mensual</button>
+                    <button class="w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors" data-periodo="trimestral">Trimestral</button>
+                    <button class="w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors" data-periodo="semestral">Semestral</button>
+                    <button class="w-full text-left px-4 py-2 text-gray-400 hover:text-white hover:bg-[#3f2a6f] transition-colors" data-periodo="anual">Anual</button>
+                  </div>
+                </span>
+              </div>
+              <p class="text-white text-xl font-bold" id="total-mensual"></p>
+            </div>
           </div>
         </div>
 
@@ -91,6 +106,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const personaId = urlParams.get('id');
 
+    let periodoSeleccionado = 'mensual';
+
     function cargarPersona() {
       const personas = JSON.parse(localStorage.getItem('personas') || '[]');
       const persona = personas.find(p => p.id === parseInt(personaId));
@@ -104,17 +121,57 @@
       document.getElementById('nombre-persona').textContent = persona.nombre;
       document.getElementById('plataformas-count').textContent = `${persona.plataformas.length} plataforma${persona.plataformas.length !== 1 ? 's' : ''}`;
 
-      // Calcular y mostrar total mensual
-      const totalMensual = persona.plataformas.reduce((total, plataforma) => {
-        const precio = plataforma.precio;
-        switch(plataforma.tipoCobro) {
-          case 'mensual': return total + precio;
-          case 'semestral': return total + (precio / 6);
-          case 'anual': return total + (precio / 12);
-          default: return total;
+      // Calcular y mostrar total según período seleccionado
+      function calcularTotalPersona(periodo) {
+        let total = 0;
+        persona.plataformas.forEach(plataforma => {
+          const precio = plataforma.precio;
+          switch(periodo) {
+            case 'mensual':
+              switch(plataforma.tipoCobro) {
+                case 'mensual': total += precio; break;
+                case 'trimestral': total += precio / 3; break;
+                case 'semestral': total += precio / 6; break;
+                case 'anual': total += precio / 12; break;
+              } break;
+            case 'trimestral':
+              switch(plataforma.tipoCobro) {
+                case 'mensual': total += precio * 3; break;
+                case 'trimestral': total += precio; break;
+                case 'semestral': total += precio / 2; break;
+                case 'anual': total += precio / 4; break;
+              } break;
+            case 'semestral':
+              switch(plataforma.tipoCobro) {
+                case 'mensual': total += precio * 6; break;
+                case 'trimestral': total += precio * 2; break;
+                case 'semestral': total += precio; break;
+                case 'anual': total += precio / 2; break;
+              } break;
+            case 'anual':
+              switch(plataforma.tipoCobro) {
+                case 'mensual': total += precio * 12; break;
+                case 'trimestral': total += precio * 4; break;
+                case 'semestral': total += precio * 2; break;
+                case 'anual': total += precio; break;
+              } break;
+          }
+        });
+        return total;
+      }
+      function actualizarTotalPersona() {
+        const total = calcularTotalPersona(periodoSeleccionado);
+        document.getElementById('total-mensual').textContent = `Q ${total.toFixed(2)}`;
+        let textoPeriodo = '';
+        switch(periodoSeleccionado) {
+          case 'mensual': textoPeriodo = 'Mensual'; break;
+          case 'trimestral': textoPeriodo = 'Trimestral'; break;
+          case 'semestral': textoPeriodo = 'Semestral'; break;
+          case 'anual': textoPeriodo = 'Anual'; break;
         }
-      }, 0);
-      document.getElementById('total-mensual').textContent = `Q ${totalMensual.toFixed(2)}`;
+        document.getElementById('filtro-periodo-text').textContent = textoPeriodo;
+      }
+      actualizarTotalPersona();
 
       // Cargar plataformas
       const container = document.getElementById('plataformas-container');
@@ -165,6 +222,26 @@
 
     // Cargar datos al iniciar
     document.addEventListener('DOMContentLoaded', cargarPersona);
+
+    // Filtro de período
+    document.getElementById('filtro-periodo-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      document.getElementById('filtro-periodo-menu').classList.toggle('hidden');
+    });
+    document.addEventListener('click', function(e) {
+      const menu = document.getElementById('filtro-periodo-menu');
+      const btn = document.getElementById('filtro-periodo-btn');
+      if (!btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    });
+    document.getElementById('filtro-periodo-menu').addEventListener('click', function(e) {
+      if (e.target.hasAttribute('data-periodo')) {
+        periodoSeleccionado = e.target.dataset.periodo;
+        actualizarTotalPersona();
+        this.classList.add('hidden');
+      }
+    });
   </script>
 
   <!-- Bottom Navigation -->
