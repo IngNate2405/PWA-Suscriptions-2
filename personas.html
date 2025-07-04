@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport"/>
   <title>Personas - App Suscripciones</title>
   <meta name="description" content="Lista de personas">
   <meta name="theme-color" content="#1B1930">
@@ -18,15 +18,24 @@
     rel="stylesheet"
   />
   <style>
+    html, body {
+      overflow-y: scroll;
+      scrollbar-width: none;
+      overscroll-behavior: none;
+      touch-action: pan-x pan-y;
+    }
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none;
+    }
+    /* Prevenir zoom por doble tap */
+    body {
+      touch-action: manipulation;
+    }
     body, html {
       overflow-x: hidden !important;
       overscroll-behavior-x: none;
       max-width: 100vw;
       box-sizing: border-box;
-    }
-    /* Ocultar scrollbars en móvil */
-    body::-webkit-scrollbar, html::-webkit-scrollbar {
-      display: none;
     }
     body {
       -ms-overflow-style: none;
@@ -42,6 +51,17 @@
       }
     }
   </style>
+  <script>
+    // Prevenir zoom por doble tap
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
 </head>
 <body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
   <div class="container mx-auto px-4 pt-4 pb-20">
