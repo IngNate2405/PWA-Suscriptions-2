@@ -137,7 +137,14 @@
       // Obtener todas las plataformas únicas desde las suscripciones
       const plataformas = new Set();
       suscripciones.forEach(suscripcion => {
-        plataformas.add(suscripcion.name);
+        // Filtrar: solo agregar si NO es compartida NI de prueba
+        if (
+          suscripcion.list !== 'compartido' &&
+          suscripcion.list !== 'prueba_gratuita' &&
+          suscripcion.free_trial !== true
+        ) {
+          plataformas.add(suscripcion.name);
+        }
       });
 
       // Actualizar menú de filtro de plataformas
