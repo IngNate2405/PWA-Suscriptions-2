@@ -115,8 +115,26 @@
           let isTrial = false;
 
           if (sub.free_trial && sub.trial_end_date) {
+            // Solo agregar la fecha de fin de prueba
             paymentDate = new Date(sub.trial_end_date);
             isTrial = true;
+            const dateStr = formatDate(paymentDate);
+            if (!subscriptionDates[dateStr]) {
+              subscriptionDates[dateStr] = [];
+            }
+            subscriptionDates[dateStr].push({
+              id: sub.id,
+              name: sub.name,
+              image: sub.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png',
+              price: sub.price,
+              currency: sub.currency,
+              billingCycle: sub.billingCycle,
+              nextPayment: paymentDate.toISOString(),
+              isTrial: isTrial,
+              trialEndDate: sub.trial_end_date
+            });
+            // No continuar con el ciclo de facturación
+            return;
           } else if (sub.nextPayment) {
             paymentDate = new Date(sub.nextPayment);
           } else {
