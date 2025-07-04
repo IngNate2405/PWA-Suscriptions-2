@@ -107,6 +107,59 @@
     const personaId = urlParams.get('id');
 
     let periodoSeleccionado = 'mensual';
+    let personaActual = null;
+
+    function calcularTotalPersona(periodo) {
+      if (!personaActual) return 0;
+      let total = 0;
+      personaActual.plataformas.forEach(plataforma => {
+        const precio = plataforma.precio;
+        switch(periodo) {
+          case 'mensual':
+            switch(plataforma.tipoCobro) {
+              case 'mensual': total += precio; break;
+              case 'trimestral': total += precio / 3; break;
+              case 'semestral': total += precio / 6; break;
+              case 'anual': total += precio / 12; break;
+            } break;
+          case 'trimestral':
+            switch(plataforma.tipoCobro) {
+              case 'mensual': total += precio * 3; break;
+              case 'trimestral': total += precio; break;
+              case 'semestral': total += precio / 2; break;
+              case 'anual': total += precio / 4; break;
+            } break;
+          case 'semestral':
+            switch(plataforma.tipoCobro) {
+              case 'mensual': total += precio * 6; break;
+              case 'trimestral': total += precio * 2; break;
+              case 'semestral': total += precio; break;
+              case 'anual': total += precio / 2; break;
+            } break;
+          case 'anual':
+            switch(plataforma.tipoCobro) {
+              case 'mensual': total += precio * 12; break;
+              case 'trimestral': total += precio * 4; break;
+              case 'semestral': total += precio * 2; break;
+              case 'anual': total += precio; break;
+            } break;
+        }
+      });
+      return total;
+    }
+
+    function actualizarTotalPersona() {
+      const total = calcularTotalPersona(periodoSeleccionado);
+      document.getElementById('total-mensual').textContent = `Q ${total.toFixed(2)}`;
+      let textoPeriodo = '';
+      switch(periodoSeleccionado) {
+        case 'mensual': textoPeriodo = 'Mensual'; break;
+        case 'trimestral': textoPeriodo = 'Trimestral'; break;
+        case 'semestral': textoPeriodo = 'Semestral'; break;
+        case 'anual': textoPeriodo = 'Anual'; break;
+      }
+      document.getElementById('filtro-periodo-text').textContent = textoPeriodo;
+    }
 
     function cargarPersona() {
       const personas = JSON.parse(localStorage.getItem('personas') || '[]');
@@ -117,60 +170,12 @@
         return;
       }
 
+      personaActual = persona;
+
       // Cargar información básica
       document.getElementById('nombre-persona').textContent = persona.nombre;
       document.getElementById('plataformas-count').textContent = `${persona.plataformas.length} plataforma${persona.plataformas.length !== 1 ? 's' : ''}`;
 
-      // Calcular y mostrar total según período seleccionado
-      function calcularTotalPersona(periodo) {
-        let total = 0;
-        persona.plataformas.forEach(plataforma => {
-          const precio = plataforma.precio;
-          switch(periodo) {
-            case 'mensual':
-              switch(plataforma.tipoCobro) {
-                case 'mensual': total += precio; break;
-                case 'trimestral': total += precio / 3; break;
-                case 'semestral': total += precio / 6; break;
-                case 'anual': total += precio / 12; break;
-              } break;
-            case 'trimestral':
-              switch(plataforma.tipoCobro) {
-                case 'mensual': total += precio * 3; break;
-                case 'trimestral': total += precio; break;
-                case 'semestral': total += precio / 2; break;
-                case 'anual': total += precio / 4; break;
-              } break;
-            case 'semestral':
-              switch(plataforma.tipoCobro) {
-                case 'mensual': total += precio * 6; break;
-                case 'trimestral': total += precio * 2; break;
-                case 'semestral': total += precio; break;
-                case 'anual': total += precio / 2; break;
-              } break;
-            case 'anual':
-              switch(plataforma.tipoCobro) {
-                case 'mensual': total += precio * 12; break;
-                case 'trimestral': total += precio * 4; break;
-                case 'semestral': total += precio * 2; break;
-                case 'anual': total += precio; break;
-              } break;
-          }
-        });
-        return total;
-      }
-      function actualizarTotalPersona() {
-        const total = calcularTotalPersona(periodoSeleccionado);
-        document.getElementById('total-mensual').textContent = `Q ${total.toFixed(2)}`;
-        let textoPeriodo = '';
-        switch(periodoSeleccionado) {
-          case 'mensual': textoPeriodo = 'Mensual'; break;
-          case 'trimestral': textoPeriodo = 'Trimestral'; break;
-          case 'semestral': textoPeriodo = 'Semestral'; break;
-          case 'anual': textoPeriodo = 'Anual'; break;
-        }
-        document.getElementById('filtro-periodo-text').textContent = textoPeriodo;
-      }
       actualizarTotalPersona();
 
       // Cargar plataformas
