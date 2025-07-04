@@ -382,23 +382,7 @@
       initializeCalendar();
       generateCalendar();
 
-      // Agregar botones de navegación
-      const mainContent = document.querySelector('main');
-      const monthNavButtons = document.createElement('div');
-      monthNavButtons.className = 'flex justify-between items-center mb-4';
-      monthNavButtons.innerHTML = `
-        <button class="text-white text-base font-normal flex items-center space-x-2" id="prevMonth">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-        <button class="text-white text-base font-normal flex items-center space-x-2" id="nextMonth">
-          <i class="fas fa-chevron-right"></i>
-        </button>
-      `;
-      mainContent.insertBefore(monthNavButtons, mainContent.firstChild);
 
-      // Agregar eventos a los botones de navegación
-      document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
-      document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
 
       // Variables para el swipe
       let touchStartX = 0;
@@ -458,13 +442,9 @@
   </script>
 </head>
 <body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
-  <div class="container mx-auto px-4 pt-4 pb-24">
-   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-extrabold leading-tight"></h1>
-   </div>
-
+  <div class="container mx-auto px-4">
   <!-- Main Content -->
-  <main class="px-6 pt-12 flex-grow">
+  <main class="px-6 flex-grow">
     <h1 class="text-3xl font-extrabold mb-4">May</h1>
     <div class="grid grid-cols-7 text-sm font-normal text-white/90 mb-2">
       <div class="text-center">Dom</div>
