@@ -53,10 +53,6 @@
           <i class="fas fa-save"></i>
           <span>Guardar</span>
         </button>
-        <button onclick="probarComprobantes()" class="bg-[#2a2736] text-white px-4 py-2 rounded-lg flex items-center space-x-2 ml-2">
-          <i class="fas fa-search"></i>
-          <span>Probar</span>
-        </button>
     </div>
 
     <div class="space-y-6">
@@ -517,29 +513,31 @@
         // Cargar comprobantes
         if (plataforma.comprobantes?.length > 0) {
           const container = ultimaPlataforma.querySelector('.comprobantes-container');
-          plataforma.comprobantes.forEach(src => {
-            const imgWrapper = document.createElement('div');
-            imgWrapper.className = 'relative group';
-            
-            const img = document.createElement('img');
-            img.src = src;
-            img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
-            img.onclick = function() {
-              showImageModal(this.src);
-            };
+          if (container) {
+            plataforma.comprobantes.forEach(src => {
+              const imgWrapper = document.createElement('div');
+              imgWrapper.className = 'relative group';
+              
+              const img = document.createElement('img');
+              img.src = src;
+              img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
+              img.onclick = function() {
+                showImageModal(this.src);
+              };
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
-            deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
-            deleteBtn.onclick = function(e) {
-              e.stopPropagation();
-              imgWrapper.remove();
-            };
+              const deleteBtn = document.createElement('button');
+              deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+              deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
+              deleteBtn.onclick = function(e) {
+                e.stopPropagation();
+                imgWrapper.remove();
+              };
 
-            imgWrapper.appendChild(img);
-            imgWrapper.appendChild(deleteBtn);
-            container.appendChild(imgWrapper);
-          });
+              imgWrapper.appendChild(img);
+              imgWrapper.appendChild(deleteBtn);
+              container.appendChild(imgWrapper);
+            });
+          }
         }
       });
 
@@ -548,13 +546,17 @@
       calcularTotal(periodoActivo);
 
       // Agregar event listeners para los botones de comprobantes en plataformas existentes
-      document.querySelectorAll('.agregar-comprobante-btn').forEach(btn => {
-        const plataforma = btn.closest('.plataforma');
-        const comprobanteInput = plataforma.querySelector('.comprobante-input');
-        btn.addEventListener('click', function() {
-          comprobanteInput.click();
+      setTimeout(() => {
+        document.querySelectorAll('.agregar-comprobante-btn').forEach(btn => {
+          const plataforma = btn.closest('.plataforma');
+          const comprobanteInput = plataforma.querySelector('.comprobante-input');
+          if (comprobanteInput) {
+            btn.addEventListener('click', function() {
+              comprobanteInput.click();
+            });
+          }
         });
-      });
+      }, 100);
     }
 
     function agregarPlataforma() {
@@ -692,17 +694,11 @@
       // Agregar event listener al botón de agregar comprobante
       const agregarComprobanteBtn = nuevaPlataforma.querySelector('.agregar-comprobante-btn');
       const comprobanteInput = nuevaPlataforma.querySelector('.comprobante-input');
-      console.log('Agregando event listeners para comprobantes en nueva plataforma');
-      console.log('Botón encontrado:', agregarComprobanteBtn);
-      console.log('Input encontrado:', comprobanteInput);
       
       if (agregarComprobanteBtn && comprobanteInput) {
         agregarComprobanteBtn.addEventListener('click', function() {
-          console.log('Botón de agregar comprobante clickeado');
           comprobanteInput.click();
         });
-      } else {
-        console.error('No se encontraron los elementos de comprobante');
       }
     }
 
@@ -815,12 +811,10 @@
     function handleComprobanteUpload(input) {
       const file = input.files[0];
       if (file) {
-        console.log('Archivo seleccionado:', file.name);
         const reader = new FileReader();
         const plataforma = input.closest('.plataforma');
         reader.onload = function(event) {
           const container = plataforma.querySelector('.comprobantes-container');
-          console.log('Contenedor encontrado:', container);
           if (container) {
             const imgWrapper = document.createElement('div');
             imgWrapper.className = 'relative group';
@@ -843,9 +837,6 @@
             imgWrapper.appendChild(img);
             imgWrapper.appendChild(deleteBtn);
             container.appendChild(imgWrapper);
-            console.log('Imagen agregada al contenedor');
-          } else {
-            console.error('No se encontró el contenedor de comprobantes');
           }
         };
         reader.readAsDataURL(file);
@@ -855,7 +846,6 @@
     // Manejar la subida de imágenes usando delegación de eventos
     document.addEventListener('change', function(e) {
       if (e.target.classList.contains('comprobante-input')) {
-        console.log('Event listener global detectado para comprobante');
         handleComprobanteUpload(e.target);
       }
     });
@@ -1036,13 +1026,9 @@
         });
 
         const comprobantes = [];
-        const imagenes = plataforma.querySelectorAll('.comprobantes-container img');
-        console.log('Imágenes encontradas en plataforma', nombrePlataforma, ':', imagenes.length);
-        imagenes.forEach((img, index) => {
-          console.log('Imagen', index, ':', img.src.substring(0, 50) + '...');
+        plataforma.querySelectorAll('.comprobantes-container img').forEach(img => {
           comprobantes.push(img.src);
         });
-        console.log('Comprobantes guardados para', nombrePlataforma, ':', comprobantes.length);
 
         let pagos = [];
         if (tipoCobro === 'mensual') {
@@ -1103,24 +1089,12 @@
       }
       
       localStorage.setItem('personas', JSON.stringify(personas));
-      console.log('Persona guardada:', persona);
 
       // Redirigir a la página de personas
       window.location.href = 'personas.html';
     }
 
-    // Función de prueba para verificar comprobantes
-    function probarComprobantes() {
-      console.log('=== PRUEBA DE COMPROBANTES ===');
-      document.querySelectorAll('.plataforma').forEach((plataforma, index) => {
-        const nombre = plataforma.querySelector('.plataforma-nombre')?.textContent || 'Sin nombre';
-        const imagenes = plataforma.querySelectorAll('.comprobantes-container img');
-        console.log(`Plataforma ${index + 1} (${nombre}): ${imagenes.length} imágenes`);
-        imagenes.forEach((img, imgIndex) => {
-          console.log(`  - Imagen ${imgIndex + 1}: ${img.src.substring(0, 50)}...`);
-        });
-      });
-    }
+
 
     // Cargar datos al iniciar
     document.addEventListener('DOMContentLoaded', cargarPersona);
