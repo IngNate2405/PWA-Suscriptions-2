@@ -390,40 +390,8 @@
             </div>
           </div>
           <div id="periodo-semestral" class="grid grid-cols-2 gap-2 hidden">
-            <div class="flex flex-col space-y-2">
-              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg" data-semestre="1">Ene-Jun</button>
-              <div class="pago-info hidden text-xs space-y-1">
-                <div class="flex items-center space-x-1">
-                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
-                  <span class="text-gray-400">Pagado</span>
-                </div>
-                <div class="flex items-center space-x-1">
-                  <input type="radio" name="pago-tipo-semestre-1" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
-                  <span class="text-gray-400">Tarjeta</span>
-                </div>
-                <div class="flex items-center space-x-1">
-                  <input type="radio" name="pago-tipo-semestre-1" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
-                  <span class="text-gray-400">Efectivo</span>
-                </div>
-              </div>
-            </div>
-            <div class="flex flex-col space-y-2">
-              <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg" data-semestre="2">Jul-Dic</button>
-              <div class="pago-info hidden text-xs space-y-1">
-                <div class="flex items-center space-x-1">
-                  <input type="checkbox" class="pago-checkbox w-3 h-3 rounded border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
-                  <span class="text-gray-400">Pagado</span>
-                </div>
-                <div class="flex items-center space-x-1">
-                  <input type="radio" name="pago-tipo-semestre-2" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
-                  <span class="text-gray-400">Tarjeta</span>
-                </div>
-                <div class="flex items-center space-x-1">
-                  <input type="radio" name="pago-tipo-semestre-2" class="pago-tipo w-3 h-3 border-gray-600 bg-[#2a2736] text-[#3f2a6f] focus:ring-[#3f2a6f]">
-                  <span class="text-gray-400">Efectivo</span>
-                </div>
-              </div>
-            </div>
+            <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg" data-semestre="1">Ene-Jun</button>
+            <button class="periodo-btn bg-[#2a2736] text-white py-2 rounded-lg" data-semestre="2">Jul-Dic</button>
           </div>
         </div>
 
@@ -535,24 +503,33 @@
             }
           });
         } else if (plataforma.tipoCobro === 'semestral') {
-          plataforma.pagos?.forEach(pago => {
+          const pago = plataforma.pagos?.[0];
+          if (pago && pago.semestre) {
             const periodoBtn = ultimaPlataforma.querySelector(`.periodo-btn[data-semestre="${pago.semestre}"]`);
             if (periodoBtn) {
               periodoBtn.click();
-              const pagoInfo = periodoBtn.nextElementSibling;
-              const checkbox = pagoInfo.querySelector('.pago-checkbox');
+            }
+            
+            // Cargar información de pago general
+            if (pago.pagado !== undefined) {
+              const checkbox = ultimaPlataforma.querySelector('#pagado');
               checkbox.checked = pago.pagado;
-              
-              if (pago.pagado && pago.tipoPago) {
-                const radioBtn = Array.from(pagoInfo.querySelectorAll('.pago-tipo')).find(radio => 
-                  radio.nextElementSibling.textContent === pago.tipoPago
-                );
-                if (radioBtn) {
-                  radioBtn.checked = true;
-                }
+            }
+            
+            if (pago.pagado && pago.tipoPago) {
+              const radioBtn = Array.from(ultimaPlataforma.querySelectorAll('.pago-tipo-general')).find(radio => 
+                radio.nextElementSibling.textContent === pago.tipoPago
+              );
+              if (radioBtn) {
+                radioBtn.checked = true;
               }
             }
-          });
+
+            const enTarjetaCheckbox = ultimaPlataforma.querySelector('.en-tarjeta-checkbox');
+            if (enTarjetaCheckbox && pago.enTarjeta !== undefined) {
+              enTarjetaCheckbox.checked = pago.enTarjeta;
+            }
+          }
         } else {
           const pagado = plataforma.pagos?.[0];
           if (pagado) {
@@ -1111,21 +1088,21 @@
             }
           });
         } else if (tipoCobro === 'semestral') {
-          // Para cobro semestral, buscar los botones de semestre seleccionados
-          plataforma.querySelectorAll('.periodo-btn').forEach(btn => {
-            if (btn.classList.contains('bg-[#3f2a6f]')) {
-              const semestre = btn.dataset.semestre;
-              const pagoInfo = btn.nextElementSibling;
-              const pagado = pagoInfo.querySelector('.pago-checkbox').checked;
-              const tipoPago = pagoInfo.querySelector('.pago-tipo:checked')?.nextElementSibling.textContent || '';
-              
-              pagos.push({
-                semestre,
-                pagado,
-                tipoPago
-              });
-            }
-          });
+          // Para cobro semestral, buscar el botón de semestre seleccionado
+          const semestreSeleccionado = plataforma.querySelector('.periodo-btn.bg-[#3f2a6f]');
+          if (semestreSeleccionado) {
+            const semestre = semestreSeleccionado.dataset.semestre;
+            const pagado = plataforma.querySelector('#pagado').checked;
+            const tipoPago = plataforma.querySelector('.pago-tipo-general:checked')?.nextElementSibling.textContent || '';
+            const enTarjeta = plataforma.querySelector('.en-tarjeta-checkbox').checked;
+            
+            pagos.push({
+              semestre,
+              pagado,
+              tipoPago,
+              enTarjeta
+            });
+          }
         } else {
           // Para cobro anual o trimestral
           const pagado = plataforma.querySelector('#pagado').checked;
