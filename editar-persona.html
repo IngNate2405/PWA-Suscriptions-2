@@ -1076,15 +1076,25 @@
 
     // Función para guardar la persona
     function guardarPersona() {
+      alert('Función guardarPersona llamada');
+      
       const nombre = document.getElementById('nombre-input').value;
+      alert('Nombre: ' + nombre);
+      
       if (!nombre) {
         alert('Por favor ingrese el nombre de la persona');
         return;
       }
 
       const plataformas = [];
-      document.querySelectorAll('.plataforma').forEach(plataforma => {
+      alert('Procesando plataformas...');
+      
+      document.querySelectorAll('.plataforma').forEach((plataforma, index) => {
+        alert(`Procesando plataforma ${index + 1}`);
+        
         const nombrePlataforma = plataforma.querySelector('.plataforma-nombre').textContent;
+        alert('Nombre plataforma: ' + nombrePlataforma);
+        
         if (!nombrePlataforma || nombrePlataforma === 'Nombre de plataforma') {
           alert('Por favor seleccione una plataforma para cada suscripción');
           return;
@@ -1099,6 +1109,8 @@
             tipoCobro = btn.dataset.cobro;
           }
         });
+        
+        alert('Tipo de cobro: ' + tipoCobro);
 
 
 
@@ -1119,8 +1131,12 @@
             }
           });
         } else if (tipoCobro === 'semestral') {
+          alert('Procesando cobro semestral...');
+          
           // Para cobro semestral, buscar el botón de semestre seleccionado
           const semestreSeleccionado = plataforma.querySelector('.periodo-btn.bg-[#3f2a6f]');
+          alert('Semestre seleccionado: ' + (semestreSeleccionado ? 'SÍ' : 'NO'));
+          
           if (semestreSeleccionado && semestreSeleccionado.dataset.semestre) {
             const semestre = semestreSeleccionado.dataset.semestre;
             const pagadoCheckbox = plataforma.querySelector('#pagado');
@@ -1130,6 +1146,8 @@
             const enTarjetaCheckbox = plataforma.querySelector('.en-tarjeta-checkbox');
             const enTarjeta = enTarjetaCheckbox ? enTarjetaCheckbox.checked : false;
             
+            alert('Datos del pago semestral - Semestre: ' + semestre + ', Pagado: ' + pagado + ', Tipo: ' + tipoPago);
+            
             pagos.push({
               semestre,
               pagado,
@@ -1137,6 +1155,7 @@
               enTarjeta
             });
           } else {
+            alert('No se encontró semestre seleccionado, agregando pago vacío');
             // Si no hay semestre seleccionado, agregar un pago vacío para evitar errores
             pagos.push({
               semestre: null,
@@ -1201,6 +1220,7 @@
         personas.push(persona);
       }
       
+      alert('Persona guardada exitosamente');
       localStorage.setItem('personas', JSON.stringify(personas));
 
       // Redirigir a la página de personas
