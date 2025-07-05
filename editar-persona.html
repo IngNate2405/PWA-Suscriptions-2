@@ -765,29 +765,60 @@
           periodoMensual.classList.add('hidden');
           periodoSemestral.classList.remove('hidden');
           pagadoGeneral.classList.remove('hidden');
+          // Habilitar elementos de pago general para semestral
+          const radioButtons = pagadoGeneral.querySelectorAll('.pago-tipo-general');
+          const enTarjetaCheckbox = pagadoGeneral.querySelector('.en-tarjeta-checkbox');
+          radioButtons.forEach(radio => {
+            radio.disabled = false;
+          });
+          enTarjetaCheckbox.disabled = false;
         } else {
           periodoContainer.classList.add('hidden');
           pagadoGeneral.classList.remove('hidden');
+          // Habilitar elementos de pago general para anual/trimestral
+          const radioButtons = pagadoGeneral.querySelectorAll('.pago-tipo-general');
+          const enTarjetaCheckbox = pagadoGeneral.querySelector('.en-tarjeta-checkbox');
+          radioButtons.forEach(radio => {
+            radio.disabled = false;
+          });
+          enTarjetaCheckbox.disabled = false;
         }
       }
 
       // Manejar selección de períodos
       if (e.target.classList.contains('periodo-btn')) {
-        const mes = e.target.dataset.mes;
-        const pagoInfo = e.target.nextElementSibling;
-        
-        // Toggle el estado del botón
-        e.target.classList.toggle('bg-[#3f2a6f]');
-        e.target.classList.toggle('bg-[#2a2736]');
-        
-        // Mostrar/ocultar información de pago
-        pagoInfo.classList.toggle('hidden');
-        
-        // Si el botón está activo, mostrar la información de pago
-        if (e.target.classList.contains('bg-[#3f2a6f]')) {
-          pagoInfo.classList.remove('hidden');
+        // Si es un botón de semestre, manejar selección única
+        if (e.target.dataset.semestre) {
+          const semestreContainer = e.target.closest('#periodo-semestral');
+          const semestreBtns = semestreContainer.querySelectorAll('.periodo-btn');
+          
+          // Desmarcar todos los botones de semestre
+          semestreBtns.forEach(btn => {
+            btn.classList.remove('bg-[#3f2a6f]');
+            btn.classList.add('bg-[#2a2736]');
+          });
+          
+          // Marcar el botón seleccionado
+          e.target.classList.remove('bg-[#2a2736]');
+          e.target.classList.add('bg-[#3f2a6f]');
         } else {
-          pagoInfo.classList.add('hidden');
+          // Para botones mensuales, mantener la lógica original
+          const mes = e.target.dataset.mes;
+          const pagoInfo = e.target.nextElementSibling;
+          
+          // Toggle el estado del botón
+          e.target.classList.toggle('bg-[#3f2a6f]');
+          e.target.classList.toggle('bg-[#2a2736]');
+          
+          // Mostrar/ocultar información de pago
+          pagoInfo.classList.toggle('hidden');
+          
+          // Si el botón está activo, mostrar la información de pago
+          if (e.target.classList.contains('bg-[#3f2a6f]')) {
+            pagoInfo.classList.remove('hidden');
+          } else {
+            pagoInfo.classList.add('hidden');
+          }
         }
       }
     });
@@ -1090,11 +1121,14 @@
         } else if (tipoCobro === 'semestral') {
           // Para cobro semestral, buscar el botón de semestre seleccionado
           const semestreSeleccionado = plataforma.querySelector('.periodo-btn.bg-[#3f2a6f]');
-          if (semestreSeleccionado) {
+          if (semestreSeleccionado && semestreSeleccionado.dataset.semestre) {
             const semestre = semestreSeleccionado.dataset.semestre;
-            const pagado = plataforma.querySelector('#pagado').checked;
-            const tipoPago = plataforma.querySelector('.pago-tipo-general:checked')?.nextElementSibling.textContent || '';
-            const enTarjeta = plataforma.querySelector('.en-tarjeta-checkbox').checked;
+            const pagadoCheckbox = plataforma.querySelector('#pagado');
+            const pagado = pagadoCheckbox ? pagadoCheckbox.checked : false;
+            const tipoPagoRadio = plataforma.querySelector('.pago-tipo-general:checked');
+            const tipoPago = tipoPagoRadio ? tipoPagoRadio.nextElementSibling.textContent : '';
+            const enTarjetaCheckbox = plataforma.querySelector('.en-tarjeta-checkbox');
+            const enTarjeta = enTarjetaCheckbox ? enTarjetaCheckbox.checked : false;
             
             pagos.push({
               semestre,
@@ -1102,12 +1136,23 @@
               tipoPago,
               enTarjeta
             });
+          } else {
+            // Si no hay semestre seleccionado, agregar un pago vacío para evitar errores
+            pagos.push({
+              semestre: null,
+              pagado: false,
+              tipoPago: '',
+              enTarjeta: false
+            });
           }
         } else {
           // Para cobro anual o trimestral
-          const pagado = plataforma.querySelector('#pagado').checked;
-          const tipoPago = plataforma.querySelector('.pago-tipo-general:checked')?.nextElementSibling.textContent || '';
-          const enTarjeta = plataforma.querySelector('.en-tarjeta-checkbox').checked;
+          const pagadoCheckbox = plataforma.querySelector('#pagado');
+          const pagado = pagadoCheckbox ? pagadoCheckbox.checked : false;
+          const tipoPagoRadio = plataforma.querySelector('.pago-tipo-general:checked');
+          const tipoPago = tipoPagoRadio ? tipoPagoRadio.nextElementSibling.textContent : '';
+          const enTarjetaCheckbox = plataforma.querySelector('.en-tarjeta-checkbox');
+          const enTarjeta = enTarjetaCheckbox ? enTarjetaCheckbox.checked : false;
           
           pagos.push({
             pagado,
