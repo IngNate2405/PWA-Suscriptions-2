@@ -49,10 +49,14 @@
         <i class="fas fa-arrow-left"></i>
       </button>
       <h1 class="text-3xl font-extrabold leading-tight" id="titulo-pagina">Nueva Persona</h1>
-      <button onclick="guardarPersona()" class="bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2">
-        <i class="fas fa-save"></i>
-        <span>Guardar</span>
-      </button>
+              <button onclick="guardarPersona()" class="bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+          <i class="fas fa-save"></i>
+          <span>Guardar</span>
+        </button>
+        <button onclick="probarComprobantes()" class="bg-[#2a2736] text-white px-4 py-2 rounded-lg flex items-center space-x-2 ml-2">
+          <i class="fas fa-search"></i>
+          <span>Probar</span>
+        </button>
     </div>
 
     <div class="space-y-6">
@@ -1032,9 +1036,13 @@
         });
 
         const comprobantes = [];
-        plataforma.querySelectorAll('.comprobantes-container img').forEach(img => {
+        const imagenes = plataforma.querySelectorAll('.comprobantes-container img');
+        console.log('Imágenes encontradas en plataforma', nombrePlataforma, ':', imagenes.length);
+        imagenes.forEach((img, index) => {
+          console.log('Imagen', index, ':', img.src.substring(0, 50) + '...');
           comprobantes.push(img.src);
         });
+        console.log('Comprobantes guardados para', nombrePlataforma, ':', comprobantes.length);
 
         let pagos = [];
         if (tipoCobro === 'mensual') {
@@ -1095,9 +1103,23 @@
       }
       
       localStorage.setItem('personas', JSON.stringify(personas));
+      console.log('Persona guardada:', persona);
 
       // Redirigir a la página de personas
       window.location.href = 'personas.html';
+    }
+
+    // Función de prueba para verificar comprobantes
+    function probarComprobantes() {
+      console.log('=== PRUEBA DE COMPROBANTES ===');
+      document.querySelectorAll('.plataforma').forEach((plataforma, index) => {
+        const nombre = plataforma.querySelector('.plataforma-nombre')?.textContent || 'Sin nombre';
+        const imagenes = plataforma.querySelectorAll('.comprobantes-container img');
+        console.log(`Plataforma ${index + 1} (${nombre}): ${imagenes.length} imágenes`);
+        imagenes.forEach((img, imgIndex) => {
+          console.log(`  - Imagen ${imgIndex + 1}: ${img.src.substring(0, 50)}...`);
+        });
+      });
     }
 
     // Cargar datos al iniciar
