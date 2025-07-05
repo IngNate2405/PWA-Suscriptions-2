@@ -1137,6 +1137,15 @@
           const semestreSeleccionado = plataforma.querySelector('.periodo-btn.bg-[#3f2a6f]');
           alert('Semestre seleccionado: ' + (semestreSeleccionado ? 'SÍ' : 'NO'));
           
+          // Si no encuentra el semestre seleccionado, buscar todos los botones de semestre para debug
+          if (!semestreSeleccionado) {
+            const todosSemestres = plataforma.querySelectorAll('.periodo-btn[data-semestre]');
+            alert('Botones de semestre encontrados: ' + todosSemestres.length);
+            todosSemestres.forEach((btn, index) => {
+              alert('Botón ' + index + ' - Clase: ' + btn.className + ' - Data: ' + btn.dataset.semestre);
+            });
+          }
+          
           if (semestreSeleccionado && semestreSeleccionado.dataset.semestre) {
             const semestre = semestreSeleccionado.dataset.semestre;
             const pagadoCheckbox = plataforma.querySelector('#pagado');
