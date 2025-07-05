@@ -688,43 +688,18 @@
       // Agregar event listener al botón de agregar comprobante
       const agregarComprobanteBtn = nuevaPlataforma.querySelector('.agregar-comprobante-btn');
       const comprobanteInput = nuevaPlataforma.querySelector('.comprobante-input');
-      agregarComprobanteBtn.addEventListener('click', function() {
-        comprobanteInput.click();
-      });
-
-      // Agregar event listener al input de comprobante
-      comprobanteInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          const plataforma = e.target.closest('.plataforma');
-          reader.onload = function(event) {
-            const container = plataforma.querySelector('.comprobantes-container');
-            const imgWrapper = document.createElement('div');
-            imgWrapper.className = 'relative group';
-            
-            const img = document.createElement('img');
-            img.src = event.target.result;
-            img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
-            img.onclick = function() {
-              showImageModal(this.src);
-            };
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
-            deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
-            deleteBtn.onclick = function(e) {
-              e.stopPropagation();
-              imgWrapper.remove();
-            };
-
-            imgWrapper.appendChild(img);
-            imgWrapper.appendChild(deleteBtn);
-            container.appendChild(imgWrapper);
-          };
-          reader.readAsDataURL(file);
-        }
-      });
+      console.log('Agregando event listeners para comprobantes en nueva plataforma');
+      console.log('Botón encontrado:', agregarComprobanteBtn);
+      console.log('Input encontrado:', comprobanteInput);
+      
+      if (agregarComprobanteBtn && comprobanteInput) {
+        agregarComprobanteBtn.addEventListener('click', function() {
+          console.log('Botón de agregar comprobante clickeado');
+          comprobanteInput.click();
+        });
+      } else {
+        console.error('No se encontraron los elementos de comprobante');
+      }
     }
 
     function togglePlataforma(button) {
@@ -832,15 +807,17 @@
       }
     });
 
-    // Manejar la subida de imágenes (para plataformas existentes)
-    document.addEventListener('change', function(e) {
-      if (e.target.classList.contains('comprobante-input')) {
-        const file = e.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          const plataforma = e.target.closest('.plataforma');
-          reader.onload = function(event) {
-            const container = plataforma.querySelector('.comprobantes-container');
+    // Función para manejar la subida de comprobantes
+    function handleComprobanteUpload(input) {
+      const file = input.files[0];
+      if (file) {
+        console.log('Archivo seleccionado:', file.name);
+        const reader = new FileReader();
+        const plataforma = input.closest('.plataforma');
+        reader.onload = function(event) {
+          const container = plataforma.querySelector('.comprobantes-container');
+          console.log('Contenedor encontrado:', container);
+          if (container) {
             const imgWrapper = document.createElement('div');
             imgWrapper.className = 'relative group';
             
@@ -862,9 +839,20 @@
             imgWrapper.appendChild(img);
             imgWrapper.appendChild(deleteBtn);
             container.appendChild(imgWrapper);
-          };
-          reader.readAsDataURL(file);
-        }
+            console.log('Imagen agregada al contenedor');
+          } else {
+            console.error('No se encontró el contenedor de comprobantes');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Manejar la subida de imágenes usando delegación de eventos
+    document.addEventListener('change', function(e) {
+      if (e.target.classList.contains('comprobante-input')) {
+        console.log('Event listener global detectado para comprobante');
+        handleComprobanteUpload(e.target);
       }
     });
 
