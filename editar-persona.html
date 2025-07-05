@@ -49,7 +49,7 @@
         <i class="fas fa-arrow-left"></i>
       </button>
       <h1 class="text-3xl font-extrabold leading-tight" id="titulo-pagina">Nueva Persona</h1>
-              <button onclick="guardarPersona()" class="bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+              <button id="guardar-btn" class="bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2">
           <i class="fas fa-save"></i>
           <span>Guardar</span>
         </button>
@@ -1232,7 +1232,20 @@
 
 
     // Cargar datos al iniciar
-    document.addEventListener('DOMContentLoaded', cargarPersona);
+    document.addEventListener('DOMContentLoaded', function() {
+      cargarPersona();
+      
+      // Agregar event listener al botón de guardar
+      const guardarBtn = document.getElementById('guardar-btn');
+      if (guardarBtn) {
+        guardarBtn.addEventListener('click', function() {
+          alert('Botón de guardar clickeado');
+          guardarPersona();
+        });
+      } else {
+        alert('No se encontró el botón de guardar');
+      }
+    });
   </script>
 </body>
 </html> 
