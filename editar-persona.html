@@ -555,9 +555,15 @@
           const plataforma = btn.closest('.plataforma');
           const comprobanteInput = plataforma.querySelector('.comprobante-input');
           if (comprobanteInput) {
-            btn.addEventListener('click', function() {
+            // Remover event listeners existentes para evitar duplicados
+            btn.removeEventListener('click', btn.comprobanteClickHandler);
+            
+            // Crear nuevo handler
+            btn.comprobanteClickHandler = function() {
               comprobanteInput.click();
-            });
+            };
+            
+            btn.addEventListener('click', btn.comprobanteClickHandler);
           }
         });
       }, 100);
@@ -871,6 +877,18 @@
       }
     });
 
+    // También manejar clicks en botones de agregar comprobante usando delegación
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.agregar-comprobante-btn')) {
+        const btn = e.target.closest('.agregar-comprobante-btn');
+        const plataforma = btn.closest('.plataforma');
+        const comprobanteInput = plataforma.querySelector('.comprobante-input');
+        if (comprobanteInput) {
+          comprobanteInput.click();
+        }
+      }
+    });
+
     // Sincronizar el precio del input con el resumen
     document.addEventListener('input', function(e) {
       if (e.target.classList.contains('precio-input')) {
@@ -1125,37 +1143,37 @@
         return;
       }
       
-      const primeraPlataforma = plataformas[0];
-      const container = primeraPlataforma.querySelector('.comprobantes-container');
+      let agregadas = 0;
+      plataformas.forEach((plataforma, index) => {
+        const container = plataforma.querySelector('.comprobantes-container');
+        if (container) {
+          // Crear una imagen de prueba
+          const imgWrapper = document.createElement('div');
+          imgWrapper.className = 'relative group';
+          
+          const img = document.createElement('img');
+          img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjM0YyQTY2Ii8+Cjx0ZXh0IHg9IjQwIiB5PSI0NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VGVzdDwvdGV4dD4KPC9zdmc+';
+          img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
+          img.onclick = function() {
+            showImageModal(this.src);
+          };
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+          deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
+          deleteBtn.onclick = function(e) {
+            e.stopPropagation();
+            imgWrapper.remove();
+          };
+
+          imgWrapper.appendChild(img);
+          imgWrapper.appendChild(deleteBtn);
+          container.appendChild(imgWrapper);
+          agregadas++;
+        }
+      });
       
-      if (container) {
-        // Crear una imagen de prueba
-        const imgWrapper = document.createElement('div');
-        imgWrapper.className = 'relative group';
-        
-        const img = document.createElement('img');
-        img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjM0YyQTY2Ii8+Cjx0ZXh0IHg9IjQwIiB5PSI0NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VGVzdDwvdGV4dD4KPC9zdmc+';
-        img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
-        img.onclick = function() {
-          showImageModal(this.src);
-        };
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
-        deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
-        deleteBtn.onclick = function(e) {
-          e.stopPropagation();
-          imgWrapper.remove();
-        };
-
-        imgWrapper.appendChild(img);
-        imgWrapper.appendChild(deleteBtn);
-        container.appendChild(imgWrapper);
-        
-        alert('Imagen de prueba agregada. Si la ves, el problema está en la selección de archivos.');
-      } else {
-        alert('No se encontró el contenedor de comprobantes');
-      }
+      alert(`Imágenes de prueba agregadas en ${agregadas} de ${plataformas.length} plataformas.`);
     }
 
     // Cargar datos al iniciar
