@@ -1133,21 +1133,26 @@
         } else if (tipoCobro === 'semestral') {
           alert('Procesando cobro semestral...');
           
-          // Para cobro semestral, buscar el botón de semestre seleccionado
-          const semestreSeleccionado = plataforma.querySelector('.periodo-btn.bg-[#3f2a6f]');
-          alert('Semestre seleccionado: ' + (semestreSeleccionado ? 'SÍ' : 'NO'));
+          // Simplificar: buscar cualquier botón de semestre que esté seleccionado
+          const todosSemestres = plataforma.querySelectorAll('.periodo-btn[data-semestre]');
+          alert('Botones de semestre encontrados: ' + todosSemestres.length);
           
-          // Si no encuentra el semestre seleccionado, buscar todos los botones de semestre para debug
-          if (!semestreSeleccionado) {
-            const todosSemestres = plataforma.querySelectorAll('.periodo-btn[data-semestre]');
-            alert('Botones de semestre encontrados: ' + todosSemestres.length);
-            todosSemestres.forEach((btn, index) => {
-              alert('Botón ' + index + ' - Clase: ' + btn.className + ' - Data: ' + btn.dataset.semestre);
-            });
+          let semestreSeleccionado = null;
+          let semestreValor = null;
+          
+          // Buscar el botón que tenga la clase bg-[#3f2a6f]
+          for (let i = 0; i < todosSemestres.length; i++) {
+            const btn = todosSemestres[i];
+            if (btn.className.includes('bg-[#3f2a6f]')) {
+              semestreSeleccionado = btn;
+              semestreValor = btn.dataset.semestre;
+              break;
+            }
           }
           
-          if (semestreSeleccionado && semestreSeleccionado.dataset.semestre) {
-            const semestre = semestreSeleccionado.dataset.semestre;
+          alert('Semestre seleccionado: ' + (semestreSeleccionado ? 'SÍ - ' + semestreValor : 'NO'));
+          
+          if (semestreSeleccionado && semestreValor) {
             const pagadoCheckbox = plataforma.querySelector('#pagado');
             const pagado = pagadoCheckbox ? pagadoCheckbox.checked : false;
             const tipoPagoRadio = plataforma.querySelector('.pago-tipo-general:checked');
@@ -1155,10 +1160,10 @@
             const enTarjetaCheckbox = plataforma.querySelector('.en-tarjeta-checkbox');
             const enTarjeta = enTarjetaCheckbox ? enTarjetaCheckbox.checked : false;
             
-            alert('Datos del pago semestral - Semestre: ' + semestre + ', Pagado: ' + pagado + ', Tipo: ' + tipoPago);
+            alert('Datos del pago semestral - Semestre: ' + semestreValor + ', Pagado: ' + pagado + ', Tipo: ' + tipoPago);
             
             pagos.push({
-              semestre,
+              semestre: semestreValor,
               pagado,
               tipoPago,
               enTarjeta
