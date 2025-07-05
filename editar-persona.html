@@ -53,10 +53,6 @@
           <i class="fas fa-save"></i>
           <span>Guardar</span>
         </button>
-        <button onclick="testComprobante()" class="bg-[#2a2736] text-white px-4 py-2 rounded-lg flex items-center space-x-2 ml-2">
-          <i class="fas fa-camera"></i>
-          <span>Test</span>
-        </button>
     </div>
 
     <div class="space-y-6">
@@ -101,6 +97,31 @@
         <div id="plataformas-container" class="space-y-4">
           <!-- Las plataformas se agregarán aquí dinámicamente -->
         </div>
+      </div>
+
+      <!-- Comprobantes Generales -->
+      <div class="bg-[#1B1930] rounded-xl p-4">
+        <div class="flex justify-between items-center mb-4">
+          <label class="text-gray-400 text-sm">Comprobantes</label>
+          <button class="bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2" onclick="document.getElementById('comprobante-input-general').click()">
+            <i class="fas fa-plus"></i>
+            <span>Agregar</span>
+          </button>
+        </div>
+        
+        <!-- Descripción -->
+        <div class="mb-4">
+          <label class="block text-gray-400 text-sm mb-2">Descripción</label>
+          <textarea id="descripcion-comprobantes" class="w-full bg-[#2a2736] border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:border-[#3f2a6f] resize-none" rows="3" placeholder="Agregar descripción de los comprobantes..."></textarea>
+        </div>
+        
+        <!-- Contenedor de imágenes -->
+        <div class="flex flex-wrap gap-3 mb-4" id="comprobantes-container-general">
+          <!-- Las imágenes se agregarán aquí -->
+        </div>
+        
+        <!-- Input de archivo oculto -->
+        <input type="file" accept="image/*" class="hidden" id="comprobante-input-general">
       </div>
     </div>
   </div>
@@ -398,18 +419,7 @@
           </div>
         </div>
 
-        <!-- Comprobantes -->
-        <div>
-          <label class="block text-gray-400 text-sm mb-2">Comprobantes</label>
-          <div class="flex flex-wrap gap-2 mb-2 comprobantes-container">
-            <!-- Las imágenes se agregarán aquí -->
-          </div>
-          <input type="file" accept="image/*" class="hidden comprobante-input">
-          <button class="agregar-comprobante-btn bg-[#3f2a6f] text-white px-4 py-2 rounded-lg flex items-center space-x-2">
-            <i class="fas fa-plus"></i>
-            <span>Agregar comprobante</span>
-          </button>
-        </div>
+
       </div>
     </div>
   </template>
@@ -514,59 +524,47 @@
           }
         }
 
-        // Cargar comprobantes
-        if (plataforma.comprobantes?.length > 0) {
-          const container = ultimaPlataforma.querySelector('.comprobantes-container');
-          if (container) {
-            plataforma.comprobantes.forEach(src => {
-              const imgWrapper = document.createElement('div');
-              imgWrapper.className = 'relative group';
-              
-              const img = document.createElement('img');
-              img.src = src;
-              img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
-              img.onclick = function() {
-                showImageModal(this.src);
-              };
 
-              const deleteBtn = document.createElement('button');
-              deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
-              deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
-              deleteBtn.onclick = function(e) {
-                e.stopPropagation();
-                imgWrapper.remove();
-              };
-
-              imgWrapper.appendChild(img);
-              imgWrapper.appendChild(deleteBtn);
-              container.appendChild(imgWrapper);
-            });
-          }
-        }
       });
 
       // Calcular total inicial
       const periodoActivo = document.querySelector('#filtro-btn span').textContent.toLowerCase();
       calcularTotal(periodoActivo);
 
-      // Agregar event listeners para los botones de comprobantes en plataformas existentes
-      setTimeout(() => {
-        document.querySelectorAll('.agregar-comprobante-btn').forEach(btn => {
-          const plataforma = btn.closest('.plataforma');
-          const comprobanteInput = plataforma.querySelector('.comprobante-input');
-          if (comprobanteInput) {
-            // Remover event listeners existentes para evitar duplicados
-            btn.removeEventListener('click', btn.comprobanteClickHandler);
+      // Cargar comprobantes generales
+      if (persona.comprobantes?.length > 0) {
+        const container = document.getElementById('comprobantes-container-general');
+        if (container) {
+          persona.comprobantes.forEach(src => {
+            const imgWrapper = document.createElement('div');
+            imgWrapper.className = 'relative group';
             
-            // Crear nuevo handler
-            btn.comprobanteClickHandler = function() {
-              comprobanteInput.click();
+            const img = document.createElement('img');
+            img.src = src;
+            img.className = 'w-24 h-24 object-cover rounded-lg cursor-pointer';
+            img.onclick = function() {
+              showImageModal(this.src);
             };
-            
-            btn.addEventListener('click', btn.comprobanteClickHandler);
-          }
-        });
-      }, 100);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
+            deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
+            deleteBtn.onclick = function(e) {
+              e.stopPropagation();
+              imgWrapper.remove();
+            };
+
+            imgWrapper.appendChild(img);
+            imgWrapper.appendChild(deleteBtn);
+            container.appendChild(imgWrapper);
+          });
+        }
+      }
+
+      // Cargar descripción de comprobantes
+      if (persona.descripcionComprobantes) {
+        document.getElementById('descripcion-comprobantes').value = persona.descripcionComprobantes;
+      }
     }
 
     function agregarPlataforma() {
@@ -701,15 +699,7 @@
         }
       });
 
-      // Agregar event listener al botón de agregar comprobante
-      const agregarComprobanteBtn = nuevaPlataforma.querySelector('.agregar-comprobante-btn');
-      const comprobanteInput = nuevaPlataforma.querySelector('.comprobante-input');
-      
-      if (agregarComprobanteBtn && comprobanteInput) {
-        agregarComprobanteBtn.addEventListener('click', function() {
-          comprobanteInput.click();
-        });
-      }
+
     }
 
     function togglePlataforma(button) {
@@ -817,8 +807,8 @@
       }
     });
 
-    // Función para manejar la subida de comprobantes
-    function handleComprobanteUpload(input) {
+    // Función para manejar la subida de comprobantes generales
+    function handleComprobanteGeneralUpload(input) {
       const file = input.files[0];
       if (file) {
         // Verificar que es una imagen
@@ -828,17 +818,16 @@
         }
 
         const reader = new FileReader();
-        const plataforma = input.closest('.plataforma');
         
         reader.onload = function(event) {
-          const container = plataforma.querySelector('.comprobantes-container');
+          const container = document.getElementById('comprobantes-container-general');
           if (container) {
             const imgWrapper = document.createElement('div');
             imgWrapper.className = 'relative group';
             
             const img = document.createElement('img');
             img.src = event.target.result;
-            img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
+            img.className = 'w-24 h-24 object-cover rounded-lg cursor-pointer';
             img.onclick = function() {
               showImageModal(this.src);
             };
@@ -870,22 +859,10 @@
       }
     }
 
-    // Manejar la subida de imágenes usando delegación de eventos
+    // Manejar la subida de imágenes generales
     document.addEventListener('change', function(e) {
-      if (e.target.classList.contains('comprobante-input')) {
-        handleComprobanteUpload(e.target);
-      }
-    });
-
-    // También manejar clicks en botones de agregar comprobante usando delegación
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.agregar-comprobante-btn')) {
-        const btn = e.target.closest('.agregar-comprobante-btn');
-        const plataforma = btn.closest('.plataforma');
-        const comprobanteInput = plataforma.querySelector('.comprobante-input');
-        if (comprobanteInput) {
-          comprobanteInput.click();
-        }
+      if (e.target.id === 'comprobante-input-general') {
+        handleComprobanteGeneralUpload(e.target);
       }
     });
 
@@ -1064,10 +1041,7 @@
           }
         });
 
-        const comprobantes = [];
-        plataforma.querySelectorAll('.comprobantes-container img').forEach(img => {
-          comprobantes.push(img.src);
-        });
+
 
         let pagos = [];
         if (tipoCobro === 'mensual') {
@@ -1101,15 +1075,25 @@
           nombre: nombrePlataforma,
           precio,
           tipoCobro,
-          comprobantes,
           pagos
         });
       });
+
+      // Recolectar comprobantes generales
+      const comprobantes = [];
+      document.querySelectorAll('#comprobantes-container-general img').forEach(img => {
+        comprobantes.push(img.src);
+      });
+
+      // Obtener descripción de comprobantes
+      const descripcionComprobantes = document.getElementById('descripcion-comprobantes').value;
 
       const persona = {
         id: personaId ? parseInt(personaId) : Date.now(),
         nombre,
         plataformas,
+        comprobantes,
+        descripcionComprobantes,
         fechaCreacion: new Date().toISOString()
       };
 
@@ -1135,46 +1119,7 @@
 
 
 
-    // Función de prueba para comprobantes
-    function testComprobante() {
-      const plataformas = document.querySelectorAll('.plataforma');
-      if (plataformas.length === 0) {
-        alert('No hay plataformas para probar');
-        return;
-      }
-      
-      let agregadas = 0;
-      plataformas.forEach((plataforma, index) => {
-        const container = plataforma.querySelector('.comprobantes-container');
-        if (container) {
-          // Crear una imagen de prueba
-          const imgWrapper = document.createElement('div');
-          imgWrapper.className = 'relative group';
-          
-          const img = document.createElement('img');
-          img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjM0YyQTY2Ii8+Cjx0ZXh0IHg9IjQwIiB5PSI0NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VGVzdDwvdGV4dD4KPC9zdmc+';
-          img.className = 'w-20 h-20 object-cover rounded-lg cursor-pointer';
-          img.onclick = function() {
-            showImageModal(this.src);
-          };
 
-          const deleteBtn = document.createElement('button');
-          deleteBtn.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200';
-          deleteBtn.innerHTML = '<i class="fas fa-times text-sm"></i>';
-          deleteBtn.onclick = function(e) {
-            e.stopPropagation();
-            imgWrapper.remove();
-          };
-
-          imgWrapper.appendChild(img);
-          imgWrapper.appendChild(deleteBtn);
-          container.appendChild(imgWrapper);
-          agregadas++;
-        }
-      });
-      
-      alert(`Imágenes de prueba agregadas en ${agregadas} de ${plataformas.length} plataformas.`);
-    }
 
     // Cargar datos al iniciar
     document.addEventListener('DOMContentLoaded', cargarPersona);
