@@ -1076,10 +1076,7 @@
 
     // Función para guardar la persona
     function guardarPersona() {
-      alert('Función guardarPersona llamada');
-      
       const nombre = document.getElementById('nombre-input').value;
-      alert('Nombre: ' + nombre);
       
       if (!nombre) {
         alert('Por favor ingrese el nombre de la persona');
@@ -1087,13 +1084,9 @@
       }
 
       const plataformas = [];
-      alert('Procesando plataformas...');
       
       document.querySelectorAll('.plataforma').forEach((plataforma, index) => {
-        alert(`Procesando plataforma ${index + 1}`);
-        
         const nombrePlataforma = plataforma.querySelector('.plataforma-nombre').textContent;
-        alert('Nombre plataforma: ' + nombrePlataforma);
         
         if (!nombrePlataforma || nombrePlataforma === 'Nombre de plataforma') {
           alert('Por favor seleccione una plataforma para cada suscripción');
@@ -1110,7 +1103,7 @@
           }
         });
         
-        alert('Tipo de cobro: ' + tipoCobro);
+
 
 
 
@@ -1131,8 +1124,6 @@
             }
           });
         } else if (tipoCobro === 'semestral') {
-          alert('Procesando cobro semestral...');
-          
           // Buscar el semestre seleccionado de forma más simple
           let semestreSeleccionado = null;
           
@@ -1140,14 +1131,11 @@
           const contenedorSemestral = plataforma.querySelector('#periodo-semestral');
           if (contenedorSemestral) {
             const botones = contenedorSemestral.querySelectorAll('button');
-            alert('Botones encontrados en semestral: ' + botones.length);
             
             for (let i = 0; i < botones.length; i++) {
               const btn = botones[i];
-              alert('Botón ' + i + ' - Clase: ' + btn.className);
               if (btn.className.includes('bg-[#3f2a6f]')) {
                 semestreSeleccionado = btn.dataset.semestre;
-                alert('Semestre seleccionado: ' + semestreSeleccionado);
                 break;
               }
             }
@@ -1155,7 +1143,6 @@
           
           // Si no se encontró, usar el que esté visible
           if (!semestreSeleccionado) {
-            alert('No se encontró semestre seleccionado, usando Jul-Dic por defecto');
             semestreSeleccionado = '2';
           }
           
@@ -1165,8 +1152,6 @@
           const tipoPago = tipoPagoRadio ? tipoPagoRadio.nextElementSibling.textContent : '';
           const enTarjetaCheckbox = plataforma.querySelector('.en-tarjeta-checkbox');
           const enTarjeta = enTarjetaCheckbox ? enTarjetaCheckbox.checked : false;
-          
-          alert('Datos del pago semestral - Semestre: ' + semestreSeleccionado + ', Pagado: ' + pagado + ', Tipo: ' + tipoPago);
           
           pagos.push({
             semestre: semestreSeleccionado,
@@ -1230,7 +1215,6 @@
         personas.push(persona);
       }
       
-      alert('Persona guardada exitosamente');
       localStorage.setItem('personas', JSON.stringify(personas));
 
       // Redirigir a la página de personas
@@ -1248,12 +1232,7 @@
       // Agregar event listener al botón de guardar
       const guardarBtn = document.getElementById('guardar-btn');
       if (guardarBtn) {
-        guardarBtn.addEventListener('click', function() {
-          alert('Botón de guardar clickeado');
-          guardarPersona();
-        });
-      } else {
-        alert('No se encontró el botón de guardar');
+        guardarBtn.addEventListener('click', guardarPersona);
       }
     });
   </script>
