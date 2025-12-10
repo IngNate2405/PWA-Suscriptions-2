@@ -41,9 +41,15 @@
   <div class="container mx-auto px-4 pt-4 pb-20">
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl font-extrabold leading-tight">Archivo de Datos</h1>
-      <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
-        <i class="fas fa-arrow-left text-xl"></i>
-      </button>
+      <div class="flex items-center space-x-3">
+        <button onclick="exportarDatos()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm flex items-center space-x-2">
+          <i class="fas fa-download"></i>
+          <span>Exportar Datos</span>
+        </button>
+        <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
+          <i class="fas fa-arrow-left text-xl"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Sección de Resumen por Usuario -->
@@ -104,6 +110,167 @@
 
   <script>
     const conversionRate = 8; // Tasa de conversión USD a GTQ
+
+    // Función para mostrar notificación
+    function showNotification(title, message) {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `
+        <div class="font-semibold">${title}</div>
+        <div class="text-sm">${message}</div>
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Función para exportar datos
+    function exportarDatos() {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const suscripciones = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      
+      // Generar resumen completo
+      let resumen = '=== ARCHIVO DE DATOS - APP SUSCRIPCIONES ===\n\n';
+      resumen += `Fecha de exportación: ${new Date().toLocaleString('es-GT')}\n\n`;
+      
+      // Resumen por usuario
+      resumen += '=== RESUMEN POR USUARIO ===\n\n';
+      if (personas.length === 0) {
+        resumen += 'No hay usuarios registrados\n\n';
+      } else {
+        personas.forEach(persona => {
+          resumen += `${persona.nombre}\n`;
+          persona.plataformas.forEach(plataforma => {
+            const precioMensual = calcularPrecioMensual(plataforma.precio, plataforma.tipoCobro);
+            const precioSemestral = calcularPrecioSemestral(plataforma.precio, plataforma.tipoCobro);
+            resumen += `  ${plataforma.nombre}: Q${precioMensual.toFixed(2)}/m Q${precioSemestral.toFixed(2)}/6m\n`;
+          });
+          resumen += '\n';
+        });
+      }
+      
+      // Estadísticas generales
+      resumen += '=== ESTADÍSTICAS GENERALES ===\n\n';
+      const usuariosActivos = personas.length;
+      let gastosMensuales = 0;
+      let ingresosMensuales = 0;
+      let gananciasMensuales = 0;
+      
+      suscripciones.forEach(sub => {
+        if (sub.list === 'compartido' && sub.status !== 'paused') {
+          const precioUSD = parseFloat(sub.original_price_usd) || 0;
+          const precioGTQ = precioUSD * conversionRate;
+          
+          let meses = 1;
+          switch((sub.billing || '').toLowerCase()) {
+            case 'anual': meses = 12; break;
+            case 'semestral': meses = 6; break;
+            case 'trimestral': meses = 3; break;
+            default: meses = 1;
+          }
+          
+          gastosMensuales += precioGTQ / meses;
+          
+          const ganancia = parseFloat(sub.ganancia) || 0;
+          gananciasMensuales += ganancia / meses;
+        }
+      });
+      
+      personas.forEach(persona => {
+        persona.plataformas.forEach(plataforma => {
+          ingresosMensuales += calcularPrecioMensual(plataforma.precio, plataforma.tipoCobro);
+        });
+      });
+      
+      const gastosSemestrales = gastosMensuales * 6;
+      const ingresosSemestrales = ingresosMensuales * 6;
+      const gananciasSemestrales = gananciasMensuales * 6;
+      const beneficioMensual = ingresosMensuales - gastosMensuales + gananciasMensuales;
+      
+      resumen += `Usuarios Activos: ${usuariosActivos}\n`;
+      resumen += `Ingresos Mensuales: Q${ingresosMensuales.toFixed(2)}\n`;
+      resumen += `Gastos Mensuales: Q${gastosMensuales.toFixed(2)}\n`;
+      resumen += `Ganancias Mensuales: Q${gananciasMensuales.toFixed(2)}\n`;
+      resumen += `Ingresos Semestrales: Q${ingresosSemestrales.toFixed(2)}\n`;
+      resumen += `Gastos Semestrales: Q${gastosSemestrales.toFixed(2)}\n`;
+      resumen += `Ganancias Semestrales: Q${gananciasSemestrales.toFixed(2)}\n`;
+      resumen += `Beneficio Neto Mensual: Q${beneficioMensual.toFixed(2)}\n\n`;
+      
+      // Resumen de aplicaciones
+      resumen += '=== APLICACIONES ===\n\n';
+      const appsMap = new Map();
+      
+      suscripciones.forEach(sub => {
+        if (sub.status === 'paused') return;
+        
+        const nombre = sub.name;
+        if (!appsMap.has(nombre)) {
+          appsMap.set(nombre, {
+            nombre: nombre,
+            gastoMensual: 0,
+            gananciaMensual: 0,
+            usuarios: new Set()
+          });
+        }
+        
+        const app = appsMap.get(nombre);
+        const precioUSD = parseFloat(sub.original_price_usd) || 0;
+        const precioGTQ = precioUSD * conversionRate;
+        
+        let meses = 1;
+        switch((sub.billing || '').toLowerCase()) {
+          case 'anual': meses = 12; break;
+          case 'semestral': meses = 6; break;
+          case 'trimestral': meses = 3; break;
+          default: meses = 1;
+        }
+        
+        app.gastoMensual += precioGTQ / meses;
+        
+        const ganancia = parseFloat(sub.ganancia) || 0;
+        app.gananciaMensual += ganancia / meses;
+        
+        if (sub.list === 'compartido') {
+          personas.forEach(persona => {
+            persona.plataformas.forEach(plataforma => {
+              if (plataforma.nombre === nombre) {
+                app.usuarios.add(persona.nombre);
+              }
+            });
+          });
+        }
+      });
+      
+      const appsArray = Array.from(appsMap.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
+      
+      if (appsArray.length === 0) {
+        resumen += 'No hay aplicaciones registradas\n\n';
+      } else {
+        appsArray.forEach(app => {
+          const beneficioMensual = app.gananciaMensual - app.gastoMensual;
+          resumen += `${app.nombre}\n`;
+          resumen += `  Usuarios: ${app.usuarios.size}\n`;
+          resumen += `  Gasto mensual: Q${app.gastoMensual.toFixed(2)}\n`;
+          resumen += `  Ganancia mensual: Q${app.gananciaMensual.toFixed(2)}\n`;
+          resumen += `  Beneficio mensual: Q${beneficioMensual.toFixed(2)}\n\n`;
+        });
+      }
+      
+      // Crear y descargar archivo
+      const blob = new Blob([resumen], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `archivo-datos-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      showNotification('Datos exportados', 'El archivo se ha descargado correctamente');
+    }
 
     // Función para calcular precio mensual según tipo de cobro
     function calcularPrecioMensual(precio, tipoCobro) {
