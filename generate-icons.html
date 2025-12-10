@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Iconos - App Suscripciones</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0D0A1A;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .icon-preview {
+            display: inline-block;
+            margin: 10px;
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #1B1930;
+            border-radius: 8px;
+            margin: 5px;
+        }
+        button {
+            background: #3f2a6f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #4f3a7f;
+        }
+        .download-all {
+            background: #2a6f3f;
+            font-size: 16px;
+            padding: 15px 30px;
+        }
+        .download-all:hover {
+            background: #3a7f4f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Generador de Iconos - App Suscripciones</h1>
+        <p>Genera todos los iconos necesarios para tu PWA</p>
+        
+        <button onclick="generateAllIcons()" class="download-all">🔄 Generar Todos los Iconos</button>
+        <button onclick="downloadAllIcons()" class="download-all">💾 Descargar Todos los Iconos</button>
+        
+        <div id="iconContainer"></div>
+    </div>
+
+    <script>
+        const iconSizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const generatedIcons = [];
+
+        function generateIcon(size) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Fondo degradado
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#1B1930');
+            gradient.addColorStop(1, '#3f2a6f');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Borde redondeado
+            ctx.globalCompositeOperation = 'destination-in';
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.2);
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // Símbolo de suscripción (dólar estilizado)
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${size * 0.4}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('$', size / 2, size / 2);
+            
+            // Círculo decorativo
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = size * 0.02;
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size * 0.35, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            return canvas;
+        }
+
+        function generateAllIcons() {
+            const container = document.getElementById('iconContainer');
+            container.innerHTML = '';
+            generatedIcons.length = 0;
+            
+            iconSizes.forEach(size => {
+                const canvas = generateIcon(size);
+                generatedIcons.push({ canvas, size });
+                
+                const div = document.createElement('div');
+                div.className = 'icon-preview';
+                div.innerHTML = `
+                    <canvas id="icon-${size}"></canvas>
+                    <div>${size}x${size}</div>
+                `;
+                container.appendChild(div);
+                
+                // Copiar el canvas generado al elemento mostrado
+                const displayCanvas = document.getElementById(`icon-${size}`);
+                const displayCtx = displayCanvas.getContext('2d');
+                displayCanvas.width = size;
+                displayCanvas.height = size;
+                displayCtx.drawImage(canvas, 0, 0);
+            });
+        }
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadAllIcons() {
+            if (generatedIcons.length === 0) {
+                alert('Primero genera los iconos');
+                return;
+            }
+            
+            generatedIcons.forEach(({ canvas, size }) => {
+                downloadCanvas(canvas, `icon-${size}x${size}.png`);
+            });
+            
+            // Crear archivo ZIP con todos los iconos
+            setTimeout(() => {
+                alert('Todos los iconos han sido descargados. Ahora cópialos a la carpeta "icons/" de tu aplicación.');
+            }, 1000);
+        }
+
+        // Generar iconos al cargar la página
+        window.addEventListener('load', generateAllIcons);
+    </script>
+</body>
+</html> 

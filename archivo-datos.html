@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <title>Archivo de Datos - App Suscripciones</title>
+  <meta name="description" content="Resumen de datos de usuarios y suscripciones">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none !important;
+    }
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none !important;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    html, body {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+  </style>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-extrabold leading-tight">Archivo de Datos</h1>
+      <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
+        <i class="fas fa-arrow-left text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Sección de Resumen por Usuario -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Resumen por Usuario</h2>
+      <div id="usuarios-resumen" class="space-y-4">
+        <!-- Se cargará dinámicamente -->
+      </div>
+    </div>
+
+    <!-- Sección de Estadísticas Generales -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Estadísticas Generales</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <p class="text-gray-400 text-sm mb-1">Usuarios Activos</p>
+          <p class="text-2xl font-bold" id="usuarios-activos">0</p>
+        </div>
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <p class="text-gray-400 text-sm mb-1">Ingresos Mensuales</p>
+          <p class="text-2xl font-bold text-blue-400" id="ingresos-mensuales">Q0.00</p>
+        </div>
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <p class="text-gray-400 text-sm mb-1">Gastos Mensuales</p>
+          <p class="text-2xl font-bold text-red-400" id="gastos-mensuales">Q0.00</p>
+        </div>
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <p class="text-gray-400 text-sm mb-1">Ganancias Mensuales</p>
+          <p class="text-2xl font-bold text-green-400" id="ganancias-mensuales">Q0.00</p>
+        </div>
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <p class="text-gray-400 text-sm mb-1">Ingresos Semestrales</p>
+          <p class="text-2xl font-bold text-blue-400" id="ingresos-semestrales">Q0.00</p>
+        </div>
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <p class="text-gray-400 text-sm mb-1">Gastos Semestrales</p>
+          <p class="text-2xl font-bold text-red-400" id="gastos-semestrales">Q0.00</p>
+        </div>
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <p class="text-gray-400 text-sm mb-1">Ganancias Semestrales</p>
+          <p class="text-2xl font-bold text-green-400" id="ganancias-semestrales">Q0.00</p>
+        </div>
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <p class="text-gray-400 text-sm mb-1">Beneficio Neto Mensual</p>
+          <p class="text-2xl font-bold" id="beneficio-mensual">Q0.00</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Aplicaciones -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Aplicaciones</h2>
+      <div id="aplicaciones-resumen" class="space-y-3">
+        <!-- Se cargará dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const conversionRate = 8; // Tasa de conversión USD a GTQ
+
+    // Función para calcular precio mensual según tipo de cobro
+    function calcularPrecioMensual(precio, tipoCobro) {
+      switch(tipoCobro) {
+        case 'mensual': return precio;
+        case 'trimestral': return precio / 3;
+        case 'semestral': return precio / 6;
+        case 'anual': return precio / 12;
+        default: return precio;
+      }
+    }
+
+    // Función para calcular precio semestral según tipo de cobro
+    function calcularPrecioSemestral(precio, tipoCobro) {
+      switch(tipoCobro) {
+        case 'mensual': return precio * 6;
+        case 'trimestral': return precio * 2;
+        case 'semestral': return precio;
+        case 'anual': return precio / 2;
+        default: return precio * 6;
+      }
+    }
+
+    // Función para cargar resumen de usuarios
+    function cargarResumenUsuarios() {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const container = document.getElementById('usuarios-resumen');
+      
+      if (personas.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-4">No hay usuarios registrados</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      
+      personas.forEach(persona => {
+        const usuarioDiv = document.createElement('div');
+        usuarioDiv.className = 'bg-[#2a2736] rounded-lg p-4';
+        
+        let contenido = `<h3 class="text-lg font-semibold mb-3">${persona.nombre}</h3>`;
+        contenido += '<div class="space-y-2">';
+        
+        persona.plataformas.forEach(plataforma => {
+          const precioMensual = calcularPrecioMensual(plataforma.precio, plataforma.tipoCobro);
+          const precioSemestral = calcularPrecioSemestral(plataforma.precio, plataforma.tipoCobro);
+          
+          contenido += `
+            <div class="flex justify-between items-center text-sm">
+              <span class="text-gray-300">${plataforma.nombre}</span>
+              <div class="text-right">
+                <span class="text-white">Q${precioMensual.toFixed(2)}/m</span>
+                <span class="text-gray-500 ml-2">Q${precioSemestral.toFixed(2)}/6m</span>
+              </div>
+            </div>
+          `;
+        });
+        
+        contenido += '</div>';
+        usuarioDiv.innerHTML = contenido;
+        container.appendChild(usuarioDiv);
+      });
+    }
+
+    // Función para cargar estadísticas generales
+    function cargarEstadisticasGenerales() {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const suscripciones = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      
+      // Calcular usuarios activos
+      const usuariosActivos = personas.length;
+      document.getElementById('usuarios-activos').textContent = usuariosActivos;
+      
+      // Calcular gastos mensuales (de suscripciones compartidas)
+      let gastosMensuales = 0;
+      suscripciones.forEach(sub => {
+        if (sub.list === 'compartido' && sub.status !== 'paused') {
+          const precioUSD = parseFloat(sub.original_price_usd) || 0;
+          const precioGTQ = precioUSD * conversionRate;
+          
+          let meses = 1;
+          switch((sub.billing || '').toLowerCase()) {
+            case 'anual': meses = 12; break;
+            case 'semestral': meses = 6; break;
+            case 'trimestral': meses = 3; break;
+            default: meses = 1;
+          }
+          
+          gastosMensuales += precioGTQ / meses;
+        }
+      });
+      
+      // Calcular gastos mensuales de personas (lo que cobran)
+      let ingresosMensuales = 0;
+      personas.forEach(persona => {
+        persona.plataformas.forEach(plataforma => {
+          ingresosMensuales += calcularPrecioMensual(plataforma.precio, plataforma.tipoCobro);
+        });
+      });
+      
+      // Calcular ganancias mensuales (de suscripciones)
+      let gananciasMensuales = 0;
+      suscripciones.forEach(sub => {
+        if (sub.list === 'compartido' && sub.status !== 'paused') {
+          const ganancia = parseFloat(sub.ganancia) || 0;
+          
+          let meses = 1;
+          switch((sub.billing || '').toLowerCase()) {
+            case 'anual': meses = 12; break;
+            case 'semestral': meses = 6; break;
+            case 'trimestral': meses = 3; break;
+            default: meses = 1;
+          }
+          
+          gananciasMensuales += ganancia / meses;
+        }
+      });
+      
+      // Calcular ingresos, gastos y ganancias semestrales
+      const ingresosSemestrales = ingresosMensuales * 6;
+      const gastosSemestrales = gastosMensuales * 6;
+      const gananciasSemestrales = gananciasMensuales * 6;
+      
+      // Calcular beneficio neto mensual
+      const beneficioMensual = ingresosMensuales - gastosMensuales + gananciasMensuales;
+      
+      // Actualizar la interfaz
+      document.getElementById('ingresos-mensuales').textContent = `Q${ingresosMensuales.toFixed(2)}`;
+      document.getElementById('gastos-mensuales').textContent = `Q${gastosMensuales.toFixed(2)}`;
+      document.getElementById('ganancias-mensuales').textContent = `Q${gananciasMensuales.toFixed(2)}`;
+      document.getElementById('ingresos-semestrales').textContent = `Q${ingresosSemestrales.toFixed(2)}`;
+      document.getElementById('gastos-semestrales').textContent = `Q${gastosSemestrales.toFixed(2)}`;
+      document.getElementById('ganancias-semestrales').textContent = `Q${gananciasSemestrales.toFixed(2)}`;
+      
+      const beneficioColor = beneficioMensual >= 0 ? 'text-green-400' : 'text-red-400';
+      document.getElementById('beneficio-mensual').textContent = `Q${beneficioMensual.toFixed(2)}`;
+      document.getElementById('beneficio-mensual').className = `text-2xl font-bold ${beneficioColor}`;
+    }
+
+    // Función para cargar resumen de aplicaciones
+    function cargarResumenAplicaciones() {
+      const suscripciones = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const container = document.getElementById('aplicaciones-resumen');
+      
+      // Agrupar suscripciones por nombre
+      const appsMap = new Map();
+      
+      suscripciones.forEach(sub => {
+        if (sub.status === 'paused') return;
+        
+        const nombre = sub.name;
+        if (!appsMap.has(nombre)) {
+          appsMap.set(nombre, {
+            nombre: nombre,
+            logo: sub.logo || '',
+            gastoMensual: 0,
+            gananciaMensual: 0,
+            usuarios: new Set()
+          });
+        }
+        
+        const app = appsMap.get(nombre);
+        const precioUSD = parseFloat(sub.original_price_usd) || 0;
+        const precioGTQ = precioUSD * conversionRate;
+        
+        let meses = 1;
+        switch((sub.billing || '').toLowerCase()) {
+          case 'anual': meses = 12; break;
+          case 'semestral': meses = 6; break;
+          case 'trimestral': meses = 3; break;
+          default: meses = 1;
+        }
+        
+        app.gastoMensual += precioGTQ / meses;
+        
+        const ganancia = parseFloat(sub.ganancia) || 0;
+        app.gananciaMensual += ganancia / meses;
+        
+        // Contar usuarios de esta app
+        if (sub.list === 'compartido') {
+          personas.forEach(persona => {
+            persona.plataformas.forEach(plataforma => {
+              if (plataforma.nombre === nombre) {
+                app.usuarios.add(persona.nombre);
+              }
+            });
+          });
+        }
+      });
+      
+      if (appsMap.size === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center py-4">No hay aplicaciones registradas</p>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      // Ordenar por nombre
+      const appsArray = Array.from(appsMap.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
+      
+      appsArray.forEach(app => {
+        const appDiv = document.createElement('div');
+        appDiv.className = 'bg-[#2a2736] rounded-lg p-4';
+        
+        const beneficioMensual = app.gananciaMensual - app.gastoMensual;
+        const beneficioColor = beneficioMensual >= 0 ? 'text-green-400' : 'text-red-400';
+        
+        appDiv.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <img src="${app.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png'}" 
+                   alt="${app.nombre}" 
+                   class="w-10 h-10 rounded-lg object-cover">
+              <div>
+                <h3 class="font-semibold">${app.nombre}</h3>
+                <p class="text-gray-400 text-sm">${app.usuarios.size} usuario${app.usuarios.size !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm">
+                <p class="text-gray-400">Gasto: <span class="text-red-400">Q${app.gastoMensual.toFixed(2)}/m</span></p>
+                <p class="text-gray-400">Ganancia: <span class="text-green-400">Q${app.gananciaMensual.toFixed(2)}/m</span></p>
+                <p class="text-gray-400 mt-1">Beneficio: <span class="${beneficioColor}">Q${beneficioMensual.toFixed(2)}/m</span></p>
+              </div>
+            </div>
+          </div>
+        `;
+        container.appendChild(appDiv);
+      });
+    }
+
+    // Cargar todos los datos al iniciar
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarResumenUsuarios();
+      cargarEstadisticasGenerales();
+      cargarResumenAplicaciones();
+    });
+
+    // Bloquear pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+    // Bloquear doble tap zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-xl"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+</body>
+</html>
+

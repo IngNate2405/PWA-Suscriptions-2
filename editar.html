@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Editar Suscripción - App Suscripciones</title>
+  <meta name="description" content="Editar suscripción">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    /* Ocultar scrollbars en móvil */
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none;
+    }
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Custom toggle switch */
+    input[type="checkbox"] {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      width: 2.5rem;
+      height: 1.25rem;
+      background-color: #3f3f46;
+      border-radius: 9999px;
+      position: relative;
+      cursor: pointer;
+      outline: none;
+      transition: background-color 0.2s ease-in-out;
+    }
+    input[type="checkbox"]:checked {
+      background-color: #fff;
+    }
+    input[type="checkbox"]::before {
+      content: "";
+      position: absolute;
+      top: 0.125rem;
+      left: 0.125rem;
+      width: 1rem;
+      height: 1rem;
+      background-color: white;
+      border-radius: 9999px;
+      transition: transform 0.2s ease-in-out;
+      box-shadow: 0 0 2px rgb(0 0 0 / 0.2);
+    }
+    input[type="checkbox"]:checked::before {
+      transform: translateX(1.25rem);
+      background-color: #000;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Estilo para inputs de fecha */
+    input[type="date"] {
+      position: relative;
+      color: white;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+      opacity: 1;
+      filter: invert(1);
+    }
+    /* Quitar los spinners de los inputs numéricos */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+  </style>
+  <script>
+    // Función para obtener el ID de la suscripción de la URL
+    function getSubscriptionId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id');
+    }
+
+    // Función para formatear como moneda
+    function formatCurrency(value) {
+      const number = value.replace(/[^0-9]/g, '');
+      return `Q${number}.00`;
+    }
+
+    // Función para formatear la fecha como dd/mm/yyyy
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    // Función para formatear la hora como HH:mm
+    function formatTime(date) {
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes}`;
+    }
+
+    // Función para convertir fecha dd/mm/yyyy a formato ISO
+    function parseDate(dateString) {
+      const [day, month, year] = dateString.split('/');
+      return `${year}-${month}-${day}`;
+    }
+
+    // Función para formatear la fecha para el input type="date" (yyyy-MM-dd)
+    function formatDateForInput(dateString) {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`; // Formato yyyy-MM-dd
+    }
+
+    // Función para mostrar la fecha en formato dd-MM-yyyy
+    function displayDate(dateString) {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+
+    // Función para calcular la conversión y ganancia
+    function calculatePrices() {
+      const originalPriceUSD = parseFloat(document.querySelector('input[name="original_price_usd"]').value) || 0;
+      const debitPriceGTQ = parseFloat(document.querySelector('input[name="debit_price_gtq"]').value) || 0;
+      const billing = document.querySelector('select[name="billing"]').value;
+      const nombreSuscripcion = document.querySelector('input[name="name"]').value;
+      
+      // Calcular conversión (USD a GTQ)
+      const conversionRate = 8;
+      const convertedPrice = originalPriceUSD * conversionRate;
+      document.getElementById('conversion_display').textContent = convertedPrice.toFixed(2);
+      
+      // Obtener todas las personas y sus suscripciones
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      let totalCobro = 0;
+
+      // Calcular el total de cobro basado en los pagos de las personas
+      personas.forEach(persona => {
+        persona.plataformas.forEach(plataforma => {
+          if (plataforma.nombre === nombreSuscripcion) {
+            let pago = parseFloat(plataforma.precio) || 0;
+            let cicloPersona = plataforma.tipoCobro || 'mensual';
+            let cicloSuscripcion = billing || 'mensual';
+            let factor = 1;
+            if (cicloPersona === cicloSuscripcion) {
+              factor = 1;
+            } else if (cicloPersona === 'mensual' && cicloSuscripcion === 'semestral') {
+              factor = 6;
+            } else if (cicloPersona === 'mensual' && cicloSuscripcion === 'anual') {
+              factor = 12;
+            } else if (cicloPersona === 'semestral' && cicloSuscripcion === 'mensual') {
+              factor = 1/6;
+            } else if (cicloPersona === 'anual' && cicloSuscripcion === 'mensual') {
+              factor = 1/12;
+            } else if (cicloPersona === 'semestral' && cicloSuscripcion === 'anual') {
+              factor = 2;
+            } else if (cicloPersona === 'anual' && cicloSuscripcion === 'semestral') {
+              factor = 0.5;
+            } else if (cicloPersona === 'trimestral' && cicloSuscripcion === 'mensual') {
+              factor = 1/3;
+            } else if (cicloPersona === 'mensual' && cicloSuscripcion === 'trimestral') {
+              factor = 3;
+            } else if (cicloPersona === 'trimestral' && cicloSuscripcion === 'semestral') {
+              factor = 2;
+            } else if (cicloPersona === 'semestral' && cicloSuscripcion === 'trimestral') {
+              factor = 0.5;
+            } else if (cicloPersona === 'trimestral' && cicloSuscripcion === 'anual') {
+              factor = 4;
+            } else if (cicloPersona === 'anual' && cicloSuscripcion === 'trimestral') {
+              factor = 0.25;
+            }
+            totalCobro += pago * factor;
+          }
+        });
+      });
+
+      // Actualizar el precio de cobro
+      document.getElementById('charge_price_display').textContent = totalCobro.toFixed(2);
+      
+      // Calcular ganancia
+      let profit = 0;
+      if (totalCobro > 0) {
+        profit = totalCobro - debitPriceGTQ;
+      } else {
+        profit = convertedPrice - debitPriceGTQ;
+      }
+      document.getElementById('profit_display').textContent = profit.toFixed(2);
+    }
+
+    // Función para cargar los datos de la suscripción
+    function loadSubscriptionData() {
+      const params = new URLSearchParams(window.location.search);
+      const isNew = params.get('new') === 'true';
+      const subscriptionId = params.get('id');
+
+      if (!isNew && !subscriptionId) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      if (isNew) {
+        // Mostrar logo genérico para nueva suscripción
+        document.getElementById('subscription-logo').src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png';
+        // Limpiar todos los campos para una nueva suscripción
+        document.querySelector('input[name="name"]').value = '';
+        document.querySelector('select[name="billing"]').value = 'mensual';
+        
+        // Cambiar el título para nueva suscripción
+        document.getElementById('pageTitle').textContent = 'Nueva Suscripción';
+        
+        // Establecer la fecha actual como primer pago
+        const today = new Date();
+        document.querySelector('input[name="nextPayment"]').value = today.toISOString().split('T')[0];
+        
+        document.querySelector('input[name="category"]').value = 'Streaming';
+        document.querySelector('select[name="list"]').value = 'personal';
+        
+        // Configurar notificaciones por defecto
+        document.querySelector('input[name="notification_1day"]').checked = false;
+        document.querySelector('input[name="notification_2days"]').checked = false;
+        document.querySelector('input[name="notification_sameday"]').checked = false;
+        document.querySelector('input[name="notification_custom"]').checked = false;
+        document.querySelector('input[name="notification_custom_days"]').value = '';
+        document.querySelector('input[name="notification_custom_days"]').disabled = true;
+        
+        // Limpiar campos de precio
+        document.querySelector('input[name="original_price_usd"]').value = '';
+        document.querySelector('input[name="debit_price_gtq"]').value = '';
+        // No limpiar charge_price_gtq porque no existe como input, solo como display
+        document.getElementById('conversion_display').textContent = '0.00';
+        document.getElementById('charge_price_display').textContent = '0.00';
+        document.getElementById('profit_display').textContent = '0.00';
+        return;
+      }
+
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+      if (subscription) {
+        // Cargar el logo si existe
+        if (subscription.logo && subscription.logo !== 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png') {
+          document.getElementById('subscription-logo').src = subscription.logo;
+          document.getElementById('delete-logo-btn').style.display = 'block';
+        } else {
+          document.getElementById('delete-logo-btn').style.display = 'none';
+        }
+        // Cargar campos básicos
+        const nameInput = document.querySelector('input[name="name"]');
+        const billingSelect = document.querySelector('select[name="billing"]');
+        const nextPaymentInput = document.querySelector('input[name="nextPayment"]');
+        const categoryInput = document.querySelector('input[name="category"]');
+        const listSelect = document.querySelector('select[name="list"]');
+
+        if (nameInput) nameInput.value = subscription.name || '';
+        if (billingSelect) billingSelect.value = subscription.billing || 'mensual';
+        if (nextPaymentInput) {
+          const nextPaymentDate = new Date(subscription.nextPayment);
+          nextPaymentInput.value = nextPaymentDate.toISOString().split('T')[0];
+        }
+        if (categoryInput) categoryInput.value = subscription.category || '';
+        if (listSelect) {
+          listSelect.value = subscription.list || 'personal';
+          console.log('Tipo de suscripción cargado:', subscription.list);
+          // Si es compartida, mostrar la sección y cargar el número de perfiles
+          if (subscription.list === 'compartido') {
+            console.log('Es suscripción compartida, buscando sección...');
+            const seccionCompartida = document.getElementById('seccion-compartida');
+            console.log('Elemento seccion-compartida encontrado:', !!seccionCompartida);
+            if (seccionCompartida) {
+              seccionCompartida.classList.remove('hidden');
+              // Forzar remoción de la clase hidden por si algún otro código la vuelve a agregar
+              setTimeout(() => {
+                seccionCompartida.classList.remove('hidden');
+                console.log('Clase hidden forzada a removerse de seccion-compartida');
+              }, 100);
+              console.log('Clase hidden removida de seccion-compartida');
+            } else {
+              console.error('No se encontró el elemento seccion-compartida');
+            }
+            const perfilesInput = document.getElementById('perfiles-input');
+            console.log('Elemento perfiles-input encontrado:', !!perfilesInput);
+            if (perfilesInput) {
+              perfilesInput.value = subscription.numPerfiles || '';
+              console.log('Número de perfiles cargado:', subscription.numPerfiles);
+              if (subscription.numPerfiles) {
+                // Generar los iconos después de establecer el valor
+                console.log('Generando iconos para', subscription.numPerfiles, 'perfiles');
+                generarIconosPerfiles(subscription.numPerfiles);
+                // Actualizar el estado de los perfiles
+                actualizarPerfiles();
+              }
+            } else {
+              console.error('No se encontró el elemento perfiles-input');
+            }
+          } else {
+            console.log('No es suscripción compartida, tipo:', subscription.list);
+          }
+          
+          // Disparar el evento change para activar los event listeners
+          // listSelect.dispatchEvent(new Event('change'));
+        }
+        
+        // Verificar si es una prueba gratuita
+        if (subscription.free_trial) {
+          const freeTrialCheckbox = document.querySelector('input[name="free_trial"]');
+          if (freeTrialCheckbox) {
+            freeTrialCheckbox.checked = true;
+            // Disparar el evento change para configurar la interfaz
+            freeTrialCheckbox.dispatchEvent(new Event('change'));
+          }
+          
+          // Cargar fecha de fin de prueba
+          const trialEndDateInput = document.querySelector('input[name="trial_end_date"]');
+          if (trialEndDateInput && subscription.trial_end_date) {
+            const trialEndDate = new Date(subscription.trial_end_date);
+            trialEndDateInput.value = trialEndDate.toISOString().split('T')[0];
+          }
+        }
+        
+        // Cargar campos de precio solo si no es prueba gratuita
+        if (!subscription.free_trial) {
+          const originalPriceUSDInput = document.querySelector('input[name="original_price_usd"]');
+          const debitPriceGTQInput = document.querySelector('input[name="debit_price_gtq"]');
+          // charge_price_gtq no existe como input, solo como display
+
+          if (originalPriceUSDInput) originalPriceUSDInput.value = subscription.original_price_usd || '';
+          if (debitPriceGTQInput) debitPriceGTQInput.value = subscription.debit_price_gtq || '';
+          // El charge_price_display se actualiza automáticamente con calculatePrices()
+          
+          // Calcular precios
+          calculatePrices();
+        }
+
+        // Si hay notificación personalizada por fecha
+        if (subscription.notifications) {
+          const customDateNotif = subscription.notifications.find(n => n.startsWith('customdate_'));
+          if (customDateNotif) {
+            const [, day, time] = customDateNotif.split('_');
+            const customDateCheckbox = document.querySelector('input[name="notification_custom_date"]');
+            const customDateInput = document.querySelector('input[name="custom_date"]');
+            const customTimeInput = document.querySelector('input[name="custom_time"]');
+            if (customDateCheckbox && customDateInput && customTimeInput) {
+              customDateCheckbox.checked = true;
+              // Setear la fecha al mes y año actual, pero con el día guardado
+              const now = new Date();
+              const year = now.getFullYear();
+              const month = (now.getMonth() + 1).toString().padStart(2, '0');
+              const dayStr = day.toString().padStart(2, '0');
+              customDateInput.value = `${year}-${month}-${dayStr}`;
+              customTimeInput.value = time;
+            }
+          }
+          
+          // Si hay notificación personalizada por fecha para prueba gratuita
+          const trialCustomDateNotif = subscription.notifications.find(n => n.startsWith('trial_customdate_'));
+          if (trialCustomDateNotif) {
+            const [, day, time] = trialCustomDateNotif.split('_');
+            const trialCustomDateCheckbox = document.querySelector('input[name="trial_notification_custom_date"]');
+            const trialCustomDateInput = document.querySelector('input[name="trial_custom_date"]');
+            const trialCustomTimeInput = document.querySelector('input[name="trial_custom_time"]');
+            if (trialCustomDateCheckbox && trialCustomDateInput && trialCustomTimeInput) {
+              trialCustomDateCheckbox.checked = true;
+              // Setear la fecha al mes y año actual, pero con el día guardado
+              const now = new Date();
+              const year = now.getFullYear();
+              const month = (now.getMonth() + 1).toString().padStart(2, '0');
+              const dayStr = day.toString().padStart(2, '0');
+              trialCustomDateInput.value = `${year}-${month}-${dayStr}`;
+              trialCustomTimeInput.value = time;
+            }
+          }
+        }
+
+        // Sincronizar notificaciones guardadas con los checkboxes y campos
+        if (subscription.notifications && Array.isArray(subscription.notifications)) {
+          subscription.notifications.forEach(notif => {
+            if (notif === '1day') {
+              const cb = document.querySelector('input[name="notification_1day"]');
+              if (cb) cb.checked = true;
+            } else if (notif === '2days') {
+              const cb = document.querySelector('input[name="notification_2days"]');
+              if (cb) cb.checked = true;
+            } else if (notif === 'sameday') {
+              const cb = document.querySelector('input[name="notification_sameday"]');
+              if (cb) cb.checked = true;
+            } else if (notif.startsWith('custom_')) {
+              const cb = document.querySelector('input[name="notification_custom"]');
+              const days = notif.split('_')[1];
+              if (cb) cb.checked = true;
+              const daysInput = document.querySelector('input[name="notification_custom_days"]');
+              if (daysInput) daysInput.value = days;
+            } else if (notif.startsWith('customdate_')) {
+              const cb = document.querySelector('input[name="notification_custom_date"]');
+              if (cb) cb.checked = true;
+              const parts = notif.split('_');
+              if (parts.length === 3) {
+                const day = parts[1];
+                const time = parts[2];
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const dayStr = day.toString().padStart(2, '0');
+                const dateInput = document.querySelector('input[name="custom_date"]');
+                const timeInput = document.querySelector('input[name="custom_time"]');
+                if (dateInput) dateInput.value = `${year}-${month}-${dayStr}`;
+                if (timeInput) timeInput.value = time;
+              }
+            } else if (notif === 'trial_1day') {
+              const cb = document.querySelector('input[name="trial_notification_1day"]');
+              if (cb) cb.checked = true;
+            } else if (notif === 'trial_2days') {
+              const cb = document.querySelector('input[name="trial_notification_2days"]');
+              if (cb) cb.checked = true;
+            } else if (notif === 'trial_sameday') {
+              const cb = document.querySelector('input[name="trial_notification_sameday"]');
+              if (cb) cb.checked = true;
+            } else if (notif.startsWith('trial_custom_')) {
+              const cb = document.querySelector('input[name="trial_notification_custom"]');
+              const days = notif.split('_')[2];
+              if (cb) cb.checked = true;
+              const daysInput = document.querySelector('input[name="trial_notification_custom_days"]');
+              if (daysInput) daysInput.value = days;
+            } else if (notif.startsWith('trial_customdate_')) {
+              const cb = document.querySelector('input[name="trial_notification_custom_date"]');
+              if (cb) cb.checked = true;
+              const parts = notif.split('_');
+              if (parts.length === 3) {
+                const day = parts[1];
+                const time = parts[2];
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const dayStr = day.toString().padStart(2, '0');
+                const dateInput = document.querySelector('input[name="trial_custom_date"]');
+                const timeInput = document.querySelector('input[name="trial_custom_time"]');
+                if (dateInput) dateInput.value = `${year}-${month}-${dayStr}`;
+                if (timeInput) timeInput.value = time;
+              }
+            }
+          });
+        }
+      }
+    }
+
+    // Función para guardar los cambios
+    async function handleSave() {
+      console.log('Función handleSave iniciada');
+      const params = new URLSearchParams(window.location.search);
+      const isNew = params.get('new') === 'true';
+      const subscriptionId = params.get('id');
+
+      console.log('Parámetros:', { isNew, subscriptionId });
+
+      // Obtener las suscripciones existentes al inicio de la función
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+
+      // Obtener los elementos del DOM
+      const nameInput = document.querySelector('input[name="name"]');
+      const nextPaymentInput = document.querySelector('input[name="nextPayment"]');
+      const billingSelect = document.querySelector('select[name="billing"]');
+      const categoryInput = document.querySelector('input[name="category"]');
+      const listSelect = document.querySelector('select[name="list"]');
+      const originalPriceUSDInput = document.querySelector('input[name="original_price_usd"]');
+      const debitPriceGTQInput = document.querySelector('input[name="debit_price_gtq"]');
+      const chargePriceDisplay = document.getElementById('charge_price_display');
+      const profitDisplay = document.getElementById('profit_display');
+
+      console.log('Elementos del DOM encontrados:', {
+        nameInput: !!nameInput,
+        nextPaymentInput: !!nextPaymentInput,
+        billingSelect: !!billingSelect,
+        categoryInput: !!categoryInput,
+        listSelect: !!listSelect,
+        originalPriceUSDInput: !!originalPriceUSDInput,
+        debitPriceGTQInput: !!debitPriceGTQInput,
+        chargePriceDisplay: !!chargePriceDisplay,
+        profitDisplay: !!profitDisplay
+      });
+
+      // Validar que todos los elementos existan
+      if (!nameInput || !nextPaymentInput || !billingSelect || !categoryInput || !listSelect || 
+          !originalPriceUSDInput || !debitPriceGTQInput || !chargePriceDisplay || !profitDisplay) {
+        alert('Error: No se pudieron encontrar todos los elementos del formulario');
+        return;
+      }
+
+      // Obtener los valores de los campos
+      const name = nameInput.value;
+      const nextPaymentDate = nextPaymentInput.value;
+      const nextPayment = new Date(nextPaymentDate + 'T00:00:00');
+      const billing = billingSelect.value;
+      const category = categoryInput.value;
+      const list = listSelect.value;
+      const originalPriceUSD = originalPriceUSDInput.value;
+      const debitPriceGTQ = debitPriceGTQInput.value;
+      const chargePriceGTQ = chargePriceDisplay.textContent;
+      const ganancia = profitDisplay.textContent;
+
+      // Verificar si es prueba gratuita
+      const freeTrialCheckbox = document.querySelector('input[name="free_trial"]');
+      const isFreeTrial = freeTrialCheckbox && freeTrialCheckbox.checked;
+
+      console.log('Valores obtenidos:', {
+        name,
+        nextPaymentDate,
+        billing,
+        category,
+        list,
+        originalPriceUSD,
+        debitPriceGTQ,
+        chargePriceGTQ,
+        ganancia,
+        isFreeTrial
+      });
+
+      // Validar campos requeridos según el tipo
+      let validationError = false;
+      let missingFields = [];
+
+      if (!name) {
+        validationError = true;
+        missingFields.push('nombre');
+      }
+
+      if (isFreeTrial) {
+        // Para prueba gratuita, solo validar nombre y precio de prueba
+        const trialEndDateInput = document.querySelector('input[name="trial_end_date"]');
+        const trialEndDate = trialEndDateInput ? trialEndDateInput.value : '';
+        
+        if (!trialEndDate) {
+          validationError = true;
+          missingFields.push('fecha de fin de prueba');
+        }
+        
+        console.log('Validación de prueba gratuita:', { trialEndDate });
+      } else {
+        // Para suscripción normal, validar todos los campos
+        if (!originalPriceUSD) {
+          validationError = true;
+          missingFields.push('precio original USD');
+        }
+        if (!debitPriceGTQ) {
+          validationError = true;
+          missingFields.push('precio debitado GTQ');
+        }
+        if (!nextPaymentDate) {
+          validationError = true;
+          missingFields.push('fecha de próximo pago');
+        }
+        if (!billing) {
+          validationError = true;
+          missingFields.push('ciclo de facturación');
+        }
+      }
+
+      if (validationError) {
+        console.log('Validación fallida - campos faltantes:', missingFields);
+        alert(`Por favor complete todos los campos requeridos: ${missingFields.join(', ')}`);
+        return;
+      }
+
+      console.log('Validación de campos exitosa');
+
+      // Obtener notificaciones seleccionadas con sus horas
+      const notifications = [];
+      // Buscar todos los checkboxes de notificaciones estándar y personalizadas
+      document.querySelectorAll('input[type="checkbox"][name^="notification_"]').forEach(checkbox => {
+        if (checkbox.checked) {
+          if (checkbox.name === 'notification_custom') {
+            const customDays = document.querySelector('input[name="notification_custom_days"]');
+            if (customDays && customDays.value) {
+              notifications.push(`custom_${customDays.value}`);
+            }
+          } else if (checkbox.name === 'notification_custom_date') {
+            const customDateInput = document.querySelector('input[name="custom_date"]');
+            const customTimeInput = document.querySelector('input[name="custom_time"]');
+            if (customDateInput && customDateInput.value && customTimeInput && customTimeInput.value) {
+              const dateObj = new Date(customDateInput.value);
+              const day = dateObj.getDate();
+              let [hour, minute] = customTimeInput.value.split(':');
+              hour = hour.padStart(2, '0');
+              minute = minute.padStart(2, '0');
+              const time = `${hour}:${minute}`;
+              const dayStr = String(day).padStart(2, '0');
+              notifications.push(`customdate_${dayStr}_${time}`);
+            }
+          } else if (checkbox.name === 'notification_1day' || checkbox.name === 'notification_2days' || checkbox.name === 'notification_sameday') {
+            // Notificaciones estándar
+            if (checkbox.name === 'notification_1day') notifications.push('1day');
+            if (checkbox.name === 'notification_2days') notifications.push('2days');
+            if (checkbox.name === 'notification_sameday') notifications.push('sameday');
+          }
+        }
+      });
+      console.log('Notificaciones a guardar (reforzado):', notifications);
+
+      // Crear objeto base de suscripción
+      const subscriptionData = {
+        name,
+        logo: window.logoData || document.getElementById('subscription-logo')?.src || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png',
+        status: isNew ? 'active' : (subscriptions.find(sub => sub.id === subscriptionId)?.status || 'active')
+      };
+
+      if (isFreeTrial) {
+        // Para prueba gratuita
+        const trialEndDateInput = document.querySelector('input[name="trial_end_date"]');
+        const trialEndDate = trialEndDateInput ? new Date(trialEndDateInput.value + 'T00:00:00') : new Date();
+        
+        subscriptionData.free_trial = true;
+        subscriptionData.trial_end_date = trialEndDate.toISOString();
+        subscriptionData.billing = 'trial';
+        subscriptionData.nextPayment = trialEndDate.toISOString();
+        subscriptionData.category = category || 'Prueba gratuita';
+        subscriptionData.list = list; // Usar el valor del select (puede ser "prueba_gratuita", "personal", etc.)
+        subscriptionData.notifications = notifications;
+        subscriptionData.original_price_usd = '0.00';
+        subscriptionData.debit_price_gtq = '0.00';
+        subscriptionData.charge_price_gtq = '0.00';
+        subscriptionData.ganancia = '0.00';
+        
+        console.log('Configuración de prueba gratuita:', subscriptionData);
+      } else {
+        // Para suscripción normal
+        subscriptionData.billing = billing;
+        subscriptionData.nextPayment = nextPayment.toISOString();
+        subscriptionData.category = category;
+        subscriptionData.list = list;
+        subscriptionData.notifications = notifications;
+        subscriptionData.original_price_usd = originalPriceUSD;
+        subscriptionData.debit_price_gtq = debitPriceGTQ;
+        subscriptionData.charge_price_gtq = chargePriceGTQ;
+        subscriptionData.ganancia = ganancia;
+        subscriptionData.free_trial = false;
+        
+        console.log('Configuración de suscripción normal:', subscriptionData);
+      }
+
+      console.log('Objeto subscriptionData creado:', subscriptionData);
+
+      // Agregar número de perfiles si es una suscripción compartida
+      if (!isFreeTrial && list === 'compartido') {
+        const perfilesInput = document.getElementById('perfiles-input');
+        if (perfilesInput && perfilesInput.value) {
+          subscriptionData.numPerfiles = parseInt(perfilesInput.value);
+        }
+      }
+
+      if (isNew) {
+        subscriptionData.id = Date.now().toString();
+        subscriptions.push(subscriptionData);
+        console.log('Nueva suscripción agregada al array');
+        console.log('Array de suscripciones antes de guardar:', subscriptions);
+        localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        console.log('Guardado en localStorage:', localStorage.getItem('subscriptions'));
+      } else {
+        const index = subscriptions.findIndex(sub => sub.id === subscriptionId);
+        if (index === -1) {
+          alert('Error: No se encontró la suscripción');
+          return;
+        }
+        subscriptions[index] = { ...subscriptions[index], ...subscriptionData };
+        console.log('Suscripción existente actualizada en el array');
+        console.log('Array de suscripciones antes de guardar:', subscriptions);
+        localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        console.log('Guardado en localStorage:', localStorage.getItem('subscriptions'));
+      }
+
+      // Intentar reprogramar notificaciones, pero no bloquear el guardado si falla
+      let swError = null;
+      let swTimeout;
+      let swResponded = false;
+      if ('serviceWorker' in navigator) {
+        try {
+          console.log('Obteniendo Service Worker ready...');
+          swTimeout = setTimeout(() => {
+            if (!swResponded) {
+              swError = 'El Service Worker tardó demasiado en responder.';
+              finishSave();
+            }
+          }, 2000); // 2 segundos máximo de espera
+          const registration = await navigator.serviceWorker.ready;
+          swResponded = true;
+          clearTimeout(swTimeout);
+          console.log('Service Worker ready obtenido:', registration);
+          if (registration.active) {
+            console.log('Service Worker activo, enviando mensaje...');
+            registration.active.postMessage({
+              type: 'SCHEDULE_NOTIFICATIONS'
+            });
+            console.log('Notificaciones reprogramadas después de guardar');
+          } else {
+            swError = 'El Service Worker no está activo. Intenta recargar la página.';
+            console.error(swError, registration);
+          }
+        } catch (error) {
+          swResponded = true;
+          clearTimeout(swTimeout);
+          swError = 'Error al reprogramar notificaciones: ' + (error && error.message ? error.message : error);
+          console.error(swError);
+        }
+      } else {
+        swError = 'Service Worker no disponible en este navegador.';
+        console.error(swError);
+      }
+
+      finishSave();
+
+      function finishSave() {
+        if (swTimeout) clearTimeout(swTimeout);
+        // Mostrar siempre el mensaje de éxito si el guardado fue correcto
+        if (swError) {
+          alert((isNew ? 'Suscripción creada' : 'Suscripción actualizada') + '\n\nAdvertencia: ' + swError);
+        } else {
+          alert(isNew ? 'Suscripción creada' : 'Suscripción actualizada');
+        }
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Función para generar los iconos de perfiles
+    function generarIconosPerfiles(numeroPerfiles) {
+      const container = document.getElementById('perfiles-container');
+      if (!container) return;
+      container.innerHTML = ''; // Limpiar contenedor
+      // Obtener todas las personas y sus suscripciones
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const nombreSuscripcion = document.querySelector('input[name="name"]').value;
+      // Crear un array de nombres de personas que tienen esta suscripción (pueden repetirse)
+      const perfilesOcupados = [];
+      personas.forEach(persona => {
+        if (persona.plataformas && Array.isArray(persona.plataformas)) {
+          persona.plataformas.forEach(plataforma => {
+            if (plataforma.nombre.toLowerCase() === nombreSuscripcion.toLowerCase()) {
+              perfilesOcupados.push(persona.nombre);
+            }
+          });
+        }
+      });
+      for (let i = 0; i < numeroPerfiles; i++) {
+        const icono = document.createElement('div');
+        icono.className = 'perfil-icono text-2xl relative group cursor-pointer';
+        const estaOcupado = i < perfilesOcupados.length;
+        const nombrePersona = perfilesOcupados[i] || '';
+        icono.classList.add(estaOcupado ? 'text-red-500' : 'text-green-500');
+        icono.innerHTML = '<i class="fas fa-user"></i>';
+        const tooltip = document.createElement('div');
+        tooltip.className = 'absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-[#1f1c2b] text-white text-sm rounded opacity-0 transition-opacity whitespace-nowrap z-50';
+        tooltip.textContent = estaOcupado ? nombrePersona : 'Disponible';
+        let tooltipVisible = false;
+        icono.addEventListener('click', function() {
+          tooltipVisible = !tooltipVisible;
+          if (tooltipVisible) {
+            tooltip.classList.remove('opacity-0');
+          } else {
+            tooltip.classList.add('opacity-0');
+          }
+        });
+        icono.addEventListener('mouseenter', function() {
+          if (!tooltipVisible) {
+            tooltip.classList.remove('opacity-0');
+          }
+        });
+        icono.addEventListener('mouseleave', function() {
+          if (!tooltipVisible) {
+            tooltip.classList.add('opacity-0');
+          }
+        });
+        icono.appendChild(tooltip);
+        container.appendChild(icono);
+      }
+    }
+
+    // Función para actualizar los perfiles
+    function actualizarPerfiles() {
+      const perfilesInput = document.getElementById('perfiles-input');
+      if (perfilesInput && perfilesInput.value) {
+        generarIconosPerfiles(parseInt(perfilesInput.value));
+      }
+    }
+
+    // Función para agregar event listeners a las notificaciones
+    function addNotificationEventListeners() {
+      // Verificar si la sección de notificaciones está visible
+      const sections = document.querySelectorAll('section');
+      let notifSectionVisible = false;
+      
+      sections.forEach(section => {
+        if (section.querySelector('#notificaciones-container') && !section.classList.contains('hidden')) {
+          notifSectionVisible = true;
+        }
+      });
+      
+      if (!notifSectionVisible) {
+        console.log('Sección de notificaciones está oculta, no agregando event listeners');
+        return;
+      }
+      
+      // Buscar todos los checkboxes de notificaciones por nombre
+      const notificationNames = [
+        'notification_1day',
+        'notification_2days', 
+        'notification_sameday',
+        'notification_custom_date',
+        'notification_custom'
+      ];
+      
+      notificationNames.forEach(name => {
+        const checkbox = document.querySelector(`input[name="${name}"]`);
+        if (checkbox) {
+          // Remover event listeners existentes para evitar duplicados
+          checkbox.removeEventListener('change', updateNotificationsPosition);
+          // Agregar nuevo event listener
+          checkbox.addEventListener('change', updateNotificationsPosition);
+          console.log(`Event listener agregado a ${name}`);
+        } else {
+          console.log(`Checkbox ${name} no encontrado`);
+        }
+      });
+    }
+
+    // Lógica para mover notificaciones activas arriba y las inactivas al dropdown
+    function updateNotificationsPosition() {
+      console.log('Ejecutando updateNotificationsPosition');
+      
+      const activeContainer = document.getElementById('activeNotificationsContainer');
+      const additionalContainer = document.getElementById('additionalNotifications');
+      
+      if (!activeContainer || !additionalContainer) {
+        console.log('Contenedores no encontrados');
+        return;
+      }
+      
+      // Verificar si la sección de notificaciones está visible
+      const sections = document.querySelectorAll('section');
+      let notifSectionVisible = false;
+      
+      sections.forEach(section => {
+        if (section.querySelector('#notificaciones-container') && !section.classList.contains('hidden')) {
+          notifSectionVisible = true;
+        }
+      });
+      
+      if (!notifSectionVisible) {
+        console.log('Sección de notificaciones está oculta, no reorganizando');
+        return;
+      }
+      
+      // Buscar todas las notificaciones por sus IDs específicos
+      const notificationElements = [
+        { id: 'notif-1day', name: 'notification_1day' },
+        { id: 'notif-2days', name: 'notification_2days' },
+        { id: 'notif-sameday', name: 'notification_sameday' },
+        { id: 'customDateNotificationDropdown', name: 'notification_custom_date' },
+        { id: 'notif-custom', name: 'notification_custom' }
+      ];
+      
+      notificationElements.forEach(notification => {
+        const element = document.getElementById(notification.id);
+        if (!element) {
+          console.log(`Elemento ${notification.id} no encontrado`);
+          return;
+        }
+        
+        const checkbox = element.querySelector(`input[name="${notification.name}"]`);
+        if (!checkbox) {
+          console.log(`Checkbox ${notification.name} no encontrado en ${notification.id}`);
+          return;
+        }
+        
+        if (checkbox.checked) {
+          // Mover al contenedor activo si no está ahí
+          if (!activeContainer.contains(element)) {
+            console.log(`Moviendo ${notification.name} al contenedor activo`);
+            activeContainer.appendChild(element);
+          }
+        } else {
+          // Mover al contenedor adicional si no está ahí
+          if (!additionalContainer.contains(element)) {
+            console.log(`Moviendo ${notification.name} al contenedor adicional`);
+            additionalContainer.appendChild(element);
+          }
+        }
+      });
+    }
+
+    // Agregar eventos cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSubscriptionData();
+
+      // Botón de guardar
+      const saveButton = document.getElementById('saveButton');
+      if (saveButton) {
+        console.log('Botón de guardar encontrado, agregando event listener');
+        saveButton.addEventListener('click', () => {
+          console.log('Botón de guardar clickeado');
+          handleSave();
+        });
+      } else {
+        console.error('Botón de guardar no encontrado');
+      }
+
+      // Manejar el botón de agregar notificación
+      let addNotificationBtn = document.getElementById('addNotificationBtn');
+      let additionalNotifications = document.getElementById('additionalNotifications');
+      
+      if (addNotificationBtn && additionalNotifications) {
+        addNotificationBtn.addEventListener('click', () => {
+          additionalNotifications.classList.toggle('hidden');
+          addNotificationBtn.textContent = additionalNotifications.classList.contains('hidden') 
+            ? '+ Agregar notificación' 
+            : '- Ocultar notificaciones';
+        });
+      }
+      
+      // Inicializar y escuchar cambios
+      updateNotificationsPosition();
+      
+      // Agregar event listeners iniciales
+      addNotificationEventListeners();
+
+      // Manejar la visibilidad de la sección de prueba gratuita
+      const freeTrialCheckbox = document.querySelector('input[name="free_trial"]');
+      const freeTrialSection = document.getElementById('freeTrialSection');
+      const regularSubscriptionSection = document.getElementById('regularSubscriptionSection');
+      const sharedSubscriptionSection = document.getElementById('seccion-compartida');
+      
+      // Función para encontrar las secciones de manera compatible
+      function findSections() {
+        const sections = document.querySelectorAll('section');
+        let typeSection = null;
+        let notifSection = null;
+        let pricesSection = null;
+        
+        sections.forEach(section => {
+          if (section.querySelector('select[name="list"]')) {
+            typeSection = section;
+          }
+          if (section.querySelector('#notificaciones-container')) {
+            notifSection = section;
+          }
+          if (section.querySelector('input[name="original_price_usd"]')) {
+            pricesSection = section;
+          }
+        });
+        
+        return { typeSection, notifSection, pricesSection };
+      }
+      
+      const { typeSection, notifSection, pricesSection } = findSections();
+      
+      if (freeTrialCheckbox && freeTrialSection && regularSubscriptionSection) {
+        freeTrialCheckbox.addEventListener('change', function() {
+          if (this.checked) {
+            freeTrialSection.classList.remove('hidden');
+            regularSubscriptionSection.classList.add('hidden');
+            if (typeSection) typeSection.classList.remove('hidden'); // Mostrar la sección de tipo
+            if (notifSection) notifSection.classList.add('hidden');
+            if (sharedSubscriptionSection) sharedSubscriptionSection.classList.add('hidden');
+            // Ocultar también la sección de precios
+            if (pricesSection) pricesSection.classList.add('hidden');
+            
+            // Seleccionar "Prueba gratuita" por defecto
+            const tipoSelect = document.querySelector('select[name="list"]');
+            if (tipoSelect) {
+              tipoSelect.value = 'prueba_gratuita';
+            }
+            
+            // Manejar notificaciones de prueba gratuita
+            handleTrialNotifications();
+          } else {
+            freeTrialSection.classList.add('hidden');
+            regularSubscriptionSection.classList.remove('hidden');
+            if (typeSection) typeSection.classList.remove('hidden');
+            if (notifSection) notifSection.classList.remove('hidden');
+            if (sharedSubscriptionSection) sharedSubscriptionSection.classList.add('hidden'); // Mantener oculto hasta que se seleccione "compartido"
+            // Mostrar también la sección de precios
+            if (pricesSection) pricesSection.classList.remove('hidden');
+            
+            // Reorganizar notificaciones después de mostrar la sección
+            updateNotificationsPosition();
+            addNotificationEventListeners();
+          }
+        });
+      }
+
+      // Verificar estado inicial
+      if (freeTrialCheckbox.checked) {
+        freeTrialSection.classList.remove('hidden');
+        regularSubscriptionSection.classList.add('hidden');
+        if (typeSection) typeSection.classList.remove('hidden'); // Mostrar la sección de tipo
+        if (notifSection) notifSection.classList.add('hidden');
+        if (sharedSubscriptionSection) sharedSubscriptionSection.classList.add('hidden');
+        // Ocultar también la sección de precios
+        if (pricesSection) pricesSection.classList.add('hidden');
+        
+        // Seleccionar "Prueba gratuita" por defecto
+        const tipoSelect = document.querySelector('select[name="list"]');
+        if (tipoSelect) {
+          tipoSelect.value = 'prueba_gratuita';
+        }
+        
+        // Manejar notificaciones de prueba gratuita
+        handleTrialNotifications();
+      } else {
+        freeTrialSection.classList.add('hidden');
+        regularSubscriptionSection.classList.remove('hidden');
+        if (typeSection) typeSection.classList.remove('hidden');
+        if (notifSection) notifSection.classList.remove('hidden');
+        if (sharedSubscriptionSection) sharedSubscriptionSection.classList.add('hidden'); // Mantener oculto hasta que se seleccione "compartido"
+        // Mostrar también la sección de precios
+        if (pricesSection) pricesSection.classList.remove('hidden');
+        
+        // Reorganizar notificaciones después de mostrar la sección
+        updateNotificationsPosition();
+        addNotificationEventListeners();
+      }
+
+      // Agregar event listeners para los campos de precio
+      const originalPriceUSDInput = document.querySelector('input[name="original_price_usd"]');
+      const debitPriceGTQInput = document.querySelector('input[name="debit_price_gtq"]');
+
+      if (originalPriceUSDInput) {
+        originalPriceUSDInput.addEventListener('input', calculatePrices);
+        originalPriceUSDInput.addEventListener('change', calculatePrices);
+      }
+
+      if (debitPriceGTQInput) {
+        debitPriceGTQInput.addEventListener('input', calculatePrices);
+        debitPriceGTQInput.addEventListener('change', calculatePrices);
+      }
+
+      // Calcular precios iniciales
+      calculatePrices();
+
+      // Deshabilitar las teclas de flecha en inputs numéricos
+      const numberInputs = document.querySelectorAll('input[type="number"]');
+      numberInputs.forEach(input => {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
+          }
+        });
+      });
+
+      // Manejar el cambio de tipo de suscripción
+      document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('tipo-btn')) {
+          // Actualizar botones de tipo
+          const buttons = e.target.parentElement.querySelectorAll('.tipo-btn');
+          buttons.forEach(btn => {
+            btn.classList.remove('bg-[#3f2a6f]');
+            btn.classList.add('bg-[#2a2736]');
+          });
+          e.target.classList.remove('bg-[#2a2736]');
+          e.target.classList.add('bg-[#3f2a6f]');
+
+          // Mostrar/ocultar sección de suscripción compartida
+          const seccionCompartida = document.getElementById('seccion-compartida');
+          if (e.target.dataset.tipo === 'compartida') {
+            seccionCompartida.classList.remove('hidden');
+            actualizarPerfiles();
+          } else {
+            seccionCompartida.classList.add('hidden');
+          }
+        }
+      });
+
+      // Modificar el event listener para el select de tipo de suscripción
+      document.querySelector('select[name="list"]').addEventListener('change', function(e) {
+        const seccionCompartida = document.getElementById('seccion-compartida');
+        if (e.target.value === 'compartido') {
+          seccionCompartida.classList.remove('hidden');
+          actualizarPerfiles();
+        } else {
+          // Solo ocultar si no es una suscripción compartida existente
+          const subscriptionId = getSubscriptionId();
+          if (subscriptionId) {
+            const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+            const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+            if (subscription && subscription.list === 'compartido') {
+              // Es una suscripción compartida existente, no ocultar
+              return;
+            }
+          }
+          seccionCompartida.classList.add('hidden');
+        }
+      });
+
+      // Evento para el input de perfiles
+      const perfilesInput = document.getElementById('perfiles-input');
+      if (perfilesInput) {
+        perfilesInput.addEventListener('input', function(e) {
+          const numeroPerfiles = parseInt(e.target.value) || 0;
+          if (numeroPerfiles >= 1 && numeroPerfiles <= 7) {
+            generarIconosPerfiles(numeroPerfiles);
+          } else {
+            document.getElementById('perfiles-container').innerHTML = '';
+          }
+        });
+      }
+
+      // Evento para cuando cambia el nombre de la suscripción
+      const nombreInput = document.querySelector('input[name="name"]');
+      if (nombreInput) {
+        nombreInput.addEventListener('input', function() {
+          const seccionCompartida = document.getElementById('seccion-compartida');
+          if (!seccionCompartida.classList.contains('hidden')) {
+            actualizarPerfiles();
+          }
+        });
+      }
+
+      // Evento para el cambio de tipo de suscripción
+      document.querySelector('select[name="list"]').addEventListener('change', function(e) {
+        const seccionCompartida = document.getElementById('seccion-compartida');
+        if (e.target.value === 'compartido') {
+          seccionCompartida.classList.remove('hidden');
+          actualizarPerfiles();
+        } else {
+          // Solo ocultar si no es una suscripción compartida existente
+          const subscriptionId = getSubscriptionId();
+          if (subscriptionId) {
+            const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+            const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+            if (subscription && subscription.list === 'compartido') {
+              // Es una suscripción compartida existente, no ocultar
+              return;
+            }
+          }
+          seccionCompartida.classList.add('hidden');
+        }
+      });
+    });
+
+    // Función para manejar la subida del logo
+    function handleLogoUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            // Crear canvas para redimensionar y comprimir
+            const maxSize = 200;
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > maxSize) {
+                height *= maxSize / width;
+                width = maxSize;
+              }
+            } else {
+              if (height > maxSize) {
+                width *= maxSize / height;
+                height = maxSize;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            // Comprimir a JPEG calidad 0.7
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            const logoImg = document.getElementById('subscription-logo');
+            logoImg.src = compressedDataUrl;
+            // Guardar la imagen comprimida en localStorage para la suscripción
+            window.logoData = compressedDataUrl;
+            // Mostrar el botón de eliminar
+            document.getElementById('delete-logo-btn').style.display = 'block';
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    // Función para eliminar el logo
+    function handleLogoDelete() {
+      const logoImg = document.getElementById('subscription-logo');
+      logoImg.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png';
+      window.logoData = null;
+      // Ocultar el botón de eliminar cuando se usa el logo genérico
+      document.getElementById('delete-logo-btn').style.display = 'none';
+    }
+
+    // Función para manejar las notificaciones de prueba gratuita
+    function handleTrialNotifications() {
+      console.log('Manejando notificaciones de prueba gratuita');
+      
+      const addTrialNotificationBtn = document.getElementById('addTrialNotificationBtn');
+      const additionalTrialNotifications = document.getElementById('trial-additionalNotifications');
+      
+      if (addTrialNotificationBtn && additionalTrialNotifications) {
+        addTrialNotificationBtn.addEventListener('click', () => {
+          additionalTrialNotifications.classList.toggle('hidden');
+          addTrialNotificationBtn.textContent = additionalTrialNotifications.classList.contains('hidden') 
+            ? '+ Agregar notificación' 
+            : '- Ocultar notificaciones';
+        });
+      }
+      
+      // Ejecutar la reorganización de notificaciones de prueba gratuita
+      updateTrialNotificationsPosition();
+      addTrialNotificationEventListeners();
+    }
+
+    // Lógica para mover notificaciones de prueba gratuita activas arriba y las inactivas al dropdown
+    function updateTrialNotificationsPosition() {
+      console.log('Ejecutando updateTrialNotificationsPosition');
+      
+      const activeContainer = document.getElementById('trial-activeNotificationsContainer');
+      const additionalContainer = document.getElementById('trial-additionalNotifications');
+      
+      if (!activeContainer || !additionalContainer) {
+        console.log('Contenedores de prueba gratuita no encontrados');
+        return;
+      }
+      
+      // Buscar todas las notificaciones de prueba gratuita por sus IDs específicos
+      const trialNotificationElements = [
+        { id: 'trial-notif-1day', name: 'trial_notification_1day' },
+        { id: 'trial-notif-2days', name: 'trial_notification_2days' },
+        { id: 'trial-notif-sameday', name: 'trial_notification_sameday' },
+        { id: 'trial-customDateNotificationDropdown', name: 'trial_notification_custom_date' },
+        { id: 'trial-notif-custom', name: 'trial_notification_custom' }
+      ];
+      
+      trialNotificationElements.forEach(notification => {
+        const element = document.getElementById(notification.id);
+        if (!element) {
+          console.log(`Elemento de prueba gratuita ${notification.id} no encontrado`);
+          return;
+        }
+        
+        const checkbox = element.querySelector(`input[name="${notification.name}"]`);
+        if (!checkbox) {
+          console.log(`Checkbox de prueba gratuita ${notification.name} no encontrado en ${notification.id}`);
+          return;
+        }
+        
+        if (checkbox.checked) {
+          // Mover al contenedor activo si no está ahí
+          if (!activeContainer.contains(element)) {
+            console.log(`Moviendo notificación de prueba gratuita ${notification.name} al contenedor activo`);
+            activeContainer.appendChild(element);
+          }
+        } else {
+          // Mover al contenedor adicional si no está ahí
+          if (!additionalContainer.contains(element)) {
+            console.log(`Moviendo notificación de prueba gratuita ${notification.name} al contenedor adicional`);
+            additionalContainer.appendChild(element);
+          }
+        }
+      });
+    }
+
+    // Función para agregar event listeners a las notificaciones de prueba gratuita
+    function addTrialNotificationEventListeners() {
+      // Buscar todos los checkboxes de notificaciones de prueba gratuita por nombre
+      const trialNotificationNames = [
+        'trial_notification_1day',
+        'trial_notification_2days', 
+        'trial_notification_sameday',
+        'trial_notification_custom_date',
+        'trial_notification_custom'
+      ];
+      
+      trialNotificationNames.forEach(name => {
+        const checkbox = document.querySelector(`input[name="${name}"]`);
+        if (checkbox) {
+          // Remover event listeners existentes para evitar duplicados
+          checkbox.removeEventListener('change', updateTrialNotificationsPosition);
+          // Agregar nuevo event listener
+          checkbox.addEventListener('change', updateTrialNotificationsPosition);
+          console.log(`Event listener agregado a notificación de prueba gratuita ${name}`);
+        } else {
+          console.log(`Checkbox de prueba gratuita ${name} no encontrado`);
+        }
+      });
+    }
+  </script>
+</head>
+<body class="bg-[#0c0a17] text-white font-sans min-h-screen p-5">
+  <div class="max-w-md mx-auto">
+    <header class="flex justify-between items-center mb-6">
+      <button onclick="window.location.href='index.html'" class="text-[#6b6b7b] text-base font-normal hover:text-white">
+        Cancelar
+      </button>
+      <h1 id="pageTitle" class="text-2xl font-bold leading-tight">Editar Suscripción</h1>
+      <button id="saveButton" class="text-white text-base font-normal" type="button">Guardar</button>
+    </header>
+
+    <section class="bg-[#1f1c2b] rounded-xl p-4 flex items-center space-x-4 mb-6">
+      <div class="relative group">
+        <input type="file" id="logo-input" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+        <div class="w-12 h-12 flex-shrink-0 cursor-pointer rounded-lg overflow-hidden">
+          <img id="subscription-logo" alt="Logo de suscripción" class="w-full h-full object-cover" src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png"/>
+        </div>
+        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/50 rounded-lg">
+          <div class="flex flex-col items-center space-y-2">
+            <button onclick="document.getElementById('logo-input').click()" class="text-white hover:text-gray-200">
+              <i class="fas fa-camera"></i>
+              <span class="text-xs">Subir</span>
+            </button>
+            <button onclick="handleLogoDelete()" class="text-white hover:text-gray-200" id="delete-logo-btn">
+              <i class="fas fa-trash"></i>
+              <span class="text-xs">Eliminar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="flex-1">
+        <input type="text" name="name" class="text-white text-lg font-normal mb-1 bg-transparent border-none w-full" placeholder="Name" />
+      </div>
+    </section>
+
+    <section class="bg-[#1f1c2b] rounded-xl divide-y divide-[#2a2736] mb-6">
+      <!-- Precio Original en USD -->
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Precio original (USD)</div>
+        <div class="flex items-center space-x-2">
+          <div class="bg-[#3f3f46] rounded-md w-7 h-7 flex items-center justify-center text-white font-semibold text-sm select-none">$</div>
+          <input type="number" name="original_price_usd" step="0.01" min="0" class="bg-[#3f3f46] rounded-md px-3 py-1 text-white text-base font-normal w-24" placeholder="0.00" />
+        </div>
+      </div>
+      <!-- Conversión automática a GTQ -->
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Conversión (GTQ)</div>
+        <div class="flex items-center space-x-2">
+          <div class="bg-[#3f3f46] rounded-md w-7 h-7 flex items-center justify-center text-white font-semibold text-sm select-none">Q</div>
+          <div class="bg-[#3f3f46] rounded-md px-3 py-1 text-[#6b6b7b] text-base font-normal w-24" id="conversion_display">0.00</div>
+        </div>
+      </div>
+      <!-- Precio Debitado en GTQ -->
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Precio debitado (GTQ)</div>
+        <div class="flex items-center space-x-2">
+          <div class="bg-[#3f3f46] rounded-md w-7 h-7 flex items-center justify-center text-white font-semibold text-sm select-none">Q</div>
+          <input type="number" name="debit_price_gtq" step="0.01" min="0" class="bg-[#3f3f46] rounded-md px-3 py-1 text-white text-base font-normal w-24" placeholder="0.00" />
+        </div>
+      </div>
+      <!-- Precio de Cobro en GTQ -->
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Precio de cobro (GTQ)</div>
+        <div class="flex items-center space-x-2">
+          <div class="bg-[#3f3f46] rounded-md w-7 h-7 flex items-center justify-center text-white font-semibold text-sm select-none">Q</div>
+          <div class="bg-[#3f3f46] rounded-md px-3 py-1 text-[#6b6b7b] text-base font-normal w-24" id="charge_price_display">0.00</div>
+        </div>
+      </div>
+      <!-- Ganancia automática en GTQ -->
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Ganancia (GTQ)</div>
+        <div class="flex items-center space-x-2">
+          <div class="bg-[#3f3f46] rounded-md w-7 h-7 flex items-center justify-center text-white font-semibold text-sm select-none">Q</div>
+          <div class="bg-[#3f3f46] rounded-md px-3 py-1 text-[#6b6b7b] text-base font-normal w-24" id="profit_display">0.00</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-[#1f1c2b] rounded-xl divide-y divide-[#2a2736] mb-6">
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Prueba gratuita</div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" name="free_trial" class="sr-only" />
+          <div></div>
+        </label>
+      </div>
+      <div id="freeTrialSection" class="hidden divide-y divide-[#2a2736]">
+        <div class="flex justify-between items-center px-4 py-3">
+          <div class="text-white text-base font-normal">Fecha de Fin</div>
+          <div class="flex items-center space-x-2">
+            <input type="date" name="trial_end_date" class="bg-[#3f3f46] rounded-md px-3 py-1 text-white text-base font-normal" />
+          </div>
+        </div>
+        <div class="flex justify-between items-center px-4 py-3">
+          <div class="text-white text-base font-normal">Notificar antes de fin</div>
+          <div class="flex flex-col w-full" id="trial-notificaciones-container">
+            <div id="trial-activeNotificationsContainer"></div>
+            <button type="button" id="addTrialNotificationBtn" class="text-[#6b6b7b] text-sm hover:text-white mb-2 text-right w-full">
+              + Agregar notificación
+            </button>
+            <div id="trial-additionalNotifications" class="hidden flex-col items-end space-y-2 w-full">
+              <div class="flex flex-row items-center w-full mb-2" id="trial-notif-1day">
+                <input type="checkbox" name="trial_notification_1day" class="notification-checkbox mt-1" />
+                <div class="flex flex-col flex-1 ml-2">
+                  <span class="text-[#6b6b7b] text-base text-right">1 día antes</span>
+                  <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+                </div>
+              </div>
+              <div class="flex flex-row items-center w-full mb-2" id="trial-notif-2days">
+                <input type="checkbox" name="trial_notification_2days" class="notification-checkbox mt-1" />
+                <div class="flex flex-col flex-1 ml-2">
+                  <span class="text-[#6b6b7b] text-base text-right">2 días antes</span>
+                  <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+                </div>
+              </div>
+              <div class="flex flex-row items-center w-full mb-2" id="trial-notif-sameday">
+                <input type="checkbox" name="trial_notification_sameday" class="notification-checkbox mt-1" />
+                <div class="flex flex-col flex-1 ml-2">
+                  <span class="text-[#6b6b7b] text-base text-right">El mismo día</span>
+                  <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+                </div>
+              </div>
+              <div class="flex flex-row items-center w-full mb-2 mt-2" id="trial-customDateNotificationDropdown">
+                <input type="checkbox" name="trial_notification_custom_date" class="notification-checkbox mt-1" />
+                <div class="flex flex-col flex-1 space-y-2">
+                  <span class="text-[#6b6b7b] text-base text-right">Personalizado por fecha</span>
+                  <input type="date" name="trial_custom_date" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" />
+                  <input type="time" name="trial_custom_time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+                  <span class="text-xs text-[#6b6b7b]">Se repetirá cada mes en el día y hora elegidos</span>
+                </div>
+              </div>
+              <div class="flex flex-row items-center w-full mb-2" id="trial-notif-custom">
+                <input type="checkbox" name="trial_notification_custom" class="notification-checkbox mt-1" />
+                <div class="flex flex-col flex-1">
+                  <span class="text-[#6b6b7b] text-base text-right">Personalizado</span>
+                  <input type="number" name="trial_notification_custom_days" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-16 mb-2" placeholder="días" min="1" max="30" disabled />
+                  <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 mb-2 self-end" value="09:00" disabled />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-[#1f1c2b] rounded-xl divide-y divide-[#2a2736] mb-6" id="regularSubscriptionSection">
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Primer pago</div>
+        <div class="flex items-center space-x-2">
+          <input type="date" name="nextPayment" class="text-[#6b6b7b] text-base font-normal bg-transparent border-none" />
+        </div>
+      </div>
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Ciclo de facturación</div>
+        <div class="flex items-center space-x-2">
+          <select name="billing" class="text-[#6b6b7b] text-base font-normal bg-transparent border-none">
+            <option value="mensual">Mensual</option>
+            <option value="trimestral">Trimestral</option>
+            <option value="semestral">Semestral</option>
+            <option value="anual">Anual</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-[#1f1c2b] rounded-xl divide-y divide-[#2a2736] mb-6">
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Tipo de suscripción</div>
+        <div class="flex items-center space-x-2">
+          <select name="list" class="text-[#6b6b7b] text-base font-normal bg-transparent border-none">
+            <option value="personal">Personal</option>
+            <option value="compartido">Compartido</option>
+            <option value="prueba_gratuita">Prueba gratuita</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Categoría</div>
+        <div class="flex items-center space-x-2">
+          <input type="text" name="category" class="text-[#6b6b7b] text-base font-normal bg-transparent border-none" />
+        </div>
+      </div>
+      <div class="flex justify-between items-center px-4 py-3">
+        <div class="text-white text-base font-normal">Notificaciones</div>
+        <div class="flex flex-col w-full" id="notificaciones-container">
+          <div id="activeNotificationsContainer"></div>
+          <button type="button" id="addNotificationBtn" class="text-[#6b6b7b] text-sm hover:text-white mb-2 text-right w-full">
+            + Agregar notificación
+          </button>
+          <div id="additionalNotifications" class="hidden flex-col items-end space-y-2 w-full">
+            <div class="flex flex-row items-center w-full mb-2" id="notif-1day">
+              <input type="checkbox" name="notification_1day" class="notification-checkbox mt-1" />
+              <div class="flex flex-col flex-1 ml-2">
+                <span class="text-[#6b6b7b] text-base text-right">1 día antes</span>
+                <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+              </div>
+            </div>
+            <div class="flex flex-row items-center w-full mb-2" id="notif-2days">
+              <input type="checkbox" name="notification_2days" class="notification-checkbox mt-1" />
+              <div class="flex flex-col flex-1 ml-2">
+                <span class="text-[#6b6b7b] text-base text-right">2 días antes</span>
+                <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+              </div>
+            </div>
+            <div class="flex flex-row items-center w-full mb-2" id="notif-sameday">
+              <input type="checkbox" name="notification_sameday" class="notification-checkbox mt-1" />
+              <div class="flex flex-col flex-1 ml-2">
+                <span class="text-[#6b6b7b] text-base text-right">El mismo día</span>
+                <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+              </div>
+            </div>
+            <div class="flex flex-row items-center w-full mb-2 mt-2" id="customDateNotificationDropdown">
+              <input type="checkbox" name="notification_custom_date" class="notification-checkbox mt-1" />
+              <div class="flex flex-col flex-1 space-y-2">
+                <span class="text-[#6b6b7b] text-base text-right">Personalizado por fecha</span>
+                <input type="date" name="custom_date" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" />
+                <input type="time" name="custom_time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+                <span class="text-xs text-[#6b6b7b]">Se repetirá cada mes en el día y hora elegidos</span>
+              </div>
+            </div>
+            <div class="flex flex-row items-center w-full mb-2" id="notif-custom">
+              <input type="checkbox" name="notification_custom" class="notification-checkbox mt-1" />
+              <div class="flex flex-col flex-1">
+                <span class="text-[#6b6b7b] text-base text-right">Personalizado</span>
+                <input type="number" name="notification_custom_days" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-16 mb-2" placeholder="días" min="1" max="30" disabled />
+                <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 mb-2 self-end" value="09:00" disabled />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Suscripción Compartida (inicialmente oculta) -->
+    <div id="seccion-compartida" class="hidden space-y-4 mb-6">
+      <div>
+        <label class="block text-gray-400 text-sm mb-2">Suscripción Compartida</label>
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <div class="mb-4">
+            <label class="block text-gray-400 text-sm mb-2">Perfiles</label>
+            <input type="number" id="perfiles-input" class="w-full bg-transparent border-none text-white text-lg focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" placeholder="Ingrese número de perfiles" min="1" max="7">
+          </div>
+          <div id="perfiles-container" class="flex justify-center space-x-2">
+            <!-- Los iconos se generarán aquí dinámicamente -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section>
+      <label class="block text-[#6b6b7b] text-xs font-semibold mb-1 tracking-widest" for="notes">NOTAS</label>
+      <textarea class="w-full bg-[#1f1c2b] rounded-xl p-4 text-white text-base font-normal resize-none placeholder-[#6b6b7b] focus:outline-none" id="notes" placeholder="" rows="6"></textarea>
+    </section>
+  </div>
+</body>
+</html>

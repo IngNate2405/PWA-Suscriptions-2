@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Detalles de Suscripción - App Suscripciones</title>
+  <meta name="description" content="Detalles de suscripción">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+   @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Text&display=swap');
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    /* Ocultar scrollbars en móvil */
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none;
+    }
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Ocultar scrollbar pero mantener funcionalidad */
+    .scrollable-content::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollable-content {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Ajustes para dispositivos móviles */
+    @media (max-width: 640px) {
+      .card-container {
+        width: 100%;
+        height: calc(100vh - 3rem - env(safe-area-inset-top));
+        border-radius: 0;
+        position: fixed;
+        top: env(safe-area-inset-top);
+        left: 0;
+        transform: none;
+      }
+    }
+  </style>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/PWA-Suscriptions-2/sw.js')
+          .then(registration => {
+          })
+          .catch(error => {
+          });
+      });
+    }
+
+    // Función para obtener el ID de la suscripción de la URL
+    function getSubscriptionId() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('id');
+    }
+
+    // Función para formatear como moneda
+    function formatCurrency(value) {
+      // Remover cualquier caracter que no sea número
+      const number = value.replace(/[^0-9]/g, '');
+      // Formatear como moneda sin la Q
+      return `${number}.00`;
+    }
+
+    // Función para formatear la fecha como dd/mm/yyyy
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+
+    // Función para convertir fecha dd/mm/yyyy a formato ISO
+    function parseDate(dateString) {
+      const [day, month, year] = dateString.split('/');
+      return `${year}-${month}-${day}`;
+    }
+
+    // Función para cargar los datos de la suscripción
+    function loadSubscriptionData() {
+      const subscriptionId = getSubscriptionId();
+      if (!subscriptionId) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+      
+      if (subscription) {
+        // Actualizar el texto del botón de pausa según el estado
+        const pauseButton = document.querySelector('button[aria-label="Pause subscription"]');
+        if (subscription.status === 'paused') {
+          pauseButton.textContent = 'Reanudar suscripción';
+        } else {
+          pauseButton.textContent = 'Pausar suscripción';
+        }
+
+        // Cargar datos básicos
+        document.getElementById('name_display').textContent = subscription.name;
+        
+        // Cargar logo
+        const logoImg = document.querySelector('.flex.items-center.space-x-4 img');
+        logoImg.src = subscription.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png';
+        logoImg.alt = `${subscription.name} logo`;
+        
+        // Cargar y mostrar precios
+        const originalPriceUSD = parseFloat(subscription.original_price_usd) || 0;
+        const debitPriceGTQ = parseFloat(subscription.debit_price_gtq) || 0;
+        
+        // Mostrar precio original
+        document.getElementById('original_price_display').textContent = originalPriceUSD.toFixed(2);
+        
+        // Calcular y mostrar conversión
+        const conversionRate = 8;
+        const convertedPrice = originalPriceUSD * conversionRate;
+        document.getElementById('conversion_display').textContent = convertedPrice.toFixed(2);
+        
+        // Mostrar precio debitado
+        document.getElementById('debit_price_display').textContent = debitPriceGTQ.toFixed(2);
+
+        // Calcular el total de cobro basado en los pagos de las personas
+        let totalCobro = 0;
+        const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+        personas.forEach(persona => {
+          persona.plataformas.forEach(plataforma => {
+            if (plataforma.nombre === subscription.name) {
+              let pago = parseFloat(plataforma.precio) || 0;
+              let cicloPersona = plataforma.tipoCobro || 'mensual';
+              let cicloSuscripcion = subscription.billing || 'mensual';
+              // Convertir el pago de la persona al ciclo de la suscripción
+              let factor = 1;
+              if (cicloPersona === cicloSuscripcion) {
+                factor = 1;
+              } else if (cicloPersona === 'mensual' && cicloSuscripcion === 'semestral') {
+                factor = 6;
+              } else if (cicloPersona === 'mensual' && cicloSuscripcion === 'anual') {
+                factor = 12;
+              } else if (cicloPersona === 'semestral' && cicloSuscripcion === 'mensual') {
+                factor = 1/6;
+              } else if (cicloPersona === 'anual' && cicloSuscripcion === 'mensual') {
+                factor = 1/12;
+              } else if (cicloPersona === 'semestral' && cicloSuscripcion === 'anual') {
+                factor = 2;
+              } else if (cicloPersona === 'anual' && cicloSuscripcion === 'semestral') {
+                factor = 0.5;
+              } else if (cicloPersona === 'trimestral' && cicloSuscripcion === 'mensual') {
+                factor = 1/3;
+              } else if (cicloPersona === 'mensual' && cicloSuscripcion === 'trimestral') {
+                factor = 3;
+              } else if (cicloPersona === 'trimestral' && cicloSuscripcion === 'semestral') {
+                factor = 2;
+              } else if (cicloPersona === 'semestral' && cicloSuscripcion === 'trimestral') {
+                factor = 0.5;
+              } else if (cicloPersona === 'trimestral' && cicloSuscripcion === 'anual') {
+                factor = 4;
+              } else if (cicloPersona === 'anual' && cicloSuscripcion === 'trimestral') {
+                factor = 0.25;
+              }
+              totalCobro += pago * factor;
+            }
+          });
+        });
+        // Mostrar precio de cobro
+        document.getElementById('charge_price_display').textContent = totalCobro.toFixed(2);
+        
+        // Calcular y mostrar ganancia
+        let profit = 0;
+        if (totalCobro > 0) {
+          profit = totalCobro - debitPriceGTQ;
+        } else {
+          profit = convertedPrice - debitPriceGTQ;
+        }
+        document.getElementById('profit_display').textContent = profit.toFixed(2);
+
+        // Actualizar los valores en localStorage
+        subscription.charge_price_gtq = totalCobro.toFixed(2);
+        subscription.ganancia = profit.toFixed(2);
+        const subscriptionIndex = subscriptions.findIndex(sub => sub.id === subscriptionId);
+        if (subscriptionIndex !== -1) {
+          subscriptions[subscriptionIndex] = subscription;
+          localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        }
+
+        // Cargar otros datos
+        document.getElementById('billing_display').textContent = subscription.billing;
+        document.getElementById('category_display').textContent = subscription.category;
+        document.getElementById('subscription_type_display').textContent = subscription.list;
+
+        // Calcular el próximo pago basado en el ciclo de facturación
+        const startDate = new Date(subscription.nextPayment);
+        const today = new Date();
+        let nextPaymentDate = new Date(startDate);
+
+        // Calcular cuántos ciclos han pasado desde la fecha de inicio
+        const monthsDiff = (today.getFullYear() - startDate.getFullYear()) * 12 + 
+                          (today.getMonth() - startDate.getMonth());
+        
+        // Ajustar la fecha según el ciclo de facturación
+        switch(subscription.billing) {
+          case 'mensual':
+            // Si el día del mes es mayor que el día actual, usar el mes actual
+            if (startDate.getDate() > today.getDate()) {
+              nextPaymentDate.setMonth(today.getMonth());
+            } else {
+              // Si no, usar el próximo mes
+              nextPaymentDate.setMonth(today.getMonth() + 1);
+            }
+            break;
+          case 'trimestral':
+            // Calcular el próximo trimestre
+            const currentQuarter = Math.floor(today.getMonth() / 3);
+            const startQuarter = Math.floor(startDate.getMonth() / 3);
+            const quartersDiff = currentQuarter - startQuarter;
+            nextPaymentDate.setMonth(startDate.getMonth() + (quartersDiff + 1) * 3);
+            break;
+          case 'semestral':
+            // Calcular el próximo semestre
+            const currentSemester = Math.floor(today.getMonth() / 6);
+            const startSemester = Math.floor(startDate.getMonth() / 6);
+            const semestersDiff = currentSemester - startSemester;
+            nextPaymentDate.setMonth(startDate.getMonth() + (semestersDiff + 1) * 6);
+            break;
+          case 'anual':
+            // Calcular el próximo año
+            if (today.getMonth() > startDate.getMonth() || 
+                (today.getMonth() === startDate.getMonth() && today.getDate() >= startDate.getDate())) {
+              nextPaymentDate.setFullYear(today.getFullYear() + 1);
+            } else {
+              nextPaymentDate.setFullYear(today.getFullYear());
+            }
+            break;
+        }
+
+        // Mantener el mismo día del mes que la fecha de inicio
+        nextPaymentDate.setDate(startDate.getDate());
+
+        // Mostrar la fecha formateada
+        document.getElementById('next_payment_display').textContent = formatDate(nextPaymentDate);
+
+        // Cargar notificaciones
+        const notificationsContainer = document.querySelector('.notifications-container');
+        if (notificationsContainer) {
+          if (subscription.notifications && subscription.notifications.length > 0) {
+            const notificationsList = subscription.notifications.map(notif => {
+              if (notif.startsWith('trial_custom_')) {
+                const days = notif.split('_')[2];
+                return `Prueba gratuita: ${days} días antes`;
+              }
+              if (notif.startsWith('trial_customdate_')) {
+                const parts = notif.split('_');
+                if (parts.length === 3 && !isNaN(parts[1]) && /^\d{1,2}:\d{2}$/.test(parts[2])) {
+                  return `Prueba gratuita: Día ${parts[1]} a las ${parts[2]}`;
+                } else {
+                  return 'Prueba gratuita: Notificación personalizada inválida';
+                }
+              }
+              switch(notif) {
+                case 'trial_1day': return 'Prueba gratuita: 1 día antes';
+                case 'trial_2days': return 'Prueba gratuita: 2 días antes';
+                case 'trial_sameday': return 'Prueba gratuita: El mismo día';
+                case '1day': return '1 día antes';
+                case '2days': return '2 días antes';
+                case 'sameday': return 'El mismo día';
+                default:
+                  if (notif.startsWith('custom_')) {
+                    const days = notif.split('_')[1];
+                    return `${days} días antes`;
+                  }
+                  if (notif.startsWith('customdate_')) {
+                    const parts = notif.split('_');
+                    if (parts.length === 3 && !isNaN(parts[1]) && /^\d{1,2}:\d{2}$/.test(parts[2])) {
+                      return `Día ${parts[1]} a las ${parts[2]}`;
+                    } else {
+                      return 'Notificación personalizada inválida';
+                    }
+                  }
+                  return notif;
+              }
+            }).join(', ');
+            notificationsContainer.textContent = notificationsList;
+          } else {
+            notificationsContainer.textContent = 'Sin notificaciones';
+          }
+        }
+
+        // Mostrar la sección de perfiles si la suscripción es compartida
+        mostrarPerfilesCompartidosCard(subscription);
+      }
+    }
+
+    // Función para manejar la navegación a editar
+    function handleEdit() {
+      const subscriptionId = getSubscriptionId();
+      window.location.href = `editar.html?id=${subscriptionId}`;
+    }
+
+    // Función para manejar la eliminación
+    function handleDelete() {
+      if (confirm('¿Estás seguro de que quieres eliminar esta suscripción?')) {
+        const subscriptionId = getSubscriptionId();
+        const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+        const updatedSubscriptions = subscriptions.filter(sub => sub.id !== subscriptionId);
+        localStorage.setItem('subscriptions', JSON.stringify(updatedSubscriptions));
+        alert('Suscripción eliminada');
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Función para manejar la pausa de la suscripción
+    function handlePause() {
+      const subscriptionId = getSubscriptionId();
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+      
+      if (subscription) {
+        // Guardar la fecha de próximo pago original antes de pausar
+        subscription.originalNextPayment = subscription.nextPayment;
+        subscription.status = 'paused';
+        subscription.pausedAt = new Date().toISOString();
+        localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        alert('Suscripción pausada');
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Función para manejar la reactivación de la suscripción
+    function handleResume() {
+      const subscriptionId = getSubscriptionId();
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+      
+      if (subscription) {
+        // Restaurar el estado original
+        subscription.status = 'active';
+        subscription.pausedAt = null;
+        
+        // Si la suscripción tenía una fecha de próximo pago antes de ser pausada
+        if (subscription.originalNextPayment) {
+          subscription.nextPayment = subscription.originalNextPayment;
+          delete subscription.originalNextPayment;
+        }
+        
+        localStorage.setItem('subscriptions', JSON.stringify(subscriptions));
+        alert('Suscripción reactivada');
+        window.location.href = 'index.html';
+      }
+    }
+
+    // --- Perfiles Compartidos (solo visualización) ---
+    function generarIconosPerfilesCard(numeroPerfiles, nombreSuscripcion) {
+      const container = document.getElementById('perfiles-container-card');
+      if (!container) return;
+      container.innerHTML = '';
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      // Crear un array de nombres de personas que tienen esta suscripción (pueden repetirse)
+      const perfilesOcupados = [];
+      personas.forEach(persona => {
+        if (persona.plataformas && Array.isArray(persona.plataformas)) {
+          persona.plataformas.forEach(plataforma => {
+            if (plataforma.nombre.toLowerCase() === nombreSuscripcion.toLowerCase()) {
+              perfilesOcupados.push(persona.nombre);
+            }
+          });
+        }
+      });
+      for (let i = 0; i < numeroPerfiles; i++) {
+        const icono = document.createElement('div');
+        icono.className = 'perfil-icono text-2xl relative group';
+        const estaOcupado = i < perfilesOcupados.length;
+        const nombrePersona = perfilesOcupados[i] || '';
+        icono.classList.add(estaOcupado ? 'text-red-500' : 'text-green-500');
+        icono.innerHTML = '<i class="fas fa-user"></i>';
+        const tooltip = document.createElement('div');
+        tooltip.className = 'absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-[#1f1c2b] text-white text-sm rounded opacity-0 transition-opacity whitespace-nowrap z-50';
+        tooltip.textContent = estaOcupado ? nombrePersona : 'Disponible';
+        icono.addEventListener('mouseenter', function() {
+          tooltip.classList.remove('opacity-0');
+        });
+        icono.addEventListener('mouseleave', function() {
+          tooltip.classList.add('opacity-0');
+        });
+        icono.appendChild(tooltip);
+        container.appendChild(icono);
+      }
+    }
+    // Mostrar la sección de perfiles si la suscripción es compartida
+    function mostrarPerfilesCompartidosCard(subscription) {
+      const seccion = document.getElementById('seccion-compartida-card');
+      const numPerfilesSpan = document.getElementById('num-perfiles-card');
+      if (subscription.list === 'compartido' && subscription.numPerfiles) {
+        seccion.classList.remove('hidden');
+        if (numPerfilesSpan) numPerfilesSpan.textContent = `(${subscription.numPerfiles})`;
+        generarIconosPerfilesCard(subscription.numPerfiles, subscription.name);
+      } else {
+        seccion.classList.add('hidden');
+        if (numPerfilesSpan) numPerfilesSpan.textContent = '';
+      }
+    }
+
+    // Agregar eventos cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSubscriptionData();
+
+      // Botón de editar
+      const editButton = document.querySelector('button[type="button"]');
+      editButton.addEventListener('click', handleEdit);
+
+      // Botón de eliminar
+      const deleteButton = document.querySelector('button[aria-label="Delete subscription"]');
+      deleteButton.addEventListener('click', handleDelete);
+
+      // Botón de pausar/reactivar
+      const pauseButton = document.querySelector('button[aria-label="Pause subscription"]');
+      pauseButton.addEventListener('click', () => {
+        const subscriptionId = getSubscriptionId();
+        const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+        const subscription = subscriptions.find(sub => sub.id === subscriptionId);
+        
+        if (subscription && subscription.status === 'paused') {
+          handleResume();
+        } else {
+          handlePause();
+        }
+      });
+
+      // Evento de deslizamiento para salir de la pantalla
+      const dragHandle = document.querySelector('.w-16.h-2.bg-\\[\\#9b8dbf\\]');
+      let startY;
+      let currentY;
+
+      // Función para manejar el inicio del deslizamiento
+      function handleDragStart(e) {
+        startY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
+        currentY = startY;
+      }
+
+      // Función para manejar el movimiento del deslizamiento
+      function handleDragMove(e) {
+        if (!startY) return;
+        
+        currentY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
+        const diff = currentY - startY;
+        
+        if (diff > 100) {
+          window.location.href = 'index.html';
+        }
+      }
+
+      // Función para manejar el fin del deslizamiento
+      function handleDragEnd() {
+        startY = null;
+        currentY = null;
+      }
+
+      // Eventos de mouse
+      dragHandle.addEventListener('mousedown', handleDragStart);
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+
+      // Eventos táctiles
+      dragHandle.addEventListener('touchstart', handleDragStart);
+      document.addEventListener('touchmove', handleDragMove);
+      document.addEventListener('touchend', handleDragEnd);
+    });
+  </script>
+ </head>
+ <body class="bg-[#120c2a]">
+  <div class="card-container w-full max-w-md rounded-3xl bg-gradient-to-r from-[#3f2a6f] via-[#2d1f4f] to-[#1a1430] p-6 relative flex flex-col h-[calc(100vh-6rem)] mx-4">
+   <!-- Header fijo -->
+   <div class="flex-none">
+     <!-- Drag handle -->
+     <div class="w-16 h-2 bg-[#9b8dbf] rounded-full mx-auto mb-6"></div>
+     <!-- Edit button top right -->
+     <button class="absolute top-6 right-6 bg-[#5a3ea6] text-[#a07de0] font-semibold text-xs px-3 py-1.5 rounded-lg" type="button">Editar</button>
+     <!-- Netflix logo and title -->
+     <div class="flex items-center space-x-4 mb-6">
+       <img alt="Netflix red N logo" class="object-contain" height="48" src="https://storage.googleapis.com/a1aa/image/8e8c8931-3fb4-4f8b-5302-772c7ab0daf8.jpg" width="32"/>
+       <h3 class="text-white text-3xl font-normal" id="name_display"></h3>
+     </div>
+   </div>
+
+   <!-- Contenido scrolleable -->
+   <div class="scrollable-content flex-1 overflow-y-auto">
+     <!-- Price -->
+     <div class="space-y-6 text-[#7a6a9e] text-base font-normal mb-6">
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Precio Original (USD)</span>
+       <div class="text-white bg-transparent border-none">
+         <span>$</span>
+         <span id="original_price_display"></span>
+       </div>
+      </div>
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Conversión (GTQ)</span>
+       <div class="text-white bg-transparent border-none">
+         <span>Q</span>
+         <span id="conversion_display"></span>
+       </div>
+      </div>
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Precio Debitado (GTQ)</span>
+       <div class="text-white bg-transparent border-none">
+         <span>Q</span>
+         <span id="debit_price_display"></span>
+       </div>
+      </div>
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Ganancia (GTQ)</span>
+       <div class="text-white bg-transparent border-none">
+         <span>Q</span>
+         <span id="profit_display"></span>
+       </div>
+      </div>
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Precio de Cobro (GTQ)</span>
+       <div class="text-white bg-transparent border-none">
+         <span>Q</span>
+         <span id="charge_price_display"></span>
+       </div>
+      </div>
+     </div>
+
+     <!-- Subscription details -->
+     <div class="space-y-6 text-[#7a6a9e] text-base font-normal">
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Billing</span>
+       <div class="text-white bg-transparent border-none">
+         <span id="billing_display"></span>
+       </div>
+      </div>
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Next payment</span>
+       <div class="text-white bg-transparent border-none">
+         <span id="next_payment_display"></span>
+       </div>
+      </div>
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Tipo de suscripción</span>
+       <div class="text-white bg-transparent border-none">
+         <span id="subscription_type_display"></span>
+       </div>
+      </div>
+      <!-- Sección de Perfiles Compartidos (solo visualización) -->
+      <div id="seccion-compartida-card" class="space-y-4 mb-6 hidden">
+        <div>
+          <label class="block text-gray-400 text-sm mb-2">Suscripción Compartida</label>
+          <div class="mb-4">
+            <label class="block text-gray-400 text-sm mb-2">
+              Perfiles <span id="num-perfiles-card" class="text-white font-semibold"></span>
+            </label>
+          </div>
+          <div id="perfiles-container-card" class="flex justify-center space-x-2">
+            <!-- Los iconos se generarán aquí dinámicamente -->
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Notificaciones</span>
+       <div class="text-white bg-transparent border-none">
+         <div class="notifications-container"></div>
+       </div>
+      </div>
+      <div class="flex justify-between border-b border-[#3a2a57] pb-2">
+       <span>Category</span>
+       <div class="text-white bg-transparent border-none">
+         <span id="category_display"></span>
+       </div>
+      </div>
+     </div>
+   </div>
+
+   <!-- Footer fijo -->
+   <div class="flex-none mt-6">
+     <!-- Botón de regresar -->
+     <button onclick="window.location.href='index.html'" class="w-full bg-[#3a2a57] text-white font-semibold text-lg py-3 rounded-xl hover:bg-[#4a3a67] transition-colors" type="button">Regresar</button>
+     <!-- Botón de pausar/reactivar -->
+     <button aria-label="Pause subscription" class="mt-4 w-full text-[#a07de0] font-normal text-base" type="button">Pausar suscripción</button>
+     <!-- Delete subscription text -->
+     <button aria-label="Delete subscription" class="mt-4 w-full text-[#7a6a9e] font-normal text-base" type="button">Delete subscription</button>
+   </div>
+  </div>
+ </body>
+</html>
