@@ -93,22 +93,22 @@ self.addEventListener('notificationclick', event => {
   }
 });
 
+// IDs de timeouts programados en memoria (no disponible localStorage en SW)
+let scheduledNotifications = [];
+
 // Función para programar notificaciones
-async function scheduleNotifications() {
+async function scheduleNotifications(subscriptionsFromClient = []) {
   try {
-    const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+    const subscriptions = Array.isArray(subscriptionsFromClient) ? subscriptionsFromClient : [];
     const now = new Date();
     
-    // Limpiar notificaciones anteriores
-    const scheduledNotifications = JSON.parse(localStorage.getItem('scheduledNotifications') || '[]');
-    scheduledNotifications.forEach(notificationId => {
-      clearTimeout(notificationId);
-    });
-    
-    const newScheduledNotifications = [];
+    // Limpiar notificaciones anteriores (en memoria)
+    scheduledNotifications.forEach(notificationId => clearTimeout(notificationId));
+    scheduledNotifications = [];
     
     for (const subscription of subscriptions) {
       if (!subscription.notifications || subscription.status === 'paused') continue;
+      if (!subscription.nextPayment) continue;
       
       const nextPayment = new Date(subscription.nextPayment);
       
@@ -165,15 +165,13 @@ async function scheduleNotifications() {
             });
           }, delay);
           
-          newScheduledNotifications.push(timeoutId);
+          scheduledNotifications.push(timeoutId);
         }
       }
     }
     
-    // Guardar los IDs de las notificaciones programadas
-    localStorage.setItem('scheduledNotifications', JSON.stringify(newScheduledNotifications));
-    
   } catch (error) {
+    console.error('Error al programar notificaciones en SW:', error);
   }
 }
 
@@ -186,29 +184,25 @@ function formatDate(dateString) {
   return `${day}/${month}/${year}`;
 }
 
-// Programar notificaciones cuando se activa el service worker
+// Programar notificaciones cuando se activa el service worker (solo limpieza de caché)
 self.addEventListener('activate', event => {
   event.waitUntil(
-    Promise.all([
-      scheduleNotifications(),
-      // Limpiar caches antiguos si es necesario
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            if (cacheName !== CACHE_NAME) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
-    ])
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
 });
 
 // Escuchar mensajes del cliente para reprogramar notificaciones
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SCHEDULE_NOTIFICATIONS') {
-    scheduleNotifications();
+    scheduleNotifications(event.data.subscriptions || []);
   } else if (event.data && event.data.type === 'TEST_NOTIFICATION') {
     self.registration.showNotification(event.data.data.title, {
       body: event.data.data.body,
