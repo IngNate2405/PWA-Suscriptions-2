@@ -708,8 +708,10 @@
           console.log('Service Worker ready obtenido:', registration);
           if (registration.active) {
             console.log('Service Worker activo, enviando mensaje...');
+            const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
             registration.active.postMessage({
-              type: 'SCHEDULE_NOTIFICATIONS'
+              type: 'SCHEDULE_NOTIFICATIONS',
+              subscriptions
             });
             console.log('Notificaciones reprogramadas después de guardar');
           } else {
