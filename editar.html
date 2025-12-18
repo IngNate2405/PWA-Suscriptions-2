@@ -909,8 +909,26 @@
       });
     }
 
+    // Función para cargar versión
+    function cargarVersion() {
+      const versionElement = document.getElementById('app-version');
+      if (!versionElement) return;
+      
+      const versionHTML = '1.0.45'; // Versión base del código
+      const savedVersion = localStorage.getItem('appVersion');
+      
+      // Si hay una versión guardada y es mayor, usarla
+      if (savedVersion && savedVersion > versionHTML) {
+        versionElement.textContent = `v${savedVersion}`;
+      } else {
+        versionElement.textContent = `v${versionHTML}`;
+        localStorage.setItem('appVersion', versionHTML);
+      }
+    }
+
     // Agregar eventos cuando el DOM esté cargado
     document.addEventListener('DOMContentLoaded', () => {
+      cargarVersion();
       loadSubscriptionData();
 
       // Botón de guardar
@@ -1559,6 +1577,9 @@
       <label class="block text-[#6b6b7b] text-xs font-semibold mb-1 tracking-widest" for="notes">NOTAS</label>
       <textarea class="w-full bg-[#1f1c2b] rounded-xl p-4 text-white text-base font-normal resize-none placeholder-[#6b6b7b] focus:outline-none" id="notes" placeholder="" rows="6"></textarea>
     </section>
+  </div>
+  <div class="fixed bottom-0 left-0 right-0 text-center text-[#6b6b7b] text-[10px] pb-1 pointer-events-none z-40">
+    <span id="app-version">v1.0.45</span>
   </div>
 </body>
 </html>

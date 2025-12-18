@@ -1225,8 +1225,26 @@
 
 
 
+    // Función para cargar versión
+    function cargarVersion() {
+      const versionElement = document.getElementById('app-version');
+      if (!versionElement) return;
+      
+      const versionHTML = '1.0.45'; // Versión base del código
+      const savedVersion = localStorage.getItem('appVersion');
+      
+      // Si hay una versión guardada y es mayor, usarla
+      if (savedVersion && savedVersion > versionHTML) {
+        versionElement.textContent = `v${savedVersion}`;
+      } else {
+        versionElement.textContent = `v${versionHTML}`;
+        localStorage.setItem('appVersion', versionHTML);
+      }
+    }
+
     // Cargar datos al iniciar
     document.addEventListener('DOMContentLoaded', function() {
+      cargarVersion();
       cargarPersona();
       
       // Agregar event listener al botón de guardar
@@ -1236,5 +1254,8 @@
       }
     });
   </script>
+  <div class="fixed bottom-0 left-0 right-0 text-center text-[#6b6b7b] text-[10px] pb-1 pointer-events-none z-40">
+    <span id="app-version">v1.0.45</span>
+  </div>
 </body>
 </html> 
