@@ -513,6 +513,7 @@
 
       // Obtener los valores de los campos
       const name = nameInput.value;
+      const apodo = apodoInput ? apodoInput.value.trim() : '';
       const nextPaymentDate = nextPaymentInput.value;
       const nextPayment = new Date(nextPaymentDate + 'T00:00:00');
       const billing = billingSelect.value;
