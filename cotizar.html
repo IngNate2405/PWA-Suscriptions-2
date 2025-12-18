@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <title>Cotizar - App Suscripciones</title>
+  <meta name="description" content="Cotizar suscripciones compartidas">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none !important;
+    }
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none !important;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    html, body {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+  </style>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-extrabold leading-tight">Cotizar</h1>
+      <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
+        <i class="fas fa-arrow-left text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Sección de Información de Suscripción -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Información de Suscripción</h2>
+      
+      <div class="space-y-4">
+        <!-- Precio de la aplicación -->
+        <div>
+          <label class="block text-sm font-semibold mb-2">Precio que me cobra la aplicación (GTQ)</label>
+          <input type="number" 
+                 id="precio-aplicacion" 
+                 step="0.01" 
+                 min="0" 
+                 value="0"
+                 oninput="calcularCotizacion()"
+                 class="w-full bg-[#2a2736] text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]">
+        </div>
+
+        <!-- Número de personas -->
+        <div>
+          <label class="block text-sm font-semibold mb-2">Número de personas para compartir</label>
+          <input type="number" 
+                 id="numero-personas" 
+                 min="1" 
+                 max="10"
+                 value="1"
+                 oninput="calcularCotizacion()"
+                 class="w-full bg-[#2a2736] text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]">
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Cálculo Sugerido -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Cálculo Sugerido</h2>
+      
+      <div class="bg-[#2a2736] rounded-lg p-4">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-400">Precio por persona (sugerido)</span>
+          <span class="text-white text-xl font-bold" id="precio-sugerido">Q0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Precio Personalizado -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Precio por Persona</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold mb-2">Precio que cobraré a cada persona (GTQ)</label>
+          <input type="number" 
+                 id="precio-persona" 
+                 step="0.01" 
+                 min="0" 
+                 value="0"
+                 oninput="calcularGanancia()"
+                 class="w-full bg-[#2a2736] text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]">
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Resultados -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Resultados</h2>
+      
+      <div class="space-y-4">
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-gray-400">Cobro total</span>
+            <span class="text-blue-400 text-xl font-bold" id="cobro-total">Q0.00</span>
+          </div>
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-gray-400">Precio de suscripción</span>
+            <span class="text-red-400 text-xl font-bold" id="precio-suscripcion">Q0.00</span>
+          </div>
+          <div class="border-t border-gray-600 pt-2 mt-2">
+            <div class="flex justify-between items-center">
+              <span class="text-white font-semibold">Ganancia total</span>
+              <span class="text-green-400 text-2xl font-bold" id="ganancia-total">Q0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Función para calcular precio sugerido por persona
+    function calcularCotizacion() {
+      const precioAplicacion = parseFloat(document.getElementById('precio-aplicacion').value) || 0;
+      const numeroPersonas = parseInt(document.getElementById('numero-personas').value) || 1;
+      
+      if (numeroPersonas > 0) {
+        const precioSugerido = precioAplicacion / numeroPersonas;
+        document.getElementById('precio-sugerido').textContent = `Q${precioSugerido.toFixed(2)}`;
+        
+        // Si el precio por persona está en 0, sugerir el precio calculado
+        const precioPersonaInput = document.getElementById('precio-persona');
+        if (parseFloat(precioPersonaInput.value) === 0) {
+          precioPersonaInput.value = precioSugerido.toFixed(2);
+        }
+      } else {
+        document.getElementById('precio-sugerido').textContent = 'Q0.00';
+      }
+      
+      calcularGanancia();
+    }
+
+    // Función para calcular ganancia
+    function calcularGanancia() {
+      const precioAplicacion = parseFloat(document.getElementById('precio-aplicacion').value) || 0;
+      const numeroPersonas = parseInt(document.getElementById('numero-personas').value) || 1;
+      const precioPersona = parseFloat(document.getElementById('precio-persona').value) || 0;
+      
+      const cobroTotal = precioPersona * numeroPersonas;
+      const ganancia = cobroTotal - precioAplicacion;
+      
+      document.getElementById('cobro-total').textContent = `Q${cobroTotal.toFixed(2)}`;
+      document.getElementById('precio-suscripcion').textContent = `Q${precioAplicacion.toFixed(2)}`;
+      
+      const gananciaElement = document.getElementById('ganancia-total');
+      gananciaElement.textContent = `Q${ganancia.toFixed(2)}`;
+      
+      // Cambiar color según si hay ganancia o pérdida
+      if (ganancia >= 0) {
+        gananciaElement.className = 'text-green-400 text-2xl font-bold';
+      } else {
+        gananciaElement.className = 'text-red-400 text-2xl font-bold';
+      }
+    }
+
+    // Función para cargar versión
+    function cargarVersion() {
+      const versionElement = document.getElementById('app-version');
+      if (!versionElement) return;
+      
+      const versionHTML = '1.0.45'; // Versión base del código
+      const savedVersion = localStorage.getItem('appVersion');
+      
+      // Si hay una versión guardada y es mayor, usarla
+      if (savedVersion && savedVersion > versionHTML) {
+        versionElement.textContent = `v${savedVersion}`;
+      } else {
+        versionElement.textContent = `v${versionHTML}`;
+        localStorage.setItem('appVersion', versionHTML);
+      }
+    }
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarVersion();
+      calcularCotizacion();
+    });
+
+    // Bloquear pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+    // Bloquear doble tap zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-xl"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+  <div class="fixed bottom-0 left-0 right-0 text-center text-[#6b6b7b] text-[10px] pb-1 pointer-events-none z-40">
+    <span id="app-version">v1.0.45</span>
+  </div>
+</body>
+</html>
+
