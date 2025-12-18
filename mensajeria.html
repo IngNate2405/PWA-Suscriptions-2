@@ -306,12 +306,47 @@
       }
 
       const nombre = personaSeleccionada.nombre;
-      const nombresSuscripciones = suscripcionesSeleccionadas.map(s => s.nombre);
       const sumaTotal = suscripcionesSeleccionadas.reduce((sum, s) => sum + (s.precio || 0), 0);
+      
+      // Obtener mes actual y calcular período
+      const ahora = new Date();
+      const mesActual = ahora.getMonth(); // 0-11
+      const anioActual = ahora.getFullYear();
+      
+      // Calcular período actual (Enero a Junio) y futuro (Julio a Diciembre)
+      let periodoActual = '';
+      let periodoFuturo = '';
+      let fechaLimite = '';
+      
+      if (mesActual >= 0 && mesActual <= 5) {
+        // Estamos en Enero-Junio
+        periodoActual = 'Enero a Junio';
+        periodoFuturo = 'Julio a Diciembre';
+        fechaLimite = '1 de Julio';
+      } else {
+        // Estamos en Julio-Diciembre
+        periodoActual = 'Julio a Diciembre';
+        periodoFuturo = `Enero a Junio de ${anioActual + 1}`;
+        fechaLimite = `1 de Enero de ${anioActual + 1}`;
+      }
+      
+      // Construir lista de suscripciones con precios
+      let listaSuscripciones = '';
+      suscripcionesSeleccionadas.forEach((suscripcion, index) => {
+        const precio = suscripcion.precio || 0;
+        listaSuscripciones += `*Q${precio.toFixed(0)}* de ${suscripcion.nombre}`;
+        if (index < suscripcionesSeleccionadas.length - 1) {
+          listaSuscripciones += ' . ';
+        }
+      });
 
-      let mensaje = `Hola ${nombre}\n`;
-      mensaje += `Tu suscripción de ${nombresSuscripciones.join(' y ')} ha terminado, `;
-      mensaje += `si deseas seguir el pago sería de Q${sumaTotal.toFixed(2)}`;
+      // Generar mensaje con el formato solicitado
+      let mensaje = `¡Hola ${nombre} ! ¿Cómo estás?\n`;
+      mensaje += `Espero que bien 😊\n`;
+      mensaje += `Quería comentarte que el plazo de ${periodoActual} de tu plan de streaming de ( *${suscripcionesSeleccionadas.map(s => s.nombre).join('* y *')}* ) está por terminar este mes. Y quisiera saber si te gustaría seguir con nosotros otros seis meses, que seria de ${periodoFuturo}.\n`;
+      mensaje += `El pago semestral sería de  ${listaSuscripciones} . *Total ${sumaTotal.toFixed(0)}*\n`;
+      mensaje += `Si es de tu interés continuar, solo necesito de tu confirmación y si fuera posible que en estos días o antes del *${fechaLimite}* puedas hacer el deposito o pago en efectivo te lo agradecería bastante, para que yo pueda coordinar los espacios en la plataforma.\n`;
+      mensaje += `Me cuentas :D`;
 
       document.getElementById('mensaje-generado').value = mensaje;
     }
