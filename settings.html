@@ -381,6 +381,32 @@
       }
     }
 
+    // Función para incrementar versión automáticamente
+    function incrementarVersion() {
+      const versionElement = document.getElementById('versionNumber');
+      const currentVersion = versionElement.textContent.trim();
+      
+      // Parsear la versión (formato: X.Y.Z)
+      const versionParts = currentVersion.split('.');
+      if (versionParts.length === 3) {
+        const major = parseInt(versionParts[0]) || 1;
+        const minor = parseInt(versionParts[1]) || 0;
+        const patch = parseInt(versionParts[2]) || 0;
+        
+        // Incrementar el patch (último número)
+        const newPatch = patch + 1;
+        const newVersion = `${major}.${minor}.${newPatch}`;
+        
+        // Actualizar en el DOM
+        versionElement.textContent = newVersion;
+        
+        // Guardar en localStorage para persistencia
+        localStorage.setItem('appVersion', newVersion);
+        
+        console.log(`Versión actualizada de ${currentVersion} a ${newVersion}`);
+      }
+    }
+
     // Inicializar cuando el DOM esté cargado
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM cargado, verificando estado de notificaciones...');
@@ -434,6 +460,8 @@
       if (!onlyData && 'caches' in window) {
         const cacheNames = await caches.keys();
         await Promise.all(cacheNames.map(name => caches.delete(name)));
+        // Actualizar versión cuando se limpia el caché (opción 1)
+        incrementarVersion();
       }
       if (!onlyData && 'serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
@@ -603,12 +631,7 @@
             <h3 class="font-semibold">Versión</h3>
             <p class="text-gray-400 text-sm">App Suscripciones</p>
           </div>
-          <div class="flex items-center space-x-2">
-            <span id="versionNumber" class="text-gray-400 font-semibold">1.0.45</span>
-            <button onclick="updateVersion()" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-md text-sm">
-              Actualizar
-            </button>
-          </div>
+          <span id="versionNumber" class="text-gray-400 font-semibold">1.0.45</span>
         </div>
         
         <div class="flex justify-between items-center">
