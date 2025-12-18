@@ -121,6 +121,19 @@
         // Cargar datos básicos
         document.getElementById('name_display').textContent = subscription.name;
         
+        // Mostrar apodo si existe
+        const apodoDisplay = document.getElementById('apodo_display');
+        if (subscription.apodo && subscription.apodo !== subscription.name) {
+          if (apodoDisplay) {
+            apodoDisplay.textContent = subscription.apodo;
+            apodoDisplay.classList.remove('hidden');
+          }
+        } else {
+          if (apodoDisplay) {
+            apodoDisplay.classList.add('hidden');
+          }
+        }
+        
         // Cargar logo
         const logoImg = document.querySelector('.flex.items-center.space-x-4 img');
         logoImg.src = subscription.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png';
@@ -516,7 +529,10 @@
      <!-- Netflix logo and title -->
      <div class="flex items-center space-x-4 mb-6">
        <img alt="Netflix red N logo" class="object-contain" height="48" src="https://storage.googleapis.com/a1aa/image/8e8c8931-3fb4-4f8b-5302-772c7ab0daf8.jpg" width="32"/>
-       <h3 class="text-white text-3xl font-normal" id="name_display"></h3>
+       <div>
+         <h3 class="text-white text-3xl font-normal" id="name_display"></h3>
+         <p class="text-gray-400 text-sm mt-1" id="apodo_display"></p>
+       </div>
      </div>
    </div>
 

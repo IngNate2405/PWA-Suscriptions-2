@@ -213,7 +213,14 @@
       suscripcionesSeleccionadas = [];
       preciosPersonalizados = {};
 
+      // Obtener suscripciones compartidas para buscar apodos
+      const suscripciones = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      
       personaSeleccionada.plataformas.forEach((plataforma, index) => {
+        // Buscar el apodo de la suscripción compartida
+        const suscripcionCompartida = suscripciones.find(sub => sub.name === plataforma.nombre && sub.list === 'compartido');
+        const nombreParaMensaje = suscripcionCompartida && suscripcionCompartida.apodo ? suscripcionCompartida.apodo : plataforma.nombre;
+        
         const suscripcionDiv = document.createElement('div');
         suscripcionDiv.className = 'flex items-center space-x-3 bg-[#2a2736] rounded-lg p-3';
         
@@ -230,6 +237,7 @@
         
         suscripcionesSeleccionadas.push({
           nombre: plataforma.nombre,
+          nombreParaMensaje: nombreParaMensaje, // Usar apodo si existe
           precio: plataforma.precio,
           index: index
         });
@@ -244,8 +252,14 @@
     function toggleSuscripcion(index, seleccionada) {
       if (seleccionada) {
         const plataforma = personaSeleccionada.plataformas[index];
+        // Buscar el apodo de la suscripción compartida
+        const suscripciones = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+        const suscripcionCompartida = suscripciones.find(sub => sub.name === plataforma.nombre && sub.list === 'compartido');
+        const nombreParaMensaje = suscripcionCompartida && suscripcionCompartida.apodo ? suscripcionCompartida.apodo : plataforma.nombre;
+        
         suscripcionesSeleccionadas.push({
           nombre: plataforma.nombre,
+          nombreParaMensaje: nombreParaMensaje, // Usar apodo si existe
           precio: plataforma.precio,
           index: index
         });
@@ -330,20 +344,24 @@
         fechaLimite = `1 de Enero de ${anioActual + 1}`;
       }
       
-      // Construir lista de suscripciones con precios
+      // Construir lista de suscripciones con precios (usando apodo si existe)
       let listaSuscripciones = '';
       suscripcionesSeleccionadas.forEach((suscripcion, index) => {
         const precio = suscripcion.precio || 0;
-        listaSuscripciones += `*Q${precio.toFixed(0)}* de ${suscripcion.nombre}`;
+        const nombreAMostrar = suscripcion.nombreParaMensaje || suscripcion.nombre;
+        listaSuscripciones += `*Q${precio.toFixed(0)}* de ${nombreAMostrar}`;
         if (index < suscripcionesSeleccionadas.length - 1) {
           listaSuscripciones += ' . ';
         }
       });
 
+      // Obtener nombres para el mensaje (usando apodo si existe)
+      const nombresParaMensaje = suscripcionesSeleccionadas.map(s => s.nombreParaMensaje || s.nombre);
+
       // Generar mensaje con el formato solicitado
       let mensaje = `¡Hola ${nombre} ! ¿Cómo estás?\n`;
       mensaje += `Espero que bien 😊\n`;
-      mensaje += `Quería comentarte que el plazo de ${periodoActual} de tu plan de streaming de ( *${suscripcionesSeleccionadas.map(s => s.nombre).join('* y *')}* ) está por terminar este mes. Y quisiera saber si te gustaría seguir con nosotros otros seis meses, que seria de ${periodoFuturo}.\n`;
+      mensaje += `Quería comentarte que el plazo de ${periodoActual} de tu plan de streaming de ( *${nombresParaMensaje.join('* y *')}* ) está por terminar este mes. Y quisiera saber si te gustaría seguir con nosotros otros seis meses, que seria de ${periodoFuturo}.\n`;
       mensaje += `El pago semestral sería de  ${listaSuscripciones} . *Total ${sumaTotal.toFixed(0)}*\n`;
       mensaje += `Si es de tu interés continuar, solo necesito de tu confirmación y si fuera posible que en estos días o antes del *${fechaLimite}* puedas hacer el deposito o pago en efectivo te lo agradecería bastante, para que yo pueda coordinar los espacios en la plataforma.\n`;
       mensaje += `Me cuentas :D`;

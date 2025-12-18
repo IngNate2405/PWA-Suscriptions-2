@@ -270,12 +270,14 @@
         }
         // Cargar campos básicos
         const nameInput = document.querySelector('input[name="name"]');
+        const apodoInput = document.querySelector('input[name="apodo"]');
         const billingSelect = document.querySelector('select[name="billing"]');
         const nextPaymentInput = document.querySelector('input[name="nextPayment"]');
         const categoryInput = document.querySelector('input[name="category"]');
         const listSelect = document.querySelector('select[name="list"]');
 
         if (nameInput) nameInput.value = subscription.name || '';
+        if (apodoInput) apodoInput.value = subscription.apodo || '';
         if (billingSelect) billingSelect.value = subscription.billing || 'mensual';
         if (nextPaymentInput) {
           const nextPaymentDate = new Date(subscription.nextPayment);
@@ -480,6 +482,7 @@
 
       // Obtener los elementos del DOM
       const nameInput = document.querySelector('input[name="name"]');
+      const apodoInput = document.querySelector('input[name="apodo"]');
       const nextPaymentInput = document.querySelector('input[name="nextPayment"]');
       const billingSelect = document.querySelector('select[name="billing"]');
       const categoryInput = document.querySelector('input[name="category"]');
@@ -621,6 +624,7 @@
       // Crear objeto base de suscripción
       const subscriptionData = {
         name,
+        apodo: apodo || name, // Si no hay apodo, usar el nombre
         logo: window.logoData || document.getElementById('subscription-logo')?.src || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png',
         status: isNew ? 'active' : (subscriptions.find(sub => sub.id === subscriptionId)?.status || 'active')
       };
@@ -1356,6 +1360,7 @@
       </div>
       <div class="flex-1">
         <input type="text" name="name" class="text-white text-lg font-normal mb-1 bg-transparent border-none w-full" placeholder="Name" />
+        <input type="text" name="apodo" class="text-gray-400 text-sm font-normal bg-transparent border-none w-full" placeholder="Apodo (para mensajería)" />
       </div>
     </section>
 
