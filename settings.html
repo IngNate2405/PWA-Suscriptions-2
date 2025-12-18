@@ -432,10 +432,17 @@
       document.getElementById('totalSubscriptions').textContent = subscriptions.length;
       document.getElementById('totalPersonas').textContent = personas.length;
       
-      // Cargar versión guardada o usar la del HTML
+      // La versión siempre se toma del HTML, no de localStorage
+      // Solo se actualiza cuando se limpia el caché
+      const versionElement = document.getElementById('versionNumber');
+      const versionHTML = versionElement.textContent.trim();
+      // Si hay una versión guardada y es mayor, usarla (solo si fue actualizada por limpiar caché)
       const savedVersion = localStorage.getItem('appVersion');
-      if (savedVersion) {
-        document.getElementById('versionNumber').textContent = savedVersion;
+      if (savedVersion && savedVersion > versionHTML) {
+        versionElement.textContent = savedVersion;
+      } else {
+        // Usar la versión del HTML como base y guardarla
+        localStorage.setItem('appVersion', versionHTML);
       }
     });
 
@@ -631,7 +638,7 @@
             <h3 class="font-semibold">Versión</h3>
             <p class="text-gray-400 text-sm">App Suscripciones</p>
           </div>
-          <span id="versionNumber" class="text-gray-400 font-semibold">1.0.61</span>
+          <span id="versionNumber" class="text-gray-400 font-semibold">1.0.45</span>
         </div>
         
         <div class="flex justify-between items-center">
