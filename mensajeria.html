@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <title>Mensajería - App Suscripciones</title>
+  <meta name="description" content="Generar mensajes para usuarios">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none !important;
+    }
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none !important;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    html, body {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+  </style>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-extrabold leading-tight">Mensajería</h1>
+      <button onclick="window.location.href='index.html'" class="text-gray-400 hover:text-white">
+        <i class="fas fa-arrow-left text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Sección de Generar Mensaje -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Generar Mensaje</h2>
+      
+      <div class="space-y-4">
+        <!-- Seleccionar Persona -->
+        <div>
+          <label class="block text-sm font-semibold mb-2">Seleccionar Persona</label>
+          <select id="persona-select" class="w-full bg-[#2a2736] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]">
+            <option value="">Selecciona una persona</option>
+          </select>
+        </div>
+
+        <!-- Suscripciones de la Persona -->
+        <div id="suscripciones-container" class="hidden">
+          <label class="block text-sm font-semibold mb-2">Suscripciones Activas</label>
+          <div id="suscripciones-list" class="space-y-2">
+            <!-- Se cargará dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Precios Personalizados -->
+        <div id="precios-container" class="hidden">
+          <label class="block text-sm font-semibold mb-2">Precios de Suscripciones</label>
+          <div id="precios-list" class="space-y-2">
+            <!-- Se cargará dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Plantilla de Mensaje -->
+        <div>
+          <label class="block text-sm font-semibold mb-2">Mensaje Generado</label>
+          <textarea id="mensaje-generado" readonly class="w-full bg-[#2a2736] text-white rounded-lg px-4 py-3 h-32 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]" placeholder="El mensaje aparecerá aquí..."></textarea>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="flex space-x-3">
+          <button onclick="copiarMensaje()" class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-semibold">
+            <i class="fas fa-copy mr-2"></i>Copiar Mensaje
+          </button>
+          <button onclick="marcarEnviado()" class="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-semibold">
+            <i class="fas fa-check mr-2"></i>Marcar como Enviado
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Listado de Personas -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Listado de Personas</h2>
+      
+      <div id="personas-listado" class="space-y-3">
+        <!-- Se cargará dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let personas = [];
+    let personaSeleccionada = null;
+    let suscripcionesSeleccionadas = [];
+    let preciosPersonalizados = {};
+
+    // Función para mostrar notificación
+    function showNotification(title, message, type = 'success') {
+      const notification = document.createElement('div');
+      const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50`;
+      notification.innerHTML = `
+        <div class="font-semibold">${title}</div>
+        <div class="text-sm">${message}</div>
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Función para cargar personas
+    function cargarPersonas() {
+      personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      
+      // Cargar estado de mensajes enviados
+      const mensajesEnviados = JSON.parse(localStorage.getItem('mensajesEnviados') || '{}');
+      
+      // Llenar select de personas
+      const select = document.getElementById('persona-select');
+      select.innerHTML = '<option value="">Selecciona una persona</option>';
+      
+      personas.forEach(persona => {
+        const option = document.createElement('option');
+        option.value = persona.id;
+        option.textContent = persona.nombre;
+        select.appendChild(option);
+      });
+
+      // Cargar listado de personas
+      const listadoContainer = document.getElementById('personas-listado');
+      listadoContainer.innerHTML = '';
+
+      if (personas.length === 0) {
+        listadoContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No hay personas registradas</p>';
+        return;
+      }
+
+      personas.forEach(persona => {
+        const enviado = mensajesEnviados[persona.id] || false;
+        const personaDiv = document.createElement('div');
+        personaDiv.className = `bg-[#2a2736] rounded-lg p-4 ${enviado ? 'border-2 border-green-500' : ''}`;
+        
+        personaDiv.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <input type="checkbox" ${enviado ? 'checked' : ''} 
+                     onchange="toggleMensajeEnviado(${persona.id}, this.checked)"
+                     class="w-5 h-5 rounded bg-[#3f3f46] border-[#3f3f46] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+              <div>
+                <h3 class="font-semibold">${persona.nombre}</h3>
+                <p class="text-gray-400 text-sm">${persona.plataformas.length} plataforma${persona.plataformas.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+            ${enviado ? '<span class="text-green-400 text-sm"><i class="fas fa-check-circle"></i> Enviado</span>' : ''}
+          </div>
+        `;
+        listadoContainer.appendChild(personaDiv);
+      });
+    }
+
+    // Función para toggle mensaje enviado
+    function toggleMensajeEnviado(personaId, enviado) {
+      const mensajesEnviados = JSON.parse(localStorage.getItem('mensajesEnviados') || '{}');
+      mensajesEnviados[personaId] = enviado;
+      localStorage.setItem('mensajesEnviados', JSON.stringify(mensajesEnviados));
+      cargarPersonas();
+      
+      if (enviado) {
+        showNotification('Marcado', 'Persona marcada como mensaje enviado');
+      }
+    }
+
+    // Función para cuando se selecciona una persona
+    function onPersonaSeleccionada() {
+      const select = document.getElementById('persona-select');
+      const personaId = parseInt(select.value);
+      
+      if (!personaId) {
+        document.getElementById('suscripciones-container').classList.add('hidden');
+        document.getElementById('precios-container').classList.add('hidden');
+        document.getElementById('mensaje-generado').value = '';
+        personaSeleccionada = null;
+        suscripcionesSeleccionadas = [];
+        return;
+      }
+
+      personaSeleccionada = personas.find(p => p.id === personaId);
+      if (!personaSeleccionada) return;
+
+      // Mostrar suscripciones
+      const suscripcionesContainer = document.getElementById('suscripciones-container');
+      const suscripcionesList = document.getElementById('suscripciones-list');
+      suscripcionesContainer.classList.remove('hidden');
+      suscripcionesList.innerHTML = '';
+
+      suscripcionesSeleccionadas = [];
+      preciosPersonalizados = {};
+
+      personaSeleccionada.plataformas.forEach((plataforma, index) => {
+        const suscripcionDiv = document.createElement('div');
+        suscripcionDiv.className = 'flex items-center space-x-3 bg-[#2a2736] rounded-lg p-3';
+        
+        suscripcionDiv.innerHTML = `
+          <input type="checkbox" id="susc-${index}" checked 
+                 onchange="toggleSuscripcion(${index}, this.checked)"
+                 class="w-5 h-5 rounded bg-[#3f3f46] border-[#3f3f46] text-[#3f2a6f] focus:ring-[#3f2a6f]">
+          <label for="susc-${index}" class="flex-1 cursor-pointer">
+            <span class="font-semibold">${plataforma.nombre}</span>
+            <span class="text-gray-400 text-sm ml-2">Q${plataforma.precio.toFixed(2)}</span>
+          </label>
+        `;
+        suscripcionesList.appendChild(suscripcionDiv);
+        
+        suscripcionesSeleccionadas.push({
+          nombre: plataforma.nombre,
+          precio: plataforma.precio,
+          index: index
+        });
+      });
+
+      // Mostrar precios personalizados
+      mostrarPreciosPersonalizados();
+      generarMensaje();
+    }
+
+    // Función para toggle suscripción
+    function toggleSuscripcion(index, seleccionada) {
+      if (seleccionada) {
+        const plataforma = personaSeleccionada.plataformas[index];
+        suscripcionesSeleccionadas.push({
+          nombre: plataforma.nombre,
+          precio: plataforma.precio,
+          index: index
+        });
+      } else {
+        suscripcionesSeleccionadas = suscripcionesSeleccionadas.filter(s => s.index !== index);
+      }
+      mostrarPreciosPersonalizados();
+      generarMensaje();
+    }
+
+    // Función para mostrar precios personalizados
+    function mostrarPreciosPersonalizados() {
+      const preciosContainer = document.getElementById('precios-container');
+      const preciosList = document.getElementById('precios-list');
+      
+      if (suscripcionesSeleccionadas.length === 0) {
+        preciosContainer.classList.add('hidden');
+        return;
+      }
+
+      preciosContainer.classList.remove('hidden');
+      preciosList.innerHTML = '';
+
+      suscripcionesSeleccionadas.forEach(suscripcion => {
+        const precioDiv = document.createElement('div');
+        precioDiv.className = 'flex items-center space-x-3 bg-[#2a2736] rounded-lg p-3';
+        
+        precioDiv.innerHTML = `
+          <label class="flex-1">
+            <span class="text-sm text-gray-400">${suscripcion.nombre}:</span>
+            <input type="number" 
+                   value="${suscripcion.precio.toFixed(2)}" 
+                   step="0.01"
+                   min="0"
+                   onchange="actualizarPrecio(${suscripcion.index}, parseFloat(this.value))"
+                   class="w-full bg-[#3f3f46] text-white rounded px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]">
+          </label>
+        `;
+        preciosList.appendChild(precioDiv);
+      });
+    }
+
+    // Función para actualizar precio
+    function actualizarPrecio(index, nuevoPrecio) {
+      const suscripcion = suscripcionesSeleccionadas.find(s => s.index === index);
+      if (suscripcion) {
+        suscripcion.precio = nuevoPrecio || 0;
+        preciosPersonalizados[index] = nuevoPrecio;
+        generarMensaje();
+      }
+    }
+
+    // Función para generar mensaje
+    function generarMensaje() {
+      if (!personaSeleccionada || suscripcionesSeleccionadas.length === 0) {
+        document.getElementById('mensaje-generado').value = '';
+        return;
+      }
+
+      const nombre = personaSeleccionada.nombre;
+      const nombresSuscripciones = suscripcionesSeleccionadas.map(s => s.nombre);
+      const sumaTotal = suscripcionesSeleccionadas.reduce((sum, s) => sum + (s.precio || 0), 0);
+
+      let mensaje = `Hola ${nombre}\n`;
+      mensaje += `Tu suscripción de ${nombresSuscripciones.join(' y ')} ha terminado, `;
+      mensaje += `si deseas seguir el pago sería de Q${sumaTotal.toFixed(2)}`;
+
+      document.getElementById('mensaje-generado').value = mensaje;
+    }
+
+    // Función para copiar mensaje
+    function copiarMensaje() {
+      const mensaje = document.getElementById('mensaje-generado').value;
+      if (!mensaje) {
+        showNotification('Error', 'No hay mensaje para copiar', 'error');
+        return;
+      }
+
+      navigator.clipboard.writeText(mensaje).then(() => {
+        showNotification('Copiado', 'Mensaje copiado al portapapeles');
+      }).catch(() => {
+        // Fallback para navegadores antiguos
+        const textarea = document.createElement('textarea');
+        textarea.value = mensaje;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showNotification('Copiado', 'Mensaje copiado al portapapeles');
+      });
+    }
+
+    // Función para marcar como enviado
+    function marcarEnviado() {
+      if (!personaSeleccionada) {
+        showNotification('Error', 'Selecciona una persona primero', 'error');
+        return;
+      }
+
+      const mensajesEnviados = JSON.parse(localStorage.getItem('mensajesEnviados') || '{}');
+      mensajesEnviados[personaSeleccionada.id] = true;
+      localStorage.setItem('mensajesEnviados', JSON.stringify(mensajesEnviados));
+      
+      showNotification('Marcado', 'Persona marcada como mensaje enviado');
+      cargarPersonas();
+    }
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarPersonas();
+      
+      document.getElementById('persona-select').addEventListener('change', onPersonaSeleccionada);
+    });
+
+    // Bloquear pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+    // Bloquear doble tap zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-xl"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+</body>
+</html>
+
