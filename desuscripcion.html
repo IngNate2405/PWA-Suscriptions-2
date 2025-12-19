@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <title>Desuscripción de Personas - App Suscripciones</title>
+  <meta name="description" content="Gestionar desuscripciones de personas">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none !important;
+    }
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none !important;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    html, body {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+  </style>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-extrabold leading-tight">Desuscripción de Personas</h1>
+      <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
+        <i class="fas fa-arrow-left text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Sección de Desuscripción -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Gestionar Desuscripciones</h2>
+      <p class="text-gray-400 text-sm mb-6">Activa el switch para marcar una persona como desuscrita. Se eliminarán todas sus plataformas y dejará de aparecer en los listados.</p>
+      
+      <div class="space-y-3" id="desuscripcion-container">
+        <!-- Las personas se cargarán aquí -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Función para mostrar notificación
+    function showNotification(title, message) {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `
+        <div class="font-semibold">${title}</div>
+        <div class="text-sm">${message}</div>
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Función para cargar personas en la sección de desuscripción
+    function cargarDesuscripciones() {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const container = document.getElementById('desuscripcion-container');
+      
+      if (personas.length === 0) {
+        container.innerHTML = `
+          <div class="text-center text-gray-400 py-4">
+            No hay personas registradas
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      // Ordenar personas: primero las desuscritas, luego las activas
+      const personasOrdenadas = [...personas].sort((a, b) => {
+        const aDesuscrita = a.desuscrita || false;
+        const bDesuscrita = b.desuscrita || false;
+        if (aDesuscrita === bDesuscrita) {
+          return a.nombre.localeCompare(b.nombre);
+        }
+        return bDesuscrita ? 1 : -1;
+      });
+      
+      personasOrdenadas.forEach(persona => {
+        const personaDiv = document.createElement('div');
+        personaDiv.className = `bg-[#2a2736] rounded-lg p-4 ${persona.desuscrita ? 'opacity-60' : ''}`;
+        
+        const plataformasTexto = persona.plataformas && persona.plataformas.length > 0 
+          ? persona.plataformas.map(p => p.nombre).join(', ')
+          : 'Sin plataformas';
+        
+        personaDiv.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h3 class="font-semibold ${persona.desuscrita ? 'text-gray-400' : 'text-white'}">${persona.nombre}</h3>
+              <p class="text-gray-500 text-sm mt-1">${plataformasTexto}</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer ml-4">
+              <input type="checkbox" 
+                     ${persona.desuscrita ? 'checked' : ''} 
+                     onchange="toggleDesuscripcion(${persona.id}, this.checked)"
+                     class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#3f2a6f] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+              <span class="ml-3 text-sm text-gray-400">${persona.desuscrita ? 'Desuscrita' : 'Activa'}</span>
+            </label>
+          </div>
+        `;
+        container.appendChild(personaDiv);
+      });
+    }
+
+    // Función para toggle desuscripción
+    function toggleDesuscripcion(personaId, desuscrita) {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const personaIndex = personas.findIndex(p => p.id === parseInt(personaId));
+      
+      if (personaIndex === -1) return;
+      
+      if (desuscrita) {
+        // Marcar como desuscrita y limpiar plataformas
+        personas[personaIndex].desuscrita = true;
+        personas[personaIndex].plataformas = [];
+        showNotification('Persona desuscrita', `${personas[personaIndex].nombre} ha sido desuscrita y removida de todas las plataformas.`);
+      } else {
+        // Reactivar persona
+        personas[personaIndex].desuscrita = false;
+        showNotification('Persona reactivada', `${personas[personaIndex].nombre} ha sido reactivada.`);
+      }
+      
+      localStorage.setItem('personas', JSON.stringify(personas));
+      cargarDesuscripciones();
+    }
+
+    // Función para cargar versión
+    function cargarVersion() {
+      const versionElement = document.getElementById('app-version');
+      if (!versionElement) return;
+      
+      const versionHTML = '1.0.45'; // Versión base del código
+      const savedVersion = localStorage.getItem('appVersion');
+      
+      // Si hay una versión guardada y es mayor, usarla
+      if (savedVersion && savedVersion > versionHTML) {
+        versionElement.textContent = `v${savedVersion}`;
+      } else {
+        versionElement.textContent = `v${versionHTML}`;
+        localStorage.setItem('appVersion', versionHTML);
+      }
+    }
+
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarVersion();
+      cargarDesuscripciones();
+    });
+
+    // Bloquear pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+    // Bloquear doble tap zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-xl"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+  <div class="fixed bottom-0 left-0 right-0 text-center text-[#6b6b7b] text-[10px] pb-1 pointer-events-none z-40">
+    <span id="app-version">v1.0.45</span>
+  </div>
+</body>
+</html>
+
