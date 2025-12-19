@@ -381,24 +381,70 @@
 
     // Función para copiar mensaje
     function copiarMensaje() {
-      const mensaje = document.getElementById('mensaje-generado').value;
-      if (!mensaje) {
+      const textarea = document.getElementById('mensaje-generado');
+      if (!textarea) {
+        showNotification('Error', 'No se encontró el campo de mensaje', 'error');
+        return;
+      }
+      
+      const mensaje = textarea.value;
+      if (!mensaje || mensaje.trim() === '') {
         showNotification('Error', 'No hay mensaje para copiar', 'error');
         return;
       }
 
-      navigator.clipboard.writeText(mensaje).then(() => {
-        showNotification('Copiado', 'Mensaje copiado al portapapeles');
-      }).catch(() => {
+      // Intentar usar la API moderna del portapapeles
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(mensaje).then(() => {
+          showNotification('Copiado', 'Mensaje copiado al portapapeles');
+        }).catch((err) => {
+          console.error('Error al copiar con clipboard API:', err);
+          // Fallback para navegadores antiguos
+          copiarMensajeFallback(textarea, mensaje);
+        });
+      } else {
         // Fallback para navegadores antiguos
-        const textarea = document.createElement('textarea');
-        textarea.value = mensaje;
-        document.body.appendChild(textarea);
+        copiarMensajeFallback(textarea, mensaje);
+      }
+    }
+
+    // Función fallback para copiar mensaje
+    function copiarMensajeFallback(textarea, mensaje) {
+      try {
+        // Seleccionar el texto del textarea directamente
+        textarea.focus();
         textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        showNotification('Copiado', 'Mensaje copiado al portapapeles');
-      });
+        textarea.setSelectionRange(0, mensaje.length);
+        
+        // Intentar copiar
+        const exito = document.execCommand('copy');
+        if (exito) {
+          showNotification('Copiado', 'Mensaje copiado al portapapeles');
+        } else {
+          // Si falla, crear un textarea temporal
+          const tempTextarea = document.createElement('textarea');
+          tempTextarea.value = mensaje;
+          tempTextarea.style.position = 'fixed';
+          tempTextarea.style.left = '-9999px';
+          tempTextarea.style.top = '0';
+          document.body.appendChild(tempTextarea);
+          tempTextarea.focus();
+          tempTextarea.select();
+          
+          try {
+            document.execCommand('copy');
+            showNotification('Copiado', 'Mensaje copiado al portapapeles');
+          } catch (err) {
+            console.error('Error al copiar:', err);
+            showNotification('Error', 'No se pudo copiar el mensaje. Por favor, selecciónalo manualmente.', 'error');
+          } finally {
+            document.body.removeChild(tempTextarea);
+          }
+        }
+      } catch (err) {
+        console.error('Error en fallback de copiar:', err);
+        showNotification('Error', 'No se pudo copiar el mensaje. Por favor, selecciónalo manualmente.', 'error');
+      }
     }
 
     // Función para marcar como enviado
