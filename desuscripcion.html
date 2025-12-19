@@ -208,7 +208,7 @@
             <label class="relative inline-flex items-center cursor-pointer ml-4">
               <input type="checkbox" 
                      checked
-                     onchange="toggleDesuscripcion(${persona.id}, false)"
+                     onchange="toggleDesuscripcion(${persona.id}, this.checked)"
                      class="sr-only peer">
               <div class="w-11 h-6 bg-red-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#3f2a6f] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
               <span class="ml-3 text-sm text-gray-400">Desuscrita</span>
@@ -236,6 +236,9 @@
       
       if (personaIndex === -1) return;
       
+      const select = document.getElementById('persona-select');
+      const personaSeleccionadaId = select.value;
+      
       if (desuscrita) {
         // Guardar las plataformas antes de desuscribir
         if (personas[personaIndex].plataformas && personas[personaIndex].plataformas.length > 0) {
@@ -250,9 +253,8 @@
         personas[personaIndex].desuscrita = false;
         if (personas[personaIndex].plataformasAnteriores && personas[personaIndex].plataformasAnteriores.length > 0) {
           personas[personaIndex].plataformas = JSON.parse(JSON.stringify(personas[personaIndex].plataformasAnteriores));
-          // Opcional: eliminar el campo de plataformas anteriores después de restaurar
-          delete personas[personaIndex].plataformasAnteriores;
-          showNotification('Persona reactivada', `${personas[personaIndex].nombre} ha sido reactivada y sus plataformas han sido restauradas.`);
+          // NO eliminar plataformasAnteriores para mantener el respaldo
+          showNotification('Persona reactivada', `${personas[personaIndex].nombre} ha sido reactivada y sus ${personas[personaIndex].plataformas.length} plataforma(s) han sido restauradas.`);
         } else {
           showNotification('Persona reactivada', `${personas[personaIndex].nombre} ha sido reactivada.`);
         }
@@ -265,15 +267,13 @@
       cargarDesuscritas();
       
       // Si la persona seleccionada fue desuscrita, limpiar selector
-      const select = document.getElementById('persona-select');
-      if (desuscrita && select.value == personaId) {
+      if (desuscrita && personaSeleccionadaId == personaId) {
         select.value = '';
         document.getElementById('switch-container').classList.add('hidden');
       } else if (!desuscrita) {
-        // Si se reactivó, actualizar la vista si está seleccionada
-        if (select.value == personaId) {
-          cargarPersonaSeleccionada();
-        }
+        // Si se reactivó desde el listado, limpiar selector y ocultar switch
+        select.value = '';
+        document.getElementById('switch-container').classList.add('hidden');
       }
     }
 
