@@ -152,8 +152,8 @@
         `).join('')}
       `;
 
-      // Filtrar personas según la plataforma seleccionada y búsqueda
-      let personasFiltradas = personas;
+      // Filtrar personas desuscritas
+      let personasFiltradas = personas.filter(p => !p.desuscrita);
       
       // Filtrar por plataforma
       if (plataformaSeleccionada !== 'todas') {

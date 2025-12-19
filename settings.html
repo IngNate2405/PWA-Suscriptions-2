@@ -432,6 +432,9 @@
       document.getElementById('totalSubscriptions').textContent = subscriptions.length;
       document.getElementById('totalPersonas').textContent = personas.length;
       
+      // Cargar sección de desuscripción
+      cargarDesuscripciones();
+      
       // La versión siempre se toma del HTML, no de localStorage
       // Solo se actualiza cuando se limpia el caché
       const versionElement = document.getElementById('versionNumber');
@@ -445,6 +448,86 @@
         localStorage.setItem('appVersion', versionHTML);
       }
     });
+
+    // Función para cargar personas en la sección de desuscripción
+    function cargarDesuscripciones() {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const container = document.getElementById('desuscripcion-container');
+      
+      if (personas.length === 0) {
+        container.innerHTML = `
+          <div class="text-center text-gray-400 py-4">
+            No hay personas registradas
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      // Ordenar personas: primero las desuscritas, luego las activas
+      const personasOrdenadas = [...personas].sort((a, b) => {
+        const aDesuscrita = a.desuscrita || false;
+        const bDesuscrita = b.desuscrita || false;
+        if (aDesuscrita === bDesuscrita) {
+          return a.nombre.localeCompare(b.nombre);
+        }
+        return bDesuscrita ? 1 : -1;
+      });
+      
+      personasOrdenadas.forEach(persona => {
+        const personaDiv = document.createElement('div');
+        personaDiv.className = `bg-[#2a2736] rounded-lg p-4 ${persona.desuscrita ? 'opacity-60' : ''}`;
+        
+        const plataformasTexto = persona.plataformas.length > 0 
+          ? persona.plataformas.map(p => p.nombre).join(', ')
+          : 'Sin plataformas';
+        
+        personaDiv.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h3 class="font-semibold ${persona.desuscrita ? 'text-gray-400' : 'text-white'}">${persona.nombre}</h3>
+              <p class="text-gray-500 text-sm mt-1">${plataformasTexto}</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer ml-4">
+              <input type="checkbox" 
+                     ${persona.desuscrita ? 'checked' : ''} 
+                     onchange="toggleDesuscripcion(${persona.id}, this.checked)"
+                     class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#3f2a6f] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+              <span class="ml-3 text-sm text-gray-400">${persona.desuscrita ? 'Desuscrita' : 'Activa'}</span>
+            </label>
+          </div>
+        `;
+        container.appendChild(personaDiv);
+      });
+    }
+
+    // Función para toggle desuscripción
+    function toggleDesuscripcion(personaId, desuscrita) {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const personaIndex = personas.findIndex(p => p.id === parseInt(personaId));
+      
+      if (personaIndex === -1) return;
+      
+      if (desuscrita) {
+        // Marcar como desuscrita y limpiar plataformas
+        personas[personaIndex].desuscrita = true;
+        personas[personaIndex].plataformas = [];
+        showNotification('Persona desuscrita', `${personas[personaIndex].nombre} ha sido desuscrita y removida de todas las plataformas.`);
+      } else {
+        // Reactivar persona
+        personas[personaIndex].desuscrita = false;
+        showNotification('Persona reactivada', `${personas[personaIndex].nombre} ha sido reactivada.`);
+      }
+      
+      localStorage.setItem('personas', JSON.stringify(personas));
+      cargarDesuscripciones();
+      
+      // Actualizar contador de personas activas
+      const personasActivas = personas.filter(p => !p.desuscrita).length;
+      document.getElementById('totalPersonas').textContent = personasActivas;
+    }
 
     function showClearOptions() {
       const choice = prompt('¿Qué deseas borrar?\n1 = Solo caché\n2 = Solo datos\n3 = Caché y datos\n(Cancelar para no hacer nada)');
@@ -592,6 +675,15 @@
             Abrir
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Sección de Desuscripción de Personas -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Desuscripción de Personas</h2>
+      
+      <div class="space-y-3" id="desuscripcion-container">
+        <!-- Las personas se cargarán aquí -->
       </div>
     </div>
 

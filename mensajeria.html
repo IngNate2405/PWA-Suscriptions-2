@@ -136,7 +136,10 @@
       const select = document.getElementById('persona-select');
       select.innerHTML = '<option value="">Selecciona una persona</option>';
       
-      personas.forEach(persona => {
+      // Filtrar solo personas activas (no desuscritas)
+      const personasActivas = personas.filter(p => !p.desuscrita);
+      
+      personasActivas.forEach(persona => {
         const option = document.createElement('option');
         option.value = persona.id;
         option.textContent = persona.nombre;
@@ -147,12 +150,15 @@
       const listadoContainer = document.getElementById('personas-listado');
       listadoContainer.innerHTML = '';
 
-      if (personas.length === 0) {
+      // Filtrar solo personas activas (no desuscritas)
+      const personasActivas = personas.filter(p => !p.desuscrita);
+
+      if (personasActivas.length === 0) {
         listadoContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No hay personas registradas</p>';
         return;
       }
 
-      personas.forEach(persona => {
+      personasActivas.forEach(persona => {
         const enviado = mensajesEnviados[persona.id] || false;
         const personaDiv = document.createElement('div');
         personaDiv.className = `bg-[#2a2736] rounded-lg p-4 ${enviado ? 'border-2 border-green-500' : ''}`;

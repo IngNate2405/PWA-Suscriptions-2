@@ -140,7 +140,9 @@
       if (personas.length === 0) {
         resumen += 'No hay usuarios registrados\n\n';
       } else {
-        personas.forEach(persona => {
+        // Solo exportar personas activas
+        const personasActivas = personas.filter(p => !p.desuscrita);
+        personasActivas.forEach(persona => {
           resumen += `${persona.nombre}\n`;
           persona.plataformas.forEach(plataforma => {
             const precioMensual = calcularPrecioMensual(plataforma.precio, plataforma.tipoCobro);
@@ -178,7 +180,9 @@
         }
       });
       
-      personas.forEach(persona => {
+      // Solo contar personas activas
+      const personasActivas = personas.filter(p => !p.desuscrita);
+      personasActivas.forEach(persona => {
         persona.plataformas.forEach(plataforma => {
           ingresosMensuales += calcularPrecioMensual(plataforma.precio, plataforma.tipoCobro);
         });
@@ -233,7 +237,9 @@
         app.gananciaMensual += ganancia / meses;
         
         if (sub.list === 'compartido') {
-          personas.forEach(persona => {
+          // Solo contar personas activas
+          const personasActivas = personas.filter(p => !p.desuscrita);
+          personasActivas.forEach(persona => {
             persona.plataformas.forEach(plataforma => {
               if (plataforma.nombre === nombre) {
                 app.usuarios.add(persona.nombre);
@@ -339,8 +345,8 @@
       const personas = JSON.parse(localStorage.getItem('personas') || '[]');
       const suscripciones = JSON.parse(localStorage.getItem('subscriptions') || '[]');
       
-      // Calcular usuarios activos
-      const usuariosActivos = personas.length;
+      // Calcular usuarios activos (excluyendo desuscritas)
+      const usuariosActivos = personas.filter(p => !p.desuscrita).length;
       document.getElementById('usuarios-activos').textContent = usuariosActivos;
       
       // Calcular gastos mensuales (de suscripciones compartidas)
@@ -364,7 +370,9 @@
       
       // Calcular gastos mensuales de personas (lo que cobran)
       let ingresosMensuales = 0;
-      personas.forEach(persona => {
+      // Solo contar personas activas
+      const personasActivas = personas.filter(p => !p.desuscrita);
+      personasActivas.forEach(persona => {
         persona.plataformas.forEach(plataforma => {
           ingresosMensuales += calcularPrecioMensual(plataforma.precio, plataforma.tipoCobro);
         });
@@ -451,7 +459,9 @@
         
         // Contar usuarios de esta app
         if (sub.list === 'compartido') {
-          personas.forEach(persona => {
+          // Solo contar personas activas
+          const personasActivas = personas.filter(p => !p.desuscrita);
+          personasActivas.forEach(persona => {
             persona.plataformas.forEach(plataforma => {
               if (plataforma.nombre === nombre) {
                 app.usuarios.add(persona.nombre);
