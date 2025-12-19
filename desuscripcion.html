@@ -49,10 +49,43 @@
     <!-- Sección de Desuscripción -->
     <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
       <h2 class="text-xl font-bold mb-4">Gestionar Desuscripciones</h2>
-      <p class="text-gray-400 text-sm mb-6">Activa el switch para marcar una persona como desuscrita. Se eliminarán todas sus plataformas y dejará de aparecer en los listados.</p>
+      <p class="text-gray-400 text-sm mb-6">Selecciona una persona y activa el switch para desuscribirla. Se eliminarán todas sus plataformas y dejará de aparecer en los listados.</p>
       
-      <div class="space-y-3" id="desuscripcion-container">
-        <!-- Las personas se cargarán aquí -->
+      <!-- Selector de persona -->
+      <div class="mb-6">
+        <label class="block text-gray-400 text-sm mb-2">Seleccionar persona</label>
+        <select id="persona-select" onchange="cargarPersonaSeleccionada()" class="w-full bg-[#2a2736] text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]">
+          <option value="">Selecciona una persona</option>
+        </select>
+      </div>
+
+      <!-- Switch de desuscripción -->
+      <div id="switch-container" class="hidden mb-6">
+        <div class="bg-[#2a2736] rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-white" id="persona-nombre"></h3>
+              <p class="text-gray-500 text-sm mt-1" id="persona-plataformas"></p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer ml-4">
+              <input type="checkbox" 
+                     id="desuscribir-switch"
+                     onchange="toggleDesuscripcionSeleccionada(this.checked)"
+                     class="sr-only peer">
+              <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#3f2a6f] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+              <span class="ml-3 text-sm text-gray-400" id="estado-switch">Activa</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Listado de personas desuscritas -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Personas Desuscritas</h2>
+      
+      <div class="space-y-3" id="desuscritas-container">
+        <!-- Las personas desuscritas se cargarán aquí -->
       </div>
     </div>
   </div>
@@ -73,15 +106,81 @@
       }, 3000);
     }
 
-    // Función para cargar personas en la sección de desuscripción
-    function cargarDesuscripciones() {
+    // Función para cargar personas activas en el selector
+    function cargarSelectorPersonas() {
       const personas = JSON.parse(localStorage.getItem('personas') || '[]');
-      const container = document.getElementById('desuscripcion-container');
+      const select = document.getElementById('persona-select');
       
-      if (personas.length === 0) {
+      // Filtrar solo personas activas (no desuscritas)
+      const personasActivas = personas.filter(p => !p.desuscrita);
+      
+      select.innerHTML = '<option value="">Selecciona una persona</option>';
+      
+      if (personasActivas.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No hay personas activas';
+        option.disabled = true;
+        select.appendChild(option);
+        return;
+      }
+      
+      personasActivas.forEach(persona => {
+        const option = document.createElement('option');
+        option.value = persona.id;
+        option.textContent = persona.nombre;
+        select.appendChild(option);
+      });
+    }
+
+    // Función para cargar persona seleccionada
+    function cargarPersonaSeleccionada() {
+      const select = document.getElementById('persona-select');
+      const personaId = select.value;
+      const switchContainer = document.getElementById('switch-container');
+      
+      if (!personaId) {
+        switchContainer.classList.add('hidden');
+        return;
+      }
+      
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const persona = personas.find(p => p.id === parseInt(personaId));
+      
+      if (!persona) {
+        switchContainer.classList.add('hidden');
+        return;
+      }
+      
+      // Mostrar información de la persona
+      document.getElementById('persona-nombre').textContent = persona.nombre;
+      const plataformasTexto = persona.plataformas && persona.plataformas.length > 0 
+        ? persona.plataformas.map(p => p.nombre).join(', ')
+        : 'Sin plataformas';
+      document.getElementById('persona-plataformas').textContent = plataformasTexto;
+      
+      // Configurar switch
+      const switchInput = document.getElementById('desuscribir-switch');
+      const estadoSpan = document.getElementById('estado-switch');
+      
+      switchInput.checked = persona.desuscrita || false;
+      estadoSpan.textContent = persona.desuscrita ? 'Desuscrita' : 'Activa';
+      
+      switchContainer.classList.remove('hidden');
+    }
+
+    // Función para cargar listado de personas desuscritas
+    function cargarDesuscritas() {
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const container = document.getElementById('desuscritas-container');
+      
+      // Filtrar solo personas desuscritas
+      const personasDesuscritas = personas.filter(p => p.desuscrita);
+      
+      if (personasDesuscritas.length === 0) {
         container.innerHTML = `
           <div class="text-center text-gray-400 py-4">
-            No hay personas registradas
+            No hay personas desuscritas
           </div>
         `;
         return;
@@ -89,42 +188,45 @@
       
       container.innerHTML = '';
       
-      // Ordenar personas: primero las desuscritas, luego las activas
-      const personasOrdenadas = [...personas].sort((a, b) => {
-        const aDesuscrita = a.desuscrita || false;
-        const bDesuscrita = b.desuscrita || false;
-        if (aDesuscrita === bDesuscrita) {
-          return a.nombre.localeCompare(b.nombre);
-        }
-        return bDesuscrita ? 1 : -1;
-      });
+      // Ordenar por nombre
+      personasDesuscritas.sort((a, b) => a.nombre.localeCompare(b.nombre));
       
-      personasOrdenadas.forEach(persona => {
+      personasDesuscritas.forEach(persona => {
         const personaDiv = document.createElement('div');
-        personaDiv.className = `bg-[#2a2736] rounded-lg p-4 ${persona.desuscrita ? 'opacity-60' : ''}`;
+        personaDiv.className = 'bg-[#2a2736] rounded-lg p-4 opacity-60';
         
-        const plataformasTexto = persona.plataformas && persona.plataformas.length > 0 
-          ? persona.plataformas.map(p => p.nombre).join(', ')
-          : 'Sin plataformas';
+        const plataformasTexto = persona.plataformasAnteriores && persona.plataformasAnteriores.length > 0 
+          ? persona.plataformasAnteriores.map(p => p.nombre).join(', ')
+          : 'Sin plataformas guardadas';
         
         personaDiv.innerHTML = `
           <div class="flex items-center justify-between">
             <div class="flex-1">
-              <h3 class="font-semibold ${persona.desuscrita ? 'text-gray-400' : 'text-white'}">${persona.nombre}</h3>
+              <h3 class="font-semibold text-gray-400">${persona.nombre}</h3>
               <p class="text-gray-500 text-sm mt-1">${plataformasTexto}</p>
             </div>
             <label class="relative inline-flex items-center cursor-pointer ml-4">
               <input type="checkbox" 
-                     ${persona.desuscrita ? 'checked' : ''} 
-                     onchange="toggleDesuscripcion(${persona.id}, this.checked)"
+                     checked
+                     onchange="toggleDesuscripcion(${persona.id}, false)"
                      class="sr-only peer">
-              <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#3f2a6f] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-              <span class="ml-3 text-sm text-gray-400">${persona.desuscrita ? 'Desuscrita' : 'Activa'}</span>
+              <div class="w-11 h-6 bg-red-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#3f2a6f] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+              <span class="ml-3 text-sm text-gray-400">Desuscrita</span>
             </label>
           </div>
         `;
         container.appendChild(personaDiv);
       });
+    }
+
+    // Función para toggle desuscripción desde el switch principal
+    function toggleDesuscripcionSeleccionada(desuscrita) {
+      const select = document.getElementById('persona-select');
+      const personaId = select.value;
+      
+      if (!personaId) return;
+      
+      toggleDesuscripcion(parseInt(personaId), desuscrita);
     }
 
     // Función para toggle desuscripción
@@ -157,7 +259,22 @@
       }
       
       localStorage.setItem('personas', JSON.stringify(personas));
-      cargarDesuscripciones();
+      
+      // Recargar todo
+      cargarSelectorPersonas();
+      cargarDesuscritas();
+      
+      // Si la persona seleccionada fue desuscrita, limpiar selector
+      const select = document.getElementById('persona-select');
+      if (desuscrita && select.value == personaId) {
+        select.value = '';
+        document.getElementById('switch-container').classList.add('hidden');
+      } else if (!desuscrita) {
+        // Si se reactivó, actualizar la vista si está seleccionada
+        if (select.value == personaId) {
+          cargarPersonaSeleccionada();
+        }
+      }
     }
 
     // Función para cargar versión
@@ -180,7 +297,8 @@
     // Inicializar
     document.addEventListener('DOMContentLoaded', () => {
       cargarVersion();
-      cargarDesuscripciones();
+      cargarSelectorPersonas();
+      cargarDesuscritas();
     });
 
     // Bloquear pinch zoom
