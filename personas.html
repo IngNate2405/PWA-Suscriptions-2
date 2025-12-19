@@ -303,6 +303,13 @@
           iconoTarjeta = '<span title="Pago en tarjeta" class="ml-1 text-blue-400"><i class="fas fa-credit-card"></i></span>';
         }
 
+        // Agregar icono de mensaje enviado si corresponde
+        const mensajesEnviados = JSON.parse(localStorage.getItem('mensajesEnviados') || '{}');
+        let iconoMensaje = '';
+        if (mensajesEnviados[persona.id]) {
+          iconoMensaje = '<span title="Mensaje enviado" class="ml-1 text-green-400"><i class="fas fa-envelope"></i></span>';
+        }
+
         const personaElement = document.createElement('div');
         personaElement.className = 'bg-[#1B1930] rounded-xl p-4 cursor-pointer hover:bg-[#2a2736] transition-colors';
         personaElement.onclick = () => editarPersona(persona.id);
@@ -314,7 +321,7 @@
               </div>
               <div>
                 <h3 class="text-lg font-semibold">${persona.nombre}</h3>
-                <p class="text-gray-400 text-sm">${persona.plataformas.length} plataforma${persona.plataformas.length !== 1 ? 's' : ''}${iconoPago}${iconoTarjeta}</p>
+                <p class="text-gray-400 text-sm">${persona.plataformas.length} plataforma${persona.plataformas.length !== 1 ? 's' : ''}${iconoPago}${iconoTarjeta}${iconoMensaje}</p>
               </div>
             </div>
             <div class="text-right">
