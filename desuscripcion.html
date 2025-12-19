@@ -135,14 +135,25 @@
       if (personaIndex === -1) return;
       
       if (desuscrita) {
+        // Guardar las plataformas antes de desuscribir
+        if (personas[personaIndex].plataformas && personas[personaIndex].plataformas.length > 0) {
+          personas[personaIndex].plataformasAnteriores = JSON.parse(JSON.stringify(personas[personaIndex].plataformas));
+        }
         // Marcar como desuscrita y limpiar plataformas
         personas[personaIndex].desuscrita = true;
         personas[personaIndex].plataformas = [];
         showNotification('Persona desuscrita', `${personas[personaIndex].nombre} ha sido desuscrita y removida de todas las plataformas.`);
       } else {
-        // Reactivar persona
+        // Reactivar persona y restaurar plataformas si existen
         personas[personaIndex].desuscrita = false;
-        showNotification('Persona reactivada', `${personas[personaIndex].nombre} ha sido reactivada.`);
+        if (personas[personaIndex].plataformasAnteriores && personas[personaIndex].plataformasAnteriores.length > 0) {
+          personas[personaIndex].plataformas = JSON.parse(JSON.stringify(personas[personaIndex].plataformasAnteriores));
+          // Opcional: eliminar el campo de plataformas anteriores después de restaurar
+          delete personas[personaIndex].plataformasAnteriores;
+          showNotification('Persona reactivada', `${personas[personaIndex].nombre} ha sido reactivada y sus plataformas han sido restauradas.`);
+        } else {
+          showNotification('Persona reactivada', `${personas[personaIndex].nombre} ha sido reactivada.`);
+        }
       }
       
       localStorage.setItem('personas', JSON.stringify(personas));
