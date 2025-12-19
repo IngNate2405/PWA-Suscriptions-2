@@ -132,20 +132,29 @@
       // Cargar estado de mensajes enviados
       const mensajesEnviados = JSON.parse(localStorage.getItem('mensajesEnviados') || '{}');
       
-      // Filtrar solo personas activas (no desuscritas) - una sola vez
+      // Filtrar solo personas activas (no desuscritas) y que no tengan mensaje enviado
       const personasActivas = personas.filter(p => !p.desuscrita);
+      const personasSinMensaje = personasActivas.filter(p => !mensajesEnviados[p.id]);
       
-      // Llenar select de personas
+      // Llenar select de personas (solo las que no tienen mensaje enviado)
       const select = document.getElementById('persona-select');
       if (select) {
         select.innerHTML = '<option value="">Selecciona una persona</option>';
         
-        personasActivas.forEach(persona => {
+        if (personasSinMensaje.length === 0) {
           const option = document.createElement('option');
-          option.value = persona.id;
-          option.textContent = persona.nombre;
+          option.value = '';
+          option.textContent = 'Ninguna persona pendiente de mensaje';
+          option.disabled = true;
           select.appendChild(option);
-        });
+        } else {
+          personasSinMensaje.forEach(persona => {
+            const option = document.createElement('option');
+            option.value = persona.id;
+            option.textContent = persona.nombre;
+            select.appendChild(option);
+          });
+        }
       }
 
       // Cargar listado de personas
