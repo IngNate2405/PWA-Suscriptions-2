@@ -161,6 +161,12 @@
           </div>
         </div>
 
+        <!-- Nombre de perfil -->
+        <div>
+          <label class="block text-gray-400 text-sm mb-2">Nombre de perfil en la plataforma</label>
+          <input type="text" class="nombre-perfil-input w-full bg-[#2a2736] border border-gray-600 rounded-lg p-2 text-white placeholder-gray-400 focus:outline-none focus:border-[#3f2a6f]" placeholder="Ej: spectrum, usuario123, etc.">
+        </div>
+
         <!-- Precio -->
         <div>
           <label class="block text-gray-400 text-sm mb-2">Precio</label>
@@ -475,6 +481,12 @@
         const precioInput = ultimaPlataforma.querySelector('.precio-input');
         precioInput.value = plataforma.precio;
         ultimaPlataforma.querySelector('.precio-resumen').textContent = plataforma.precio.toFixed(2);
+
+        // Establecer nombre de perfil
+        const nombrePerfilInput = ultimaPlataforma.querySelector('.nombre-perfil-input');
+        if (nombrePerfilInput && plataforma.nombrePerfil) {
+          nombrePerfilInput.value = plataforma.nombrePerfil;
+        }
 
         // Establecer tipo de cobro
         const cobroBtn = ultimaPlataforma.querySelector(`.cobro-btn[data-cobro="${plataforma.tipoCobro}"]`);
@@ -1094,6 +1106,7 @@
         }
 
         const precio = parseFloat(plataforma.querySelector('.precio-input').value) || 0;
+        const nombrePerfil = plataforma.querySelector('.nombre-perfil-input')?.value.trim() || '';
         const cobroBtns = plataforma.querySelectorAll('.cobro-btn');
         let tipoCobro = null;
         
@@ -1177,6 +1190,7 @@
 
         plataformas.push({
           nombre: nombrePlataforma,
+          nombrePerfil: nombrePerfil,
           precio,
           tipoCobro,
           pagos

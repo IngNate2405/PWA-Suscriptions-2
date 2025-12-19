@@ -244,11 +244,13 @@
           estadoPago = pago.pagado ? 'Pagado' : 'Pendiente';
         }
 
+        const nombrePerfil = plataforma.nombrePerfil ? `<p class="text-gray-500 text-xs mt-1">Perfil: ${plataforma.nombrePerfil}</p>` : '';
         plataformaElement.innerHTML = `
           <div class="flex justify-between items-center">
             <div>
               <h4 class="text-lg font-semibold">${plataforma.nombre}</h4>
               <p class="text-gray-400 text-sm">${plataforma.tipoCobro.charAt(0).toUpperCase() + plataforma.tipoCobro.slice(1)}</p>
+              ${nombrePerfil}
             </div>
             <div class="text-right">
               <p class="text-white text-lg font-bold">Q ${plataforma.precio.toFixed(2)}</p>
