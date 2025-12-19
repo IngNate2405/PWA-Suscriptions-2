@@ -1,4 +1,5 @@
-const CACHE_NAME = 'subs-app-v1';
+// Usar timestamp para forzar actualizaciones
+const CACHE_NAME = 'subs-app-v' + Date.now();
 const urlsToCache = [
   './',
   'index.html',
@@ -10,6 +11,10 @@ const urlsToCache = [
   'personas.html',
   'persona.html',
   'settings.html',
+  'mensajeria.html',
+  'cotizar.html',
+  'desuscripcion.html',
+  'archivo-datos.html',
   'manifest.json',
   'sw.js',
   'icons/icon-72x72.png',
@@ -23,30 +28,48 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
+  // Forzar actualización inmediata
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
+      .catch(err => console.error('Error al cachear:', err))
   );
 });
 
+// Estrategia network-first: intentar red primero, luego caché
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   // Si el recurso es externo, dejar que el navegador lo maneje normalmente
   if (url.origin !== self.location.origin) {
     return;
   }
+  
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        if (response) {
-          return response;
+        // Si la respuesta es válida, actualizar el caché
+        if (response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then(cache => {
+              cache.put(event.request, responseToCache);
+            });
         }
-        return fetch(event.request).catch(() => {
-          return new Response('Recurso no disponible', {
-            status: 404,
-            statusText: 'Not Found'
+        return response;
+      })
+      .catch(() => {
+        // Si falla la red, intentar desde el caché
+        return caches.match(event.request)
+          .then(response => {
+            if (response) {
+              return response;
+            }
+            return new Response('Recurso no disponible', {
+              status: 404,
+              statusText: 'Not Found'
+            });
           });
-        });
       })
   );
 });
@@ -184,18 +207,25 @@ function formatDate(dateString) {
   return `${day}/${month}/${year}`;
 }
 
-// Programar notificaciones cuando se activa el service worker (solo limpieza de caché)
+// Limpiar cachés antiguos cuando se activa el service worker
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Limpiar todos los cachés antiguos
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            // Eliminar todos los cachés que no sean el actual
+            if (!cacheName.startsWith('subs-app-v') || cacheName !== CACHE_NAME) {
+              console.log('Eliminando caché antiguo:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Tomar control inmediatamente de todas las páginas
+      self.clients.claim()
+    ])
   );
 });
 
