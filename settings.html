@@ -381,7 +381,23 @@
       }
     }
 
-    // Función para incrementar versión automáticamente
+    // Función para comparar versiones (retorna 1 si v1 > v2, -1 si v1 < v2, 0 si iguales)
+    function compareVersions(v1, v2) {
+      const parts1 = v1.split('.').map(Number);
+      const parts2 = v2.split('.').map(Number);
+      
+      for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const part1 = parts1[i] || 0;
+        const part2 = parts2[i] || 0;
+        
+        if (part1 > part2) return 1;
+        if (part1 < part2) return -1;
+      }
+      
+      return 0;
+    }
+
+    // Función para incrementar versión manualmente (solo cuando el usuario lo solicite)
     function incrementarVersion() {
       const versionElement = document.getElementById('versionNumber');
       const currentVersion = versionElement.textContent.trim();
@@ -434,16 +450,25 @@
       const personasActivas = personas.filter(p => !p.desuscrita).length;
       document.getElementById('totalPersonas').textContent = personasActivas;
       
-      // La versión siempre se toma del HTML, no de localStorage
-      // Solo se actualiza cuando se limpia el caché
+      // La versión siempre se toma del HTML como fuente de verdad
+      // No se incrementa automáticamente al limpiar caché
       const versionElement = document.getElementById('versionNumber');
       const versionHTML = versionElement.textContent.trim();
-      // Si hay una versión guardada y es mayor, usarla (solo si fue actualizada por limpiar caché)
+      
+      // Si hay una versión guardada manualmente (actualizada por el usuario), usarla
       const savedVersion = localStorage.getItem('appVersion');
-      if (savedVersion && savedVersion > versionHTML) {
-        versionElement.textContent = savedVersion;
+      if (savedVersion && savedVersion !== versionHTML) {
+        // Si la versión guardada es diferente, puede ser una actualización manual
+        // Comparar numéricamente para ver cuál es mayor
+        if (compareVersions(savedVersion, versionHTML) > 0) {
+          versionElement.textContent = savedVersion;
+        } else {
+          // Si la versión del HTML es mayor o igual, usar esa (código actualizado)
+          versionElement.textContent = versionHTML;
+          localStorage.setItem('appVersion', versionHTML);
+        }
       } else {
-        // Usar la versión del HTML como base y guardarla
+        // Usar la versión del HTML como base
         localStorage.setItem('appVersion', versionHTML);
       }
     });
@@ -469,8 +494,8 @@
       if (!onlyData && 'caches' in window) {
         const cacheNames = await caches.keys();
         await Promise.all(cacheNames.map(name => caches.delete(name)));
-        // Actualizar versión cuando se limpia el caché (opción 1)
-        incrementarVersion();
+        // No incrementar versión automáticamente al limpiar caché
+        // La versión solo debe cambiar cuando hay cambios reales en el código
       }
       if (!onlyData && 'serviceWorker' in navigator) {
         const registrations = await navigator.serviceWorker.getRegistrations();
