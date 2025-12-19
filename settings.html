@@ -496,34 +496,51 @@
 
     async function clearCacheAndUpdate(clearData = false, onlyData = false) {
       try {
+        console.log('Iniciando limpieza de caché...', { clearData, onlyData });
+        
         if (clearData) {
+          console.log('Limpiando localStorage...');
           localStorage.clear();
         }
-        if (!onlyData && 'caches' in window) {
-          try {
-            const cacheNames = await caches.keys();
-            await Promise.all(cacheNames.map(name => caches.delete(name)));
-            console.log('Caché limpiado correctamente');
-          } catch (error) {
-            console.error('Error al limpiar caché:', error);
-          }
-        }
-        if (!onlyData && 'serviceWorker' in navigator) {
-          try {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for (let reg of registrations) {
-              await reg.unregister();
+        
+        if (!onlyData) {
+          // Limpiar caché
+          if ('caches' in window) {
+            try {
+              console.log('Obteniendo nombres de caché...');
+              const cacheNames = await caches.keys();
+              console.log('Cachés encontrados:', cacheNames);
+              await Promise.all(cacheNames.map(name => caches.delete(name)));
+              console.log('Caché limpiado correctamente');
+            } catch (error) {
+              console.error('Error al limpiar caché:', error);
             }
-            console.log('Service Workers desregistrados correctamente');
-          } catch (error) {
-            console.error('Error al desregistrar Service Workers:', error);
+          }
+          
+          // Desregistrar Service Workers
+          if ('serviceWorker' in navigator) {
+            try {
+              console.log('Desregistrando Service Workers...');
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              console.log('Service Workers encontrados:', registrations.length);
+              for (let reg of registrations) {
+                await reg.unregister();
+              }
+              console.log('Service Workers desregistrados correctamente');
+            } catch (error) {
+              console.error('Error al desregistrar Service Workers:', error);
+            }
           }
         }
-        // Recargar la página
-        window.location.reload(true);
+        
+        console.log('Limpieza completada, recargando página...');
+        // Recargar la página después de un pequeño delay para asegurar que todo se procese
+        setTimeout(() => {
+          window.location.reload(true);
+        }, 100);
       } catch (error) {
         console.error('Error en clearCacheAndUpdate:', error);
-        alert('Error al limpiar caché. Por favor, intenta recargar la página manualmente.');
+        alert('Error al limpiar caché: ' + error.message + '\nPor favor, intenta recargar la página manualmente.');
       }
     }
 
