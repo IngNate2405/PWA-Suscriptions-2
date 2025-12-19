@@ -132,26 +132,30 @@
       // Cargar estado de mensajes enviados
       const mensajesEnviados = JSON.parse(localStorage.getItem('mensajesEnviados') || '{}');
       
-      // Llenar select de personas
-      const select = document.getElementById('persona-select');
-      select.innerHTML = '<option value="">Selecciona una persona</option>';
-      
-      // Filtrar solo personas activas (no desuscritas)
+      // Filtrar solo personas activas (no desuscritas) - una sola vez
       const personasActivas = personas.filter(p => !p.desuscrita);
       
-      personasActivas.forEach(persona => {
-        const option = document.createElement('option');
-        option.value = persona.id;
-        option.textContent = persona.nombre;
-        select.appendChild(option);
-      });
+      // Llenar select de personas
+      const select = document.getElementById('persona-select');
+      if (select) {
+        select.innerHTML = '<option value="">Selecciona una persona</option>';
+        
+        personasActivas.forEach(persona => {
+          const option = document.createElement('option');
+          option.value = persona.id;
+          option.textContent = persona.nombre;
+          select.appendChild(option);
+        });
+      }
 
       // Cargar listado de personas
       const listadoContainer = document.getElementById('personas-listado');
+      if (!listadoContainer) {
+        console.error('No se encontró el contenedor personas-listado');
+        return;
+      }
+      
       listadoContainer.innerHTML = '';
-
-      // Filtrar solo personas activas (no desuscritas)
-      const personasActivas = personas.filter(p => !p.desuscrita);
 
       if (personasActivas.length === 0) {
         listadoContainer.innerHTML = '<p class="text-gray-400 text-center py-4">No hay personas registradas</p>';
