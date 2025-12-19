@@ -1,5 +1,5 @@
-// Usar timestamp para forzar actualizaciones
-const CACHE_NAME = 'subs-app-v' + Date.now();
+// Nombre del caché con versión
+const CACHE_NAME = 'subs-app-v2';
 const urlsToCache = [
   './',
   'index.html',
