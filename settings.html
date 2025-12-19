@@ -488,22 +488,36 @@
     }
 
     async function clearCacheAndUpdate(clearData = false, onlyData = false) {
-      if (clearData) {
-        localStorage.clear();
-      }
-      if (!onlyData && 'caches' in window) {
-        const cacheNames = await caches.keys();
-        await Promise.all(cacheNames.map(name => caches.delete(name)));
-        // No incrementar versión automáticamente al limpiar caché
-        // La versión solo debe cambiar cuando hay cambios reales en el código
-      }
-      if (!onlyData && 'serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (let reg of registrations) {
-          await reg.unregister();
+      try {
+        if (clearData) {
+          localStorage.clear();
         }
+        if (!onlyData && 'caches' in window) {
+          try {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('Caché limpiado correctamente');
+          } catch (error) {
+            console.error('Error al limpiar caché:', error);
+          }
+        }
+        if (!onlyData && 'serviceWorker' in navigator) {
+          try {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let reg of registrations) {
+              await reg.unregister();
+            }
+            console.log('Service Workers desregistrados correctamente');
+          } catch (error) {
+            console.error('Error al desregistrar Service Workers:', error);
+          }
+        }
+        // Recargar la página
+        window.location.reload(true);
+      } catch (error) {
+        console.error('Error en clearCacheAndUpdate:', error);
+        alert('Error al limpiar caché. Por favor, intenta recargar la página manualmente.');
       }
-      window.location.reload(true);
     }
 
     // Bloquear pinch zoom
