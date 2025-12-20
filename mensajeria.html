@@ -193,6 +193,7 @@
       // Llenar select de personas (solo las que no tienen mensaje enviado)
       const select = document.getElementById('persona-select');
       if (select) {
+        const personaSeleccionadaId = select.value;
         select.innerHTML = '<option value="">Selecciona una persona</option>';
         
         if (personasSinMensaje.length === 0) {
@@ -208,6 +209,15 @@
             option.textContent = persona.nombre;
             select.appendChild(option);
           });
+        }
+        
+        // Si la persona seleccionada ya no está en la lista (por filtro o mensaje enviado), limpiar selección
+        if (personaSeleccionadaId && !personasSinMensaje.find(p => p.id == personaSeleccionadaId)) {
+          select.value = '';
+          onPersonaSeleccionada(); // Limpiar la vista
+        } else if (personaSeleccionadaId) {
+          // Restaurar la selección si todavía está disponible
+          select.value = personaSeleccionadaId;
         }
       }
 
