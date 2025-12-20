@@ -51,6 +51,14 @@
       <h2 class="text-xl font-bold mb-4">Generar Mensaje</h2>
       
       <div class="space-y-4">
+        <!-- Seleccionar Plataforma -->
+        <div>
+          <label class="block text-sm font-semibold mb-2">Filtrar por Plataforma</label>
+          <select id="plataforma-select" onchange="cargarPersonas()" class="w-full bg-[#2a2736] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]">
+            <option value="todas">Todas las plataformas</option>
+          </select>
+        </div>
+
         <!-- Seleccionar Persona -->
         <div>
           <label class="block text-sm font-semibold mb-2">Seleccionar Persona</label>
@@ -125,6 +133,39 @@
       }, 3000);
     }
 
+    // Función para cargar plataformas en el selector
+    function cargarPlataformas() {
+      personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      
+      // Filtrar solo personas activas (no desuscritas)
+      const personasActivas = personas.filter(p => !p.desuscrita);
+      
+      // Obtener todas las plataformas únicas de las personas activas
+      const plataformasSet = new Set();
+      personasActivas.forEach(persona => {
+        if (persona.plataformas && persona.plataformas.length > 0) {
+          persona.plataformas.forEach(plataforma => {
+            plataformasSet.add(plataforma.nombre);
+          });
+        }
+      });
+      
+      // Ordenar plataformas alfabéticamente
+      const plataformas = Array.from(plataformasSet).sort();
+      
+      // Llenar selector de plataformas
+      const selectPlataforma = document.getElementById('plataforma-select');
+      if (selectPlataforma) {
+        selectPlataforma.innerHTML = '<option value="todas">Todas las plataformas</option>';
+        plataformas.forEach(plataforma => {
+          const option = document.createElement('option');
+          option.value = plataforma;
+          option.textContent = plataforma;
+          selectPlataforma.appendChild(option);
+        });
+      }
+    }
+
     // Función para cargar personas
     function cargarPersonas() {
       personas = JSON.parse(localStorage.getItem('personas') || '[]');
@@ -132,8 +173,21 @@
       // Cargar estado de mensajes enviados
       const mensajesEnviados = JSON.parse(localStorage.getItem('mensajesEnviados') || '{}');
       
+      // Obtener plataforma seleccionada
+      const selectPlataforma = document.getElementById('plataforma-select');
+      const plataformaSeleccionada = selectPlataforma ? selectPlataforma.value : 'todas';
+      
       // Filtrar solo personas activas (no desuscritas) y que no tengan mensaje enviado
-      const personasActivas = personas.filter(p => !p.desuscrita);
+      let personasActivas = personas.filter(p => !p.desuscrita);
+      
+      // Filtrar por plataforma si no es "todas"
+      if (plataformaSeleccionada !== 'todas') {
+        personasActivas = personasActivas.filter(persona => {
+          return persona.plataformas && persona.plataformas.some(p => p.nombre === plataformaSeleccionada);
+        });
+      }
+      
+      // Filtrar solo las que no tienen mensaje enviado
       const personasSinMensaje = personasActivas.filter(p => !mensajesEnviados[p.id]);
       
       // Llenar select de personas (solo las que no tienen mensaje enviado)
@@ -491,6 +545,7 @@
     // Inicializar
     document.addEventListener('DOMContentLoaded', () => {
       cargarVersion();
+      cargarPlataformas();
       cargarPersonas();
       
       document.getElementById('persona-select').addEventListener('change', onPersonaSeleccionada);
