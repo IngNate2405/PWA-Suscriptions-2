@@ -33,6 +33,9 @@ build/
 *.backup
 *~
 
+# Firebase config con credenciales reales
+firebase-config.js
+
 # Archivos de herramientas de generación de iconos (opcional)
 # Descomenta si quieres excluirlos después de generar los iconos
 # create-icons-simple.html
