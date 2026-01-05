@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <title>Iniciar Sesión - App Suscripciones</title>
+  <meta name="description" content="Iniciar sesión en la aplicación">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+  </style>
+</head>
+<body class="bg-[#1B1930] text-white min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold mb-2">App Suscripciones</h1>
+      <p class="text-gray-400">Inicia sesión para sincronizar tus datos</p>
+    </div>
+
+    <div class="bg-[#2a2736] rounded-xl p-6 space-y-4">
+      <!-- Formulario de Login -->
+      <div id="login-form">
+        <h2 class="text-xl font-bold mb-4">Iniciar Sesión</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Email</label>
+            <input 
+              type="email" 
+              id="login-email" 
+              class="w-full bg-[#1B1930] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]"
+              placeholder="tu@email.com"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold mb-2">Contraseña</label>
+            <input 
+              type="password" 
+              id="login-password" 
+              class="w-full bg-[#1B1930] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button 
+            id="btn-login" 
+            class="w-full bg-[#3f2a6f] hover:bg-[#4d3578] text-white font-semibold py-3 rounded-lg transition-colors"
+          >
+            Iniciar Sesión
+          </button>
+
+          <p class="text-center text-sm text-gray-400">
+            ¿No tienes cuenta? 
+            <a href="#" id="link-register" class="text-[#3f2a6f] hover:underline">Regístrate aquí</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Formulario de Registro -->
+      <div id="register-form" class="hidden">
+        <h2 class="text-xl font-bold mb-4">Crear Cuenta</h2>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold mb-2">Email</label>
+            <input 
+              type="email" 
+              id="register-email" 
+              class="w-full bg-[#1B1930] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]"
+              placeholder="tu@email.com"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold mb-2">Contraseña</label>
+            <input 
+              type="password" 
+              id="register-password" 
+              class="w-full bg-[#1B1930] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]"
+              placeholder="Mínimo 6 caracteres"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold mb-2">Confirmar Contraseña</label>
+            <input 
+              type="password" 
+              id="register-password-confirm" 
+              class="w-full bg-[#1B1930] text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#3f2a6f]"
+              placeholder="Repite la contraseña"
+            />
+          </div>
+
+          <button 
+            id="btn-register" 
+            class="w-full bg-[#3f2a6f] hover:bg-[#4d3578] text-white font-semibold py-3 rounded-lg transition-colors"
+          >
+            Crear Cuenta
+          </button>
+
+          <p class="text-center text-sm text-gray-400">
+            ¿Ya tienes cuenta? 
+            <a href="#" id="link-login" class="text-[#3f2a6f] hover:underline">Inicia sesión aquí</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Opción para continuar sin cuenta (localStorage) -->
+      <div class="mt-6 pt-6 border-t border-gray-700">
+        <button 
+          id="btn-continue-local" 
+          class="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-lg transition-colors"
+        >
+          Continuar sin cuenta (solo local)
+        </button>
+        <p class="text-xs text-gray-500 text-center mt-2">
+          Tus datos solo se guardarán en este dispositivo
+        </p>
+      </div>
+    </div>
+
+    <!-- Notificaciones -->
+    <div id="notification" class="hidden fixed top-4 right-4 bg-[#2a2736] text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-sm">
+      <p id="notification-message"></p>
+    </div>
+  </div>
+
+  <!-- Scripts de Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  
+  <script src="firebase-config.js"></script>
+  <script src="firebase-service.js"></script>
+
+  <script>
+    // Mostrar notificación
+    function showNotification(message, type = 'info') {
+      const notification = document.getElementById('notification');
+      const messageEl = document.getElementById('notification-message');
+      messageEl.textContent = message;
+      
+      notification.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 max-w-sm ${
+        type === 'error' ? 'bg-red-600' : 
+        type === 'success' ? 'bg-green-600' : 
+        'bg-[#2a2736]'
+      } text-white`;
+      
+      notification.classList.remove('hidden');
+      
+      setTimeout(() => {
+        notification.classList.add('hidden');
+      }, 3000);
+    }
+
+    // Toggle entre login y registro
+    document.getElementById('link-register').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('login-form').classList.add('hidden');
+      document.getElementById('register-form').classList.remove('hidden');
+    });
+
+    document.getElementById('link-login').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('register-form').classList.add('hidden');
+      document.getElementById('login-form').classList.remove('hidden');
+    });
+
+    // Login
+    document.getElementById('btn-login').addEventListener('click', async () => {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      if (!email || !password) {
+        showNotification('Por favor completa todos los campos', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-login');
+      btn.disabled = true;
+      btn.textContent = 'Iniciando sesión...';
+
+      try {
+        await firebaseService.signIn(email, password);
+        showNotification('¡Bienvenido! Cargando tus datos...', 'success');
+        
+        // Cargar datos desde Firebase
+        await firebaseService.loadFromFirebase();
+        
+        // Redirigir a la app
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+      } catch (error) {
+        let errorMessage = 'Error al iniciar sesión';
+        if (error.code === 'auth/user-not-found') {
+          errorMessage = 'Usuario no encontrado';
+        } else if (error.code === 'auth/wrong-password') {
+          errorMessage = 'Contraseña incorrecta';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'Email inválido';
+        }
+        showNotification(errorMessage, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Iniciar Sesión';
+      }
+    });
+
+    // Registro
+    document.getElementById('btn-register').addEventListener('click', async () => {
+      const email = document.getElementById('register-email').value.trim();
+      const password = document.getElementById('register-password').value;
+      const passwordConfirm = document.getElementById('register-password-confirm').value;
+
+      if (!email || !password || !passwordConfirm) {
+        showNotification('Por favor completa todos los campos', 'error');
+        return;
+      }
+
+      if (password.length < 6) {
+        showNotification('La contraseña debe tener al menos 6 caracteres', 'error');
+        return;
+      }
+
+      if (password !== passwordConfirm) {
+        showNotification('Las contraseñas no coinciden', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btn-register');
+      btn.disabled = true;
+      btn.textContent = 'Creando cuenta...';
+
+      try {
+        await firebaseService.signUp(email, password);
+        showNotification('¡Cuenta creada! Redirigiendo...', 'success');
+        
+        // Redirigir a la app
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+      } catch (error) {
+        let errorMessage = 'Error al crear cuenta';
+        if (error.code === 'auth/email-already-in-use') {
+          errorMessage = 'Este email ya está registrado';
+        } else if (error.code === 'auth/invalid-email') {
+          errorMessage = 'Email inválido';
+        } else if (error.code === 'auth/weak-password') {
+          errorMessage = 'La contraseña es muy débil';
+        }
+        showNotification(errorMessage, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Crear Cuenta';
+      }
+    });
+
+    // Continuar sin cuenta
+    document.getElementById('btn-continue-local').addEventListener('click', () => {
+      localStorage.setItem('dataSource', 'localStorage');
+      window.location.href = 'index.html';
+    });
+
+    // Verificar si ya está autenticado
+    document.addEventListener('DOMContentLoaded', () => {
+      if (isFirebaseAvailable()) {
+        firebaseService.onAuthStateChanged((user) => {
+          if (user) {
+            // Ya está autenticado, redirigir
+            window.location.href = 'index.html';
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
+
+

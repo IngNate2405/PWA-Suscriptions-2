@@ -11,6 +11,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  
+  <!-- Scripts de Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  
+  <script src="firebase-config.js"></script>
+  <script src="firebase-service.js"></script>
   <style>
     html, body {
       overflow-y: auto !important;
@@ -51,6 +59,22 @@
   </style>
   <script>
     if ('serviceWorker' in navigator) {
+      // Cargar datos desde Firebase si está autenticado
+      window.addEventListener('load', async () => {
+        // Si Firebase está disponible y hay un usuario autenticado, cargar datos
+        if (isFirebaseAvailable()) {
+          const user = firebaseService.getCurrentUser();
+          if (user && localStorage.getItem('dataSource') === 'firebase') {
+            try {
+              await firebaseService.loadFromFirebase();
+              console.log('✅ Datos cargados desde Firebase');
+            } catch (error) {
+              console.error('Error al cargar desde Firebase:', error);
+            }
+          }
+        }
+      });
+
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/PWA-Suscriptions-2/sw.js')
           .then(registration => {
