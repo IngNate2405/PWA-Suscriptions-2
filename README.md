@@ -1,6 +1,6 @@
 # App Suscripciones
 
-Aplicación web para gestionar suscripciones con notificaciones push.
+Aplicación web para gestionar suscripciones con notificaciones push y sincronización en la nube.
 
 ## Características
 
@@ -12,6 +12,42 @@ Aplicación web para gestionar suscripciones con notificaciones push.
 - ✅ Soporte para diferentes ciclos de facturación
 - ✅ Pruebas gratuitas
 - ✅ PWA (Progressive Web App)
+- ✅ **Sincronización en la nube con Firebase**
+- ✅ **Autenticación de usuarios**
+- ✅ **Acceso desde múltiples dispositivos**
+
+## 🚀 Inicio Rápido
+
+### 1. Clonar el Repositorio
+
+```bash
+git clone https://github.com/IngNate2405/PWA-Suscriptions-2.git
+cd PWA-Suscriptions-2
+```
+
+### 2. Configurar Firebase
+
+**Opción A: Usar el script automático (recomendado)**
+```bash
+./setup.sh
+```
+
+**Opción B: Manual**
+```bash
+cp firebase-config.example.js firebase-config.js
+```
+
+Luego edita `firebase-config.js` con tus credenciales de Firebase.
+
+👉 **Ver `SETUP.md`** para instrucciones detalladas de configuración.
+
+👉 **Ver `GUIA-FIREBASE.md`** para la guía completa de Firebase paso a paso.
+
+## 📚 Documentación
+
+- **`SETUP.md`** - Guía de configuración inicial rápida
+- **`GUIA-FIREBASE.md`** - Guía completa paso a paso para configurar Firebase
+- **`README-FIREBASE.md`** - Documentación técnica de Firebase
 
 ## Instalación en Servidor
 
