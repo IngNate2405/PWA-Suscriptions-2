@@ -34,7 +34,10 @@ build/
 *~
 
 # Firebase config con credenciales reales
-firebase-config.js
+# NOTA: Para GitHub Pages, este archivo DEBE estar en el repositorio
+# Las credenciales de Firebase están diseñadas para ser públicas en aplicaciones web
+# La seguridad viene de las reglas de Firestore, no de ocultar las credenciales
+# firebase-config.js
 
 # Archivos de herramientas de generación de iconos (opcional)
 # Descomenta si quieres excluirlos después de generar los iconos
