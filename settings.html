@@ -615,7 +615,11 @@
       document.getElementById('totalPersonas').textContent = personasActivas;
       
       // Actualizar versión usando el sistema centralizado
-      updateVersionDisplay();
+      cargarVersion();
+      const versionElement = document.getElementById('versionNumber');
+      if (versionElement) {
+        versionElement.textContent = getCurrentVersion();
+      }
     });
 
     function showClearOptions() {
