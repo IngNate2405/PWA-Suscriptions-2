@@ -614,34 +614,8 @@
       const personasActivas = personas.filter(p => !p.desuscrita).length;
       document.getElementById('totalPersonas').textContent = personasActivas;
       
-      // La versión siempre se toma del HTML como fuente de verdad
-      // No se incrementa automáticamente al limpiar caché
-      const versionElement = document.getElementById('versionNumber');
-      const versionHTML = versionElement.textContent.trim();
-      
-      // Obtener versión guardada
-      const savedVersion = localStorage.getItem('appVersion');
-      
-      if (!savedVersion) {
-        // Primera vez: guardar la versión del HTML
-        localStorage.setItem('appVersion', versionHTML);
-      } else {
-        // Comparar versiones
-        const comparacion = compareVersions(versionHTML, savedVersion);
-        
-        if (comparacion > 0) {
-          // La versión del HTML es mayor (nueva versión detectada)
-          versionElement.textContent = versionHTML;
-          localStorage.setItem('appVersion', versionHTML);
-          console.log(`Nueva versión detectada: ${savedVersion} → ${versionHTML}`);
-        } else if (comparacion < 0) {
-          // La versión guardada es mayor (actualización manual previa)
-          versionElement.textContent = savedVersion;
-        } else {
-          // Son iguales, usar la del HTML
-          versionElement.textContent = versionHTML;
-        }
-      }
+      // Actualizar versión usando el sistema centralizado
+      updateVersionDisplay();
     });
 
     function showClearOptions() {
