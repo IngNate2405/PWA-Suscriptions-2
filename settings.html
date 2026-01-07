@@ -516,15 +516,19 @@
     }
 
     async function signOut() {
-      if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+      if (confirm('¿Estás seguro de que quieres cerrar sesión? Tus datos locales se mantendrán.')) {
         try {
           await firebaseService.signOut();
           localStorage.setItem('dataSource', 'localStorage');
-          showNotification('Sesión cerrada', 'success');
-          updateFirebaseUI();
+          showNotification('Sesión cerrada correctamente', 'success');
+          
+          // Redirigir a login después de cerrar sesión
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 1000);
         } catch (error) {
           console.error('Error al cerrar sesión:', error);
-          showNotification('Error al cerrar sesión', 'error');
+          showNotification('Error al cerrar sesión: ' + (error.message || 'Error desconocido'), 'error');
         }
       }
     }
@@ -540,6 +544,7 @@
       const btnAuth = document.getElementById('btn-auth');
       const migrateSection = document.getElementById('migrate-section');
       const syncSection = document.getElementById('sync-section');
+      const signoutSection = document.getElementById('signout-section');
 
       if (!isOnline) {
         syncStatus.textContent = 'No disponible';
@@ -549,6 +554,7 @@
         btnAuth.disabled = true;
         migrateSection.classList.add('hidden');
         syncSection.classList.add('hidden');
+        if (signoutSection) signoutSection.classList.add('hidden');
         return;
       }
 
@@ -558,6 +564,9 @@
         syncStatusText.textContent = 'Sincronización activa';
         authStatusText.textContent = `Autenticado como: ${user.email}`;
         btnAuth.textContent = 'Cambiar cuenta';
+        
+        // Mostrar botón de cerrar sesión
+        if (signoutSection) signoutSection.classList.remove('hidden');
         
         if (dataSource === 'firebase') {
           migrateSection.classList.add('hidden');
@@ -574,6 +583,7 @@
         btnAuth.textContent = 'Iniciar Sesión';
         migrateSection.classList.add('hidden');
         syncSection.classList.add('hidden');
+        if (signoutSection) signoutSection.classList.add('hidden');
       }
     }
 
