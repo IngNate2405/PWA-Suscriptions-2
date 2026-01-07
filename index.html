@@ -148,15 +148,26 @@
         }
         
         // Si Firebase está disponible y hay un usuario autenticado, cargar datos
-        if (isFirebaseAvailable() && dataSource === 'firebase') {
+        if (isFirebaseAvailable()) {
           const user = firebaseService.getCurrentUser();
           if (user) {
+            console.log('👤 Usuario autenticado detectado:', user.email);
             try {
-              await firebaseService.loadFromFirebase();
-              console.log('✅ Datos cargados desde Firebase');
+              const loaded = await firebaseService.loadFromFirebase();
+              if (loaded) {
+                console.log('✅ Datos cargados desde Firebase');
+                // Recargar la página para mostrar los datos cargados
+                setTimeout(() => {
+                  window.location.reload();
+                }, 500);
+              } else {
+                console.log('⚠️ No hay datos en Firebase para este usuario');
+              }
             } catch (error) {
               console.error('Error al cargar desde Firebase:', error);
             }
+          } else {
+            console.log('ℹ️ No hay usuario autenticado');
           }
         }
       });

@@ -232,17 +232,23 @@
         
         // Cargar datos desde Firebase
         try {
-          await firebaseService.loadFromFirebase();
-          console.log('✅ Datos cargados desde Firebase');
+          const loaded = await firebaseService.loadFromFirebase();
+          if (loaded) {
+            console.log('✅ Datos cargados desde Firebase correctamente');
+            showNotification('✅ Datos cargados correctamente', 'success');
+          } else {
+            console.log('⚠️ No hay datos en Firebase para este usuario');
+            showNotification('No hay datos guardados en la nube', 'info');
+          }
         } catch (loadError) {
           console.error('Error al cargar datos:', loadError);
-          // Continuar aunque falle la carga de datos
+          showNotification('Error al cargar datos: ' + (loadError.message || 'Error desconocido'), 'error');
         }
         
-        // Redirigir a la app
+        // Redirigir a la app después de cargar datos
         setTimeout(() => {
           window.location.href = 'index.html';
-        }, 1000);
+        }, 1500);
       } catch (error) {
         console.error('Error al iniciar sesión:', error);
         let errorMessage = 'Error al iniciar sesión';
@@ -330,13 +336,25 @@
       window.location.href = 'index.html';
     });
 
-    // Verificar si ya está autenticado
-    document.addEventListener('DOMContentLoaded', () => {
+    // Verificar si ya está autenticado y cargar datos
+    document.addEventListener('DOMContentLoaded', async () => {
       if (isFirebaseAvailable()) {
-        firebaseService.onAuthStateChanged((user) => {
+        firebaseService.onAuthStateChanged(async (user) => {
           if (user) {
-            // Ya está autenticado, redirigir
-            window.location.href = 'index.html';
+            console.log('👤 Usuario ya autenticado:', user.email);
+            // Cargar datos desde Firebase
+            try {
+              const loaded = await firebaseService.loadFromFirebase();
+              if (loaded) {
+                console.log('✅ Datos cargados desde Firebase');
+              }
+            } catch (error) {
+              console.error('Error al cargar datos:', error);
+            }
+            // Redirigir a la app
+            setTimeout(() => {
+              window.location.href = 'index.html';
+            }, 500);
           }
         });
       }
