@@ -568,12 +568,16 @@
         // Mostrar botón de cerrar sesión
         if (signoutSection) signoutSection.classList.remove('hidden');
         
+        // Si está autenticado, siempre mostrar opciones de sincronización
+        // Mostrar "Cargar desde la nube" siempre cuando hay usuario autenticado
+        syncSection.classList.remove('hidden');
+        
+        // Solo mostrar migración si no hay datos en Firebase aún
         if (dataSource === 'firebase') {
           migrateSection.classList.add('hidden');
-          syncSection.classList.remove('hidden');
         } else {
+          // Mostrar migración pero también opción de cargar
           migrateSection.classList.remove('hidden');
-          syncSection.classList.add('hidden');
         }
       } else {
         syncStatus.textContent = 'Desconectado';
