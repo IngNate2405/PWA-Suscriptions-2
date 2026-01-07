@@ -489,33 +489,36 @@
       }
     }
 
-    async function loadFromFirebase() {
-      const btn = document.getElementById('btn-load');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = 'Cargando...';
-
-      try {
-        const loaded = await firebaseService.loadFromFirebase();
-        if (loaded) {
-          showNotification('✅ Datos cargados desde la nube', 'success');
-          // Recargar la página para reflejar los cambios
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        } else {
-          showNotification('No hay datos en la nube para cargar', 'info');
-        }
-      } catch (error) {
-        console.error('Error al cargar:', error);
-        showNotification('Error al cargar datos', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = originalText;
-      }
-    }
 
     async function signOut() {
+      const dataSource = localStorage.getItem('dataSource') || 'localStorage';
+      const user = firebaseService.getCurrentUser();
+      
+      // Si está usando Firebase, preguntar si quiere sincronizar antes de cerrar
+      if (user && dataSource === 'firebase' && isFirebaseAvailable()) {
+        const sincronizar = confirm('¿Quieres sincronizar tus cambios antes de cerrar sesión?');
+        
+        if (sincronizar) {
+          try {
+            const btn = document.getElementById('btn-signout');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sincronizando...';
+            
+            await firebaseService.syncToFirebase();
+            showNotification('✅ Datos sincronizados correctamente', 'success');
+            
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          } catch (error) {
+            console.error('Error al sincronizar:', error);
+            showNotification('Error al sincronizar: ' + (error.message || 'Error desconocido'), 'error');
+            // Continuar con el cierre de sesión aunque falle la sincronización
+          }
+        }
+      }
+      
+      // Confirmar cierre de sesión
       if (confirm('¿Estás seguro de que quieres cerrar sesión? Tus datos locales se mantendrán.')) {
         try {
           await firebaseService.signOut();
@@ -568,16 +571,13 @@
         // Mostrar botón de cerrar sesión
         if (signoutSection) signoutSection.classList.remove('hidden');
         
-        // Si está autenticado, siempre mostrar opciones de sincronización
-        // Mostrar "Cargar desde la nube" siempre cuando hay usuario autenticado
-        syncSection.classList.remove('hidden');
-        
-        // Solo mostrar migración si no hay datos en Firebase aún
+        // Si está autenticado, mostrar opciones de sincronización
         if (dataSource === 'firebase') {
           migrateSection.classList.add('hidden');
+          syncSection.classList.remove('hidden');
         } else {
-          // Mostrar migración pero también opción de cargar
           migrateSection.classList.remove('hidden');
+          syncSection.classList.add('hidden');
         }
       } else {
         syncStatus.textContent = 'Desconectado';
@@ -873,11 +873,7 @@
         </div>
 
         <div id="sync-section" class="hidden">
-          <button onclick="loadFromFirebase()" id="btn-load" class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm">
-            <i class="fas fa-cloud-download-alt mr-2"></i>
-            Cargar desde la nube
-          </button>
-          <button onclick="syncToFirebase()" id="btn-sync" class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm mt-2">
+          <button onclick="syncToFirebase()" id="btn-sync" class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm">
             <i class="fas fa-sync-alt mr-2"></i>
             Sincronizar ahora
           </button>
