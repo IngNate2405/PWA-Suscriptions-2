@@ -16,7 +16,23 @@ let firebaseInitialized = false;
 let db = null;
 let auth = null;
 
-if (firebaseConfig.apiKey !== "AIzaSyBOJKuHva_eoyl9kjc1fkbjunjdD8hnOgI" && firebaseConfig.projectId !== "TU_PROJECT_ID") {
+// Función para inicializar Firebase
+function initializeFirebase() {
+  // Verificar que Firebase esté cargado
+  if (typeof firebase === 'undefined') {
+    console.warn('⚠️ Firebase SDK no está cargado. Verifica que los scripts de Firebase se carguen antes de firebase-config.js');
+    return false;
+  }
+
+  // Verificar que la configuración tenga valores válidos (no placeholders)
+  if (!firebaseConfig.apiKey || 
+      !firebaseConfig.projectId || 
+      firebaseConfig.apiKey === "TU_API_KEY" || 
+      firebaseConfig.projectId === "TU_PROJECT_ID") {
+    console.warn('⚠️ Firebase no configurado correctamente. Usando localStorage como respaldo.');
+    return false;
+  }
+
   try {
     // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
@@ -24,15 +40,30 @@ if (firebaseConfig.apiKey !== "AIzaSyBOJKuHva_eoyl9kjc1fkbjunjdD8hnOgI" && fireb
     auth = firebase.auth();
     firebaseInitialized = true;
     console.log('✅ Firebase inicializado correctamente');
+    return true;
   } catch (error) {
     console.error('❌ Error al inicializar Firebase:', error);
+    return false;
   }
+}
+
+// Intentar inicializar cuando el DOM esté listo
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeFirebase);
 } else {
-  console.warn('⚠️ Firebase no configurado. Usando localStorage como respaldo.');
+  // Si el DOM ya está cargado, intentar inicializar inmediatamente
+  // Pero esperar un poco para asegurar que Firebase SDK esté cargado
+  setTimeout(() => {
+    initializeFirebase();
+  }, 100);
 }
 
 // Función para verificar si Firebase está disponible
 function isFirebaseAvailable() {
+  // Si aún no se ha intentado inicializar, intentarlo ahora
+  if (!firebaseInitialized && typeof firebase !== 'undefined') {
+    initializeFirebase();
+  }
   return firebaseInitialized && db && auth;
 }
 
