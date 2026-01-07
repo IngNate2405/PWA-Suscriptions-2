@@ -156,31 +156,46 @@ class FirebaseService {
     try {
       const backup = JSON.parse(backupStr);
       
-      // Restaurar datos locales
-      if (backup.subscriptions) {
+      // Limpiar primero todos los datos actuales (incluyendo los de Firebase)
+      localStorage.removeItem('subscriptions');
+      localStorage.removeItem('personas');
+      localStorage.removeItem('mensajesEnviados');
+      localStorage.removeItem('appVersion');
+      localStorage.removeItem('notificationPermission');
+      localStorage.removeItem('selectedYear');
+      
+      // Restaurar datos locales desde el backup
+      if (backup.subscriptions !== undefined) {
         localStorage.setItem('subscriptions', backup.subscriptions);
+      } else {
+        localStorage.setItem('subscriptions', '[]');
       }
-      if (backup.personas) {
+      if (backup.personas !== undefined) {
         localStorage.setItem('personas', backup.personas);
+      } else {
+        localStorage.setItem('personas', '[]');
       }
-      if (backup.mensajesEnviados) {
+      if (backup.mensajesEnviados !== undefined) {
         localStorage.setItem('mensajesEnviados', backup.mensajesEnviados);
+      } else {
+        localStorage.setItem('mensajesEnviados', '{}');
       }
-      if (backup.appVersion) {
+      if (backup.appVersion !== undefined) {
         localStorage.setItem('appVersion', backup.appVersion);
       }
-      if (backup.notificationPermission) {
+      if (backup.notificationPermission !== undefined) {
         localStorage.setItem('notificationPermission', backup.notificationPermission);
       }
-      if (backup.selectedYear) {
+      if (backup.selectedYear !== undefined) {
         localStorage.setItem('selectedYear', backup.selectedYear);
       }
 
       // Limpiar el backup después de restaurar
       localStorage.removeItem('localDataBackup');
       localStorage.setItem('dataSource', 'localStorage');
+      localStorage.removeItem('firebaseUserId');
       
-      console.log('✅ Datos locales restaurados desde backup');
+      console.log('✅ Datos locales restaurados desde backup. Datos de Firebase eliminados.');
       return true;
     } catch (error) {
       console.error('❌ Error al restaurar backup:', error);
