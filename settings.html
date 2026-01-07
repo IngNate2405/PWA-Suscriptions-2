@@ -519,11 +519,21 @@
       }
       
       // Confirmar cierre de sesión
-      if (confirm('¿Estás seguro de que quieres cerrar sesión? Tus datos locales se mantendrán.')) {
+      if (confirm('¿Estás seguro de que quieres cerrar sesión? Se restaurarán tus datos locales anteriores.')) {
         try {
           await firebaseService.signOut();
+          
+          // Restaurar datos locales desde el backup
+          const restored = firebaseService.restoreLocalBackup();
+          if (!restored) {
+            // Si no hay backup, limpiar datos de Firebase pero mantener estructura básica
+            localStorage.setItem('subscriptions', '[]');
+            localStorage.setItem('personas', '[]');
+            localStorage.setItem('mensajesEnviados', '{}');
+          }
+          
           localStorage.setItem('dataSource', 'localStorage');
-          showNotification('Sesión cerrada correctamente', 'success');
+          showNotification('Sesión cerrada correctamente. Datos locales restaurados.', 'success');
           
           // Redirigir a login después de cerrar sesión
           setTimeout(() => {

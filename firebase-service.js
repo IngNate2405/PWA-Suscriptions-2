@@ -90,6 +90,12 @@ class FirebaseService {
     this.syncInProgress = true;
 
     try {
+      // Guardar backup de datos locales antes de migrar
+      // Solo si aún no hay un backup (primera vez que se migra)
+      if (!localStorage.getItem('localDataBackup')) {
+        this.saveLocalBackup();
+      }
+
       const userId = user.uid;
       const userRef = db.collection('users').doc(userId);
 
@@ -122,6 +128,72 @@ class FirebaseService {
     }
   }
 
+  // ========== BACKUP Y RESTAURACIÓN DE DATOS LOCALES ==========
+
+  // Guardar backup de datos locales antes de cargar desde Firebase
+  saveLocalBackup() {
+    const backup = {
+      subscriptions: localStorage.getItem('subscriptions') || '[]',
+      personas: localStorage.getItem('personas') || '[]',
+      mensajesEnviados: localStorage.getItem('mensajesEnviados') || '{}',
+      appVersion: localStorage.getItem('appVersion') || '1.0.45',
+      notificationPermission: localStorage.getItem('notificationPermission') || 'default',
+      selectedYear: localStorage.getItem('selectedYear') || new Date().getFullYear().toString(),
+      timestamp: Date.now()
+    };
+    localStorage.setItem('localDataBackup', JSON.stringify(backup));
+    console.log('💾 Backup de datos locales guardado');
+  }
+
+  // Restaurar datos locales desde el backup
+  restoreLocalBackup() {
+    const backupStr = localStorage.getItem('localDataBackup');
+    if (!backupStr) {
+      console.log('⚠️ No hay backup de datos locales para restaurar');
+      return false;
+    }
+
+    try {
+      const backup = JSON.parse(backupStr);
+      
+      // Restaurar datos locales
+      if (backup.subscriptions) {
+        localStorage.setItem('subscriptions', backup.subscriptions);
+      }
+      if (backup.personas) {
+        localStorage.setItem('personas', backup.personas);
+      }
+      if (backup.mensajesEnviados) {
+        localStorage.setItem('mensajesEnviados', backup.mensajesEnviados);
+      }
+      if (backup.appVersion) {
+        localStorage.setItem('appVersion', backup.appVersion);
+      }
+      if (backup.notificationPermission) {
+        localStorage.setItem('notificationPermission', backup.notificationPermission);
+      }
+      if (backup.selectedYear) {
+        localStorage.setItem('selectedYear', backup.selectedYear);
+      }
+
+      // Limpiar el backup después de restaurar
+      localStorage.removeItem('localDataBackup');
+      localStorage.setItem('dataSource', 'localStorage');
+      
+      console.log('✅ Datos locales restaurados desde backup');
+      return true;
+    } catch (error) {
+      console.error('❌ Error al restaurar backup:', error);
+      return false;
+    }
+  }
+
+  // Limpiar backup si existe
+  clearLocalBackup() {
+    localStorage.removeItem('localDataBackup');
+    console.log('🗑️ Backup de datos locales eliminado');
+  }
+
   // ========== LECTURA DE DATOS ==========
 
   async loadFromFirebase() {
@@ -135,6 +207,12 @@ class FirebaseService {
     }
 
     try {
+      // Guardar backup de datos locales antes de cargar desde Firebase
+      // Solo si aún no hay un backup (primera vez que se carga desde Firebase)
+      if (!localStorage.getItem('localDataBackup')) {
+        this.saveLocalBackup();
+      }
+
       const userId = user.uid;
       const userRef = db.collection('users').doc(userId);
       const doc = await userRef.get();
