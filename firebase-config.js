@@ -47,16 +47,17 @@ function initializeFirebase() {
   }
 }
 
-// Intentar inicializar cuando el DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeFirebase);
-} else {
-  // Si el DOM ya está cargado, intentar inicializar inmediatamente
-  // Pero esperar un poco para asegurar que Firebase SDK esté cargado
-  setTimeout(() => {
+// Intentar inicializar Firebase
+// Esperar a que Firebase SDK esté completamente cargado
+(function initFirebaseWhenReady() {
+  if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length === 0) {
+    // Firebase está cargado y no hay apps inicializadas
     initializeFirebase();
-  }, 100);
-}
+  } else if (typeof firebase === 'undefined') {
+    // Firebase aún no está cargado, esperar un poco más
+    setTimeout(initFirebaseWhenReady, 50);
+  }
+})();
 
 // Función para verificar si Firebase está disponible
 function isFirebaseAvailable() {
