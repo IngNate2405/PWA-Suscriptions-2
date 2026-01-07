@@ -59,12 +59,56 @@
   </style>
   <script>
     if ('serviceWorker' in navigator) {
+      // Función para continuar sin cuenta (solo local)
+      function continueLocal() {
+        localStorage.setItem('dataSource', 'localStorage');
+        // Ocultar el botón de local si ya está usando local
+        const localButton = document.getElementById('local-button');
+        if (localButton) {
+          localButton.className = 'flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs transition-colors';
+          localButton.innerHTML = '<i class="fas fa-check"></i><span>Local</span>';
+          localButton.disabled = true;
+        }
+        // Mostrar notificación
+        showLocalNotification('Modo local activado. Tus datos se guardarán solo en este dispositivo.');
+      }
+
+      // Función para mostrar notificación local
+      function showLocalNotification(message) {
+        // Crear notificación temporal
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-sm';
+        notification.innerHTML = `<p>${message}</p>`;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      }
+
       // Verificar estado de autenticación y actualizar UI
       function updateAuthButton() {
         const authButton = document.getElementById('auth-button');
         const authButtonText = document.getElementById('auth-button-text');
+        const localButton = document.getElementById('local-button');
+        const dataSource = localStorage.getItem('dataSource') || 'localStorage';
         
         if (!authButton || !authButtonText) return;
+        
+        // Actualizar botón local
+        if (localButton) {
+          if (dataSource === 'localStorage') {
+            localButton.className = 'flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs transition-colors';
+            localButton.innerHTML = '<i class="fas fa-check"></i><span>Local</span>';
+            localButton.disabled = true;
+            localButton.onclick = null;
+          } else {
+            localButton.className = 'flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-xs transition-colors';
+            localButton.innerHTML = '<i class="fas fa-mobile-alt"></i><span>Local</span>';
+            localButton.disabled = false;
+            localButton.onclick = continueLocal;
+          }
+        }
         
         if (isFirebaseAvailable()) {
           const user = firebaseService.getCurrentUser();
@@ -78,14 +122,20 @@
             authButton.onclick = () => window.location.href = 'login.html';
           }
         } else {
-          authButtonText.textContent = 'Solo Local';
-          authButton.className = 'flex items-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors';
+          authButtonText.textContent = 'Iniciar Sesión';
+          authButton.className = 'flex items-center space-x-2 bg-[#3f2a6f] hover:bg-[#4d3578] text-white px-4 py-2 rounded-lg text-sm transition-colors';
           authButton.onclick = () => window.location.href = 'login.html';
         }
       }
 
       // Cargar datos desde Firebase si está autenticado
       window.addEventListener('load', async () => {
+        // Verificar si ya está en modo local
+        const dataSource = localStorage.getItem('dataSource') || 'localStorage';
+        if (dataSource === 'localStorage') {
+          console.log('✅ Modo local activo. Los datos se guardarán solo en este dispositivo.');
+        }
+        
         // Actualizar botón de autenticación
         updateAuthButton();
         
@@ -97,9 +147,9 @@
         }
         
         // Si Firebase está disponible y hay un usuario autenticado, cargar datos
-        if (isFirebaseAvailable()) {
+        if (isFirebaseAvailable() && dataSource === 'firebase') {
           const user = firebaseService.getCurrentUser();
-          if (user && localStorage.getItem('dataSource') === 'firebase') {
+          if (user) {
             try {
               await firebaseService.loadFromFirebase();
               console.log('✅ Datos cargados desde Firebase');
@@ -755,7 +805,16 @@
  <body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
   <!-- Botón de Login/Usuario en la parte superior -->
   <div class="container mx-auto px-4 pt-4">
-    <div class="flex justify-end mb-4">
+    <div class="flex justify-end items-center space-x-2 mb-4">
+      <button 
+        id="local-button" 
+        onclick="continueLocal()" 
+        class="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-xs transition-colors"
+        title="Continuar sin cuenta (solo local)"
+      >
+        <i class="fas fa-mobile-alt"></i>
+        <span>Local</span>
+      </button>
       <button 
         id="auth-button" 
         onclick="window.location.href='login.html'" 
