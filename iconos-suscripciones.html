@@ -548,89 +548,50 @@
         return;
       }
 
-      // Verificar que Storage esté disponible
-      if (!storage) {
-        showNotification('Firebase Storage no está disponible. Verifica que el script esté cargado.', 'error');
+      // Verificar tamaño del archivo (máximo 1MB para evitar costos y límites de Firestore)
+      const maxSize = 1024 * 1024; // 1MB
+      if (file.size > maxSize) {
+        showNotification('El archivo es muy grande. Máximo 1MB. Usa una imagen más pequeña o comprímela.', 'error');
         return;
       }
 
+      // Convertir archivo a base64 para guardarlo en Firestore (sin usar Storage - GRATIS)
       try {
-        showNotification('Subiendo imagen...', 'info');
+        showNotification('Procesando imagen...', 'info');
         
-        // Convertir el archivo a base64 como alternativa si hay problemas de CORS
-        // Primero intentar subir directamente a Firebase Storage
-        const storageRef = storage.ref();
-        // Limpiar el nombre del archivo para evitar caracteres problemáticos
-        const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const fileName = `subscription-icons/${user.uid}/${Date.now()}_${cleanFileName}`;
-        const fileRef = storageRef.child(fileName);
-        
-        // Usar put() para la API de compatibilidad con metadata
-        const metadata = {
-          contentType: file.type || 'image/png',
-          customMetadata: {
-            'uploadedBy': user.uid,
-            'originalName': file.name
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const base64Image = e.target.result;
+            
+            // Guardar en Firestore como base64 (solo para imágenes pequeñas)
+            const iconosRef = db.collection('users').doc(user.uid).collection('subscription_icons');
+            await iconosRef.add({
+              nombre: nombre,
+              url: base64Image, // Guardar como base64
+              esBase64: true, // Marcar como base64
+              creadoPor: user.uid,
+              creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            showNotification('Icono guardado correctamente (sin costo de Storage)', 'success');
+            fileInput.value = '';
+            nameInput.value = '';
+            cargarIconos();
+          } catch (error) {
+            console.error('Error al guardar icono:', error);
+            showNotification('Error al guardar icono: ' + (error.message || 'Error desconocido'), 'error');
           }
         };
         
-        const uploadTask = fileRef.put(file, metadata);
+        reader.onerror = () => {
+          showNotification('Error al leer el archivo', 'error');
+        };
         
-        uploadTask.on('state_changed', 
-          (snapshot) => {
-            // Progreso de subida
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Progreso de subida:', progress + '%');
-            // Solo mostrar notificación de progreso si es significativo
-            if (progress % 25 === 0 || progress === 100) {
-              showNotification(`Subiendo... ${Math.round(progress)}%`, 'info');
-            }
-          },
-          (error) => {
-            console.error('Error al subir archivo:', error);
-            console.error('Código de error:', error.code);
-            let errorMessage = 'Error al subir archivo';
-            if (error.code === 'storage/unauthorized') {
-              errorMessage = 'No tienes permisos para subir archivos. Verifica las reglas de Storage.';
-            } else if (error.code === 'storage/canceled') {
-              errorMessage = 'Subida cancelada';
-            } else if (error.code === 'storage/quota-exceeded') {
-              errorMessage = 'Cuota de almacenamiento excedida';
-            } else if (error.code === 'storage/unauthenticated') {
-              errorMessage = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
-            } else if (error.message) {
-              errorMessage = error.message;
-            }
-            showNotification(errorMessage, 'error');
-          },
-          async () => {
-            try {
-              // Obtener URL de descarga
-              const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-              console.log('✅ Archivo subido, URL:', downloadURL);
-              
-              // Guardar metadata en Firestore en la subcolección del usuario
-              const iconosRef = db.collection('users').doc(user.uid).collection('subscription_icons');
-              await iconosRef.add({
-                nombre: nombre,
-                url: downloadURL,
-                creadoPor: user.uid,
-                creadoEn: firebase.firestore.FieldValue.serverTimestamp()
-              });
-
-              showNotification('Icono subido correctamente', 'success');
-              fileInput.value = '';
-              nameInput.value = '';
-              cargarIconos();
-            } catch (error) {
-              console.error('Error al guardar metadata:', error);
-              showNotification('Error al guardar icono: ' + (error.message || 'Error desconocido'), 'error');
-            }
-          }
-        );
+        reader.readAsDataURL(file);
       } catch (error) {
-        console.error('Error al subir icono:', error);
-        showNotification('Error al subir icono: ' + (error.message || 'Error desconocido'), 'error');
+        console.error('Error al procesar icono:', error);
+        showNotification('Error al procesar icono: ' + (error.message || 'Error desconocido'), 'error');
       }
     }
 
