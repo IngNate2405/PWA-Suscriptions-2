@@ -183,10 +183,17 @@
         return;
       }
 
+      // Esperar un momento para que Firebase se inicialice completamente
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const user = firebaseService.getCurrentUser();
       if (!user) {
-        iconosLista.innerHTML = '<div class="col-span-3 text-center text-yellow-400">Debes iniciar sesión para ver los iconos</div>';
-        return;
+        // Intentar obtener el usuario directamente de auth
+        const authUser = auth ? auth.currentUser : null;
+        if (!authUser) {
+          iconosLista.innerHTML = '<div class="col-span-3 text-center text-yellow-400">Debes iniciar sesión para ver los iconos</div>';
+          return;
+        }
       }
 
       try {
@@ -251,7 +258,10 @@
         return;
       }
 
-      const user = firebaseService.getCurrentUser();
+      let user = firebaseService.getCurrentUser();
+      if (!user && auth) {
+        user = auth.currentUser;
+      }
       if (!user) {
         showNotification('Debes iniciar sesión para agregar iconos', 'error');
         return;
@@ -306,7 +316,10 @@
         return;
       }
 
-      const user = firebaseService.getCurrentUser();
+      let user = firebaseService.getCurrentUser();
+      if (!user && auth) {
+        user = auth.currentUser;
+      }
       if (!user) {
         showNotification('Debes iniciar sesión para agregar iconos', 'error');
         return;
@@ -382,7 +395,10 @@
         return;
       }
 
-      const user = firebaseService.getCurrentUser();
+      let user = firebaseService.getCurrentUser();
+      if (!user && auth) {
+        user = auth.currentUser;
+      }
       if (!user) {
         showNotification('Debes iniciar sesión para eliminar iconos', 'error');
         return;
