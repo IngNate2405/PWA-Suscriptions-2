@@ -39,7 +39,15 @@ function initializeFirebase() {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
-    storage = firebase.storage();
+    
+    // Inicializar Storage solo si está disponible
+    if (typeof firebase.storage === 'function') {
+      storage = firebase.storage();
+    } else {
+      console.warn('⚠️ Firebase Storage no está disponible. Asegúrate de cargar firebase-storage-compat.js');
+      storage = null;
+    }
+    
     firebaseInitialized = true;
     console.log('✅ Firebase inicializado correctamente');
     return true;
@@ -67,7 +75,8 @@ function isFirebaseAvailable() {
   if (!firebaseInitialized && typeof firebase !== 'undefined') {
     initializeFirebase();
   }
-  return firebaseInitialized && db && auth && storage;
+  // Storage es opcional, no requerirlo para que Firebase funcione
+  return firebaseInitialized && db && auth;
 }
 
 
