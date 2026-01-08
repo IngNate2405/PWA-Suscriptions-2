@@ -57,7 +57,50 @@
       </button>
     </div>
 
-    <!-- Sección de Métricas -->
+    <!-- Sección de Métricas de Pagos -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Métricas de Pagos</h2>
+      
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <!-- Métrica 1: Pagos -->
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-gray-500 text-sm mb-1">Pagos</p>
+          <p class="text-3xl font-bold text-gray-800" id="metric-pagos-count">0</p>
+        </div>
+
+        <!-- Métrica 2: Monto de Pagos -->
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-gray-500 text-sm mb-1">Monto de Pagos</p>
+          <p class="text-3xl font-bold text-gray-800" id="metric-pagos-monto">Q0</p>
+        </div>
+
+        <!-- Métrica 3: Promedio de Pago -->
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-gray-500 text-sm mb-1">Promedio de Pago</p>
+          <p class="text-3xl font-bold text-gray-800" id="metric-pagos-promedio">Q0</p>
+        </div>
+
+        <!-- Métrica 4: Pagos Pendientes -->
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-gray-500 text-sm mb-1">Pagos Pendientes</p>
+          <p class="text-3xl font-bold text-gray-800" id="metric-pendientes-count">0</p>
+        </div>
+
+        <!-- Métrica 5: Monto Pendiente -->
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-gray-500 text-sm mb-1">Monto Pendiente</p>
+          <p class="text-3xl font-bold text-gray-800" id="metric-pendientes-monto">Q0</p>
+        </div>
+
+        <!-- Métrica 6: Promedio Pendiente -->
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-gray-500 text-sm mb-1">Promedio Pendiente</p>
+          <p class="text-3xl font-bold text-gray-800" id="metric-pendientes-promedio">Q0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Métricas Generales -->
     <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
       <h2 class="text-xl font-bold mb-4">Métricas Generales</h2>
       
@@ -163,6 +206,56 @@
 
       // Filtrar personas desuscritas
       const personasActivas = personas.filter(p => !p.desuscrita);
+
+      // Calcular métricas de pagos
+      let totalPagos = 0;
+      let totalMontoPagos = 0;
+      let totalPendientes = 0;
+      let totalMontoPendientes = 0;
+
+      personasActivas.forEach(persona => {
+        persona.plataformas?.forEach(plataforma => {
+          if (!plataforma.pagos || !Array.isArray(plataforma.pagos)) return;
+
+          const precio = parseFloat(plataforma.precio) || 0;
+          let precioMensual = precio;
+
+          // Convertir a mensual según el ciclo de facturación
+          switch (plataforma.tipoCobro || 'mensual') {
+            case 'trimestral':
+              precioMensual = precio / 3;
+              break;
+            case 'semestral':
+              precioMensual = precio / 6;
+              break;
+            case 'anual':
+              precioMensual = precio / 12;
+              break;
+          }
+
+          plataforma.pagos.forEach(pago => {
+            if (pago.pagado) {
+              totalPagos++;
+              totalMontoPagos += precioMensual;
+            } else {
+              totalPendientes++;
+              totalMontoPendientes += precioMensual;
+            }
+          });
+        });
+      });
+
+      // Actualizar métricas de pagos
+      document.getElementById('metric-pagos-count').textContent = totalPagos;
+      document.getElementById('metric-pagos-monto').textContent = `Q${totalMontoPagos.toFixed(2)}`;
+      document.getElementById('metric-pagos-promedio').textContent = totalPagos > 0 
+        ? `Q${(totalMontoPagos / totalPagos).toFixed(2)}` 
+        : 'Q0';
+      document.getElementById('metric-pendientes-count').textContent = totalPendientes;
+      document.getElementById('metric-pendientes-monto').textContent = `Q${totalMontoPendientes.toFixed(2)}`;
+      document.getElementById('metric-pendientes-promedio').textContent = totalPendientes > 0 
+        ? `Q${(totalMontoPendientes / totalPendientes).toFixed(2)}` 
+        : 'Q0';
 
       // Contar suscripciones activas
       const suscripcionesActivas = subscriptions.filter(s => s.status !== 'paused').length;
