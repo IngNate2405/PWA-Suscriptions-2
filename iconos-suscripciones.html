@@ -183,17 +183,24 @@
         return;
       }
 
-      // Esperar un momento para que Firebase se inicialice completamente
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Esperar a que Firebase se inicialice completamente
+      let attempts = 0;
+      while (!isFirebaseAvailable() && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
 
-      const user = firebaseService.getCurrentUser();
+      // Esperar un momento adicional para que auth se sincronice
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      let user = firebaseService.getCurrentUser();
+      if (!user && typeof auth !== 'undefined' && auth) {
+        user = auth.currentUser;
+      }
+      
       if (!user) {
-        // Intentar obtener el usuario directamente de auth
-        const authUser = auth ? auth.currentUser : null;
-        if (!authUser) {
-          iconosLista.innerHTML = '<div class="col-span-3 text-center text-yellow-400">Debes iniciar sesión para ver los iconos</div>';
-          return;
-        }
+        iconosLista.innerHTML = '<div class="col-span-3 text-center text-yellow-400">Debes iniciar sesión para ver los iconos. <a href="login.html" class="text-blue-400 underline">Iniciar sesión</a></div>';
+        return;
       }
 
       try {
