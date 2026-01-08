@@ -27,110 +27,110 @@
     /* Contenedor principal que usa todo el ancho */
     .dashboard-container {
       width: 100%;
-      padding: 2rem;
+      padding: 0.67rem;
     }
     @media (max-width: 768px) {
       .dashboard-container {
-        padding: 1rem;
+        padding: 0.33rem;
       }
     }
   </style>
 </head>
 <body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
   <div class="dashboard-container">
-    <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-extrabold leading-tight">Dashboard</h1>
+    <div class="flex items-center justify-between mb-2.67">
+      <h1 class="text-lg font-extrabold leading-tight">Dashboard</h1>
       <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
-        <i class="fas fa-arrow-left text-xl"></i>
+        <i class="fas fa-arrow-left text-xs"></i>
       </button>
     </div>
 
     <!-- Sección de Métricas Generales -->
-    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
-      <h2 class="text-xl font-bold mb-4">Métricas Generales</h2>
+    <div class="bg-[#1B1930] rounded-lg p-2 mb-2">
+      <h2 class="text-sm font-bold mb-1.33">Métricas Generales</h2>
       
-      <div class="grid grid-cols-3 gap-6">
+      <div class="grid grid-cols-3 gap-2">
         <!-- Métrica 1 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-xs">Suscripciones Activas</span>
-            <i class="fas fa-tv text-purple-400 text-sm"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-0.67">
+            <span class="text-gray-400 text-[8px]">Suscripciones Activas</span>
+            <i class="fas fa-tv text-purple-400 text-[10px]"></i>
           </div>
-          <p class="text-2xl font-bold" id="metric-subscriptions">0</p>
+          <p class="text-lg font-bold" id="metric-subscriptions">0</p>
         </div>
 
         <!-- Métrica 2 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-xs">Personas Activas</span>
-            <i class="fas fa-users text-blue-400 text-sm"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-0.67">
+            <span class="text-gray-400 text-[8px]">Personas Activas</span>
+            <i class="fas fa-users text-blue-400 text-[10px]"></i>
           </div>
-          <p class="text-2xl font-bold" id="metric-personas">0</p>
+          <p class="text-lg font-bold" id="metric-personas">0</p>
         </div>
 
         <!-- Métrica 3 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-xs">Gasto Mensual</span>
-            <i class="fas fa-dollar-sign text-red-400 text-sm"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-0.67">
+            <span class="text-gray-400 text-[8px]">Gasto Mensual</span>
+            <i class="fas fa-dollar-sign text-red-400 text-[10px]"></i>
           </div>
-          <p class="text-2xl font-bold" id="metric-gasto-mensual">Q0</p>
+          <p class="text-lg font-bold" id="metric-gasto-mensual">Q0</p>
         </div>
 
         <!-- Métrica 4 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-xs">Ingreso Mensual</span>
-            <i class="fas fa-chart-line text-green-400 text-sm"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-0.67">
+            <span class="text-gray-400 text-[8px]">Ingreso Mensual</span>
+            <i class="fas fa-chart-line text-green-400 text-[10px]"></i>
           </div>
-          <p class="text-2xl font-bold" id="metric-ingreso-mensual">Q0</p>
+          <p class="text-lg font-bold" id="metric-ingreso-mensual">Q0</p>
         </div>
 
         <!-- Métrica 5 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-xs">Gasto Semestral</span>
-            <i class="fas fa-calendar-alt text-orange-400 text-sm"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-0.67">
+            <span class="text-gray-400 text-[8px]">Gasto Semestral</span>
+            <i class="fas fa-calendar-alt text-orange-400 text-[10px]"></i>
           </div>
-          <p class="text-2xl font-bold" id="metric-gasto-semestral">Q0</p>
+          <p class="text-lg font-bold" id="metric-gasto-semestral">Q0</p>
         </div>
 
         <!-- Métrica 6 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-gray-400 text-xs">Ingreso Semestral</span>
-            <i class="fas fa-chart-bar text-cyan-400 text-sm"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-0.67">
+            <span class="text-gray-400 text-[8px]">Ingreso Semestral</span>
+            <i class="fas fa-chart-bar text-cyan-400 text-[10px]"></i>
           </div>
-          <p class="text-2xl font-bold" id="metric-ingreso-semestral">Q0</p>
+          <p class="text-lg font-bold" id="metric-ingreso-semestral">Q0</p>
         </div>
       </div>
     </div>
 
     <!-- Sección de Métricas Detalladas -->
-    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
-      <h2 class="text-xl font-bold mb-4">Análisis Detallado</h2>
+    <div class="bg-[#1B1930] rounded-lg p-2 mb-2">
+      <h2 class="text-sm font-bold mb-1.33">Análisis Detallado</h2>
       
-      <div class="space-y-4">
+      <div class="space-y-1.33">
         <!-- Gasto por Plataforma -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4">
-          <h3 class="font-semibold mb-3">Gasto por Plataforma (Mensual)</h3>
-          <div id="gasto-plataformas" class="space-y-2">
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33">
+          <h3 class="font-semibold mb-1 text-xs">Gasto por Plataforma (Mensual)</h3>
+          <div id="gasto-plataformas" class="space-y-0.67">
             <!-- Se llenará dinámicamente -->
           </div>
         </div>
 
         <!-- Ingreso por Plataforma -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4">
-          <h3 class="font-semibold mb-3">Ingreso por Plataforma (Mensual)</h3>
-          <div id="ingreso-plataformas" class="space-y-2">
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33">
+          <h3 class="font-semibold mb-1 text-xs">Ingreso por Plataforma (Mensual)</h3>
+          <div id="ingreso-plataformas" class="space-y-0.67">
             <!-- Se llenará dinámicamente -->
           </div>
         </div>
 
         <!-- Beneficio Neto -->
-        <div class="bg-[#2a1f3d] rounded-lg p-4">
-          <h3 class="font-semibold mb-3">Beneficio Neto por Plataforma</h3>
-          <div id="beneficio-plataformas" class="space-y-2">
+        <div class="bg-[#2a1f3d] rounded-lg p-1.33">
+          <h3 class="font-semibold mb-1 text-xs">Beneficio Neto por Plataforma</h3>
+          <div id="beneficio-plataformas" class="space-y-0.67">
             <!-- Se llenará dinámicamente -->
           </div>
         </div>
@@ -263,8 +263,8 @@
           const div = document.createElement('div');
           div.className = 'flex justify-between items-center';
           div.innerHTML = `
-            <span class="text-gray-300">${nombre}</span>
-            <span class="font-semibold text-red-400">Q${gasto.toFixed(2)}</span>
+            <span class="text-gray-300 text-xs">${nombre}</span>
+            <span class="font-semibold text-red-400 text-xs">Q${gasto.toFixed(2)}</span>
           `;
           gastoPlataformasDiv.appendChild(div);
         });
@@ -278,8 +278,8 @@
           const div = document.createElement('div');
           div.className = 'flex justify-between items-center';
           div.innerHTML = `
-            <span class="text-gray-300">${nombre}</span>
-            <span class="font-semibold text-green-400">Q${ingreso.toFixed(2)}</span>
+            <span class="text-gray-300 text-xs">${nombre}</span>
+            <span class="font-semibold text-green-400 text-xs">Q${ingreso.toFixed(2)}</span>
           `;
           ingresoPlataformasDiv.appendChild(div);
         });
@@ -298,8 +298,8 @@
           div.className = 'flex justify-between items-center';
           const colorClass = beneficio >= 0 ? 'text-green-400' : 'text-red-400';
           div.innerHTML = `
-            <span class="text-gray-300">${nombre}</span>
-            <span class="font-semibold ${colorClass}">Q${beneficio.toFixed(2)}</span>
+            <span class="text-gray-300 text-xs">${nombre}</span>
+            <span class="font-semibold ${colorClass} text-xs">Q${beneficio.toFixed(2)}</span>
           `;
           beneficioPlataformasDiv.appendChild(div);
         });
