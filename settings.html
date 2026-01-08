@@ -583,7 +583,11 @@
         syncStatus.className = 'text-green-400';
         syncStatusText.textContent = 'Sincronización activa';
         authStatusText.textContent = `Autenticado como: ${user.email}`;
-        btnAuth.textContent = 'Cambiar cuenta';
+        
+        // Ocultar botón de iniciar sesión/cambiar cuenta cuando hay usuario autenticado
+        if (btnAuth && btnAuth.parentElement) {
+          btnAuth.parentElement.classList.add('hidden');
+        }
         
         // Mostrar botón de cerrar sesión
         if (signoutSection) signoutSection.classList.remove('hidden');
@@ -602,6 +606,12 @@
         syncStatusText.textContent = 'No autenticado';
         authStatusText.textContent = 'No autenticado';
         btnAuth.textContent = 'Iniciar Sesión';
+        
+        // Mostrar botón de iniciar sesión cuando no hay usuario
+        if (btnAuth && btnAuth.parentElement) {
+          btnAuth.parentElement.classList.remove('hidden');
+        }
+        
         migrateSection.classList.add('hidden');
         syncSection.classList.add('hidden');
         if (signoutSection) signoutSection.classList.add('hidden');
