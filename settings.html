@@ -585,8 +585,9 @@
         authStatusText.textContent = `Autenticado como: ${user.email}`;
         
         // Ocultar botón de iniciar sesión/cambiar cuenta cuando hay usuario autenticado
-        if (btnAuth && btnAuth.parentElement) {
-          btnAuth.parentElement.classList.add('hidden');
+        const authButtonContainer = document.getElementById('auth-button-container');
+        if (authButtonContainer) {
+          authButtonContainer.classList.add('hidden');
         }
         
         // Mostrar botón de cerrar sesión
@@ -608,8 +609,9 @@
         btnAuth.textContent = 'Iniciar Sesión';
         
         // Mostrar botón de iniciar sesión cuando no hay usuario
-        if (btnAuth && btnAuth.parentElement) {
-          btnAuth.parentElement.classList.remove('hidden');
+        const authButtonContainer = document.getElementById('auth-button-container');
+        if (authButtonContainer) {
+          authButtonContainer.classList.remove('hidden');
         }
         
         migrateSection.classList.add('hidden');
@@ -870,7 +872,7 @@
         </div>
 
         <div id="auth-section" class="space-y-3">
-          <div class="flex justify-between items-center">
+          <div class="flex justify-between items-center" id="auth-button-container">
             <div>
               <h3 class="font-semibold">Autenticación</h3>
               <p class="text-gray-400 text-sm" id="auth-status-text">No autenticado</p>
