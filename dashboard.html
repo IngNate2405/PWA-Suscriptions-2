@@ -27,12 +27,17 @@
     /* Contenedor principal que usa todo el ancho */
     .dashboard-container {
       width: 100%;
-      padding: 0.67rem;
+      padding: 2rem;
     }
     @media (max-width: 768px) {
       .dashboard-container {
-        padding: 0.33rem;
+        padding: 1rem;
       }
+    }
+    /* Limitar tamaño máximo de los cuadros de métricas */
+    .metric-card {
+      max-width: 200px;
+      max-height: 200px;
     }
   </style>
 </head>
@@ -263,8 +268,8 @@
           const div = document.createElement('div');
           div.className = 'flex justify-between items-center';
           div.innerHTML = `
-            <span class="text-gray-300 text-xs">${nombre}</span>
-            <span class="font-semibold text-red-400 text-xs">Q${gasto.toFixed(2)}</span>
+            <span class="text-gray-300">${nombre}</span>
+            <span class="font-semibold text-red-400">Q${gasto.toFixed(2)}</span>
           `;
           gastoPlataformasDiv.appendChild(div);
         });
@@ -278,8 +283,8 @@
           const div = document.createElement('div');
           div.className = 'flex justify-between items-center';
           div.innerHTML = `
-            <span class="text-gray-300 text-xs">${nombre}</span>
-            <span class="font-semibold text-green-400 text-xs">Q${ingreso.toFixed(2)}</span>
+            <span class="text-gray-300">${nombre}</span>
+            <span class="font-semibold text-green-400">Q${ingreso.toFixed(2)}</span>
           `;
           ingresoPlataformasDiv.appendChild(div);
         });
@@ -298,8 +303,8 @@
           div.className = 'flex justify-between items-center';
           const colorClass = beneficio >= 0 ? 'text-green-400' : 'text-red-400';
           div.innerHTML = `
-            <span class="text-gray-300 text-xs">${nombre}</span>
-            <span class="font-semibold ${colorClass} text-xs">Q${beneficio.toFixed(2)}</span>
+            <span class="text-gray-300">${nombre}</span>
+            <span class="font-semibold ${colorClass}">Q${beneficio.toFixed(2)}</span>
           `;
           beneficioPlataformasDiv.appendChild(div);
         });
