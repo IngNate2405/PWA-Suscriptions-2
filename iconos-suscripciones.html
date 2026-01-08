@@ -364,18 +364,20 @@
         iconosLista.innerHTML = '';
         snapshot.forEach(doc => {
           const icono = doc.data();
+          // Si es base64, usar directamente; si no, usar la URL
+          const imageSrc = icono.url || '';
           const div = document.createElement('div');
           div.className = 'bg-[#2a1f3d] rounded-lg p-3 flex flex-col items-center space-y-2';
           div.innerHTML = `
             <img 
-              src="${icono.url}" 
+              src="${imageSrc}" 
               alt="${icono.nombre}" 
               class="w-20 h-20 object-contain rounded-lg"
               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png'"
             />
             <p class="text-xs text-center text-gray-300">${icono.nombre}</p>
             <button 
-              onclick="copiarURL('${icono.url.replace(/'/g, "\\'")}')" 
+              onclick="copiarURL('${imageSrc.replace(/'/g, "\\'")}')" 
               class="w-full bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded text-xs"
             >
               <i class="fas fa-copy mr-1"></i>
