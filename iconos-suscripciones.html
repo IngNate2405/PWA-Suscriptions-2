@@ -125,10 +125,19 @@
       </div>
     </div>
 
-    <!-- Lista de iconos en uso -->
+    <!-- Revisión de suscripciones existentes -->
     <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
-      <h2 class="text-xl font-bold mb-4">Iconos en Uso</h2>
-      <p class="text-gray-400 text-sm mb-4">Iconos que están siendo utilizados en tus suscripciones actuales</p>
+      <h2 class="text-xl font-bold mb-4">Revisar Suscripciones Existentes</h2>
+      <p class="text-gray-400 text-sm mb-4">Selecciona las imágenes de tus suscripciones para guardarlas como iconos globales</p>
+      
+      <div id="suscripciones-lista" class="grid grid-cols-2 gap-4">
+        <!-- Se cargará dinámicamente -->
+      </div>
+    </div>
+
+    <!-- Lista de iconos guardados globalmente -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Iconos Guardados Globalmente</h2>
       
       <div id="iconos-lista" class="grid grid-cols-3 gap-4">
         <!-- Se cargará dinámicamente -->
@@ -174,6 +183,118 @@
       }, 3000);
     }
 
+    // Función para cargar suscripciones existentes
+    function cargarSuscripciones() {
+      const suscripcionesLista = document.getElementById('suscripciones-lista');
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      
+      if (subscriptions.length === 0) {
+        suscripcionesLista.innerHTML = '<div class="col-span-2 text-center text-gray-400 py-8">No hay suscripciones guardadas</div>';
+        return;
+      }
+
+      suscripcionesLista.innerHTML = '';
+      subscriptions.forEach(sub => {
+        const logoUrl = sub.logo || 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png';
+        const nombre = sub.name || 'Sin nombre';
+        const tieneImagen = logoUrl && logoUrl !== 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png';
+        
+        const div = document.createElement('div');
+        div.className = 'bg-[#2a1f3d] rounded-lg p-4 flex flex-col items-center space-y-3';
+        div.innerHTML = `
+          <img 
+            src="${logoUrl}" 
+            alt="${nombre}" 
+            class="w-24 h-24 object-contain rounded-lg ${!tieneImagen ? 'opacity-50' : ''}"
+            onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png'; this.classList.add('opacity-50')"
+          />
+          <p class="text-sm text-center text-gray-300 font-semibold">${nombre}</p>
+          ${tieneImagen ? `
+            <button 
+              onclick="guardarIconoDesdeSuscripcion('${nombre.replace(/'/g, "\\'")}', '${logoUrl.replace(/'/g, "\\'")}')" 
+              class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-sm transition-colors"
+            >
+              <i class="fas fa-save mr-2"></i>
+              Guardar como Icono Global
+            </button>
+          ` : `
+            <p class="text-xs text-gray-500 text-center">Sin imagen</p>
+          `}
+        `;
+        suscripcionesLista.appendChild(div);
+      });
+    }
+
+    // Función para guardar icono desde suscripción existente
+    async function guardarIconoDesdeSuscripcion(nombre, url) {
+      if (!url || url === 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png') {
+        showNotification('Esta suscripción no tiene una imagen válida', 'error');
+        return;
+      }
+
+      let user = null;
+      if (isFirebaseAvailable()) {
+        let attempts = 0;
+        while (!isFirebaseAvailable() && attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        user = firebaseService.getCurrentUser();
+        if (!user && typeof auth !== 'undefined' && auth) {
+          user = auth.currentUser;
+        }
+      }
+
+      try {
+        if (user && isFirebaseAvailable()) {
+          // Guardar en Firebase
+          const iconosRef = db.collection('subscriptionIcons');
+          const existingSnapshot = await iconosRef.where('nombre', '==', nombre).get();
+          
+          if (!existingSnapshot.empty) {
+            if (!confirm(`Ya existe un icono con el nombre "${nombre}". ¿Deseas actualizarlo?`)) {
+              return;
+            }
+            const existingDoc = existingSnapshot.docs[0];
+            await existingDoc.ref.update({
+              url: url,
+              actualizadoEn: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showNotification('Icono actualizado correctamente', 'success');
+          } else {
+            await iconosRef.add({
+              nombre: nombre,
+              url: url,
+              creadoPor: user.uid,
+              creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showNotification('Icono guardado correctamente en la nube', 'success');
+          }
+        } else {
+          // Guardar en localStorage como fallback
+          const iconos = JSON.parse(localStorage.getItem('subscriptionIcons') || '[]');
+          const existe = iconos.find(i => i.nombre === nombre);
+          if (existe) {
+            if (!confirm(`Ya existe un icono con el nombre "${nombre}". ¿Deseas actualizarlo?`)) {
+              return;
+            }
+            existe.url = url;
+          } else {
+            iconos.push({ nombre, url });
+          }
+          localStorage.setItem('subscriptionIcons', JSON.stringify(iconos));
+          showNotification('Icono guardado localmente', 'success');
+        }
+        
+        cargarIconos();
+      } catch (error) {
+        console.error('Error al guardar icono:', error);
+        showNotification('Error al guardar icono: ' + (error.message || 'Error desconocido'), 'error');
+      }
+    }
+
     // Función para cargar iconos desde Firebase
     async function cargarIconos() {
       const iconosLista = document.getElementById('iconos-lista');
@@ -200,7 +321,13 @@
       }
       
       if (!user) {
-        iconosLista.innerHTML = '<div class="col-span-3 text-center text-yellow-400">Debes iniciar sesión para ver los iconos. <a href="login.html" class="text-blue-400 underline">Iniciar sesión</a></div>';
+        // Si no hay usuario, cargar iconos locales
+        const iconosLocal = JSON.parse(localStorage.getItem('subscriptionIcons') || '[]');
+        if (iconosLocal.length === 0) {
+          iconosLista.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-4">No hay iconos guardados. Inicia sesión para guardar iconos en la nube.</div>';
+        } else {
+          mostrarIconosLocales(iconosLocal);
+        }
         return;
       }
 
@@ -209,7 +336,13 @@
         const snapshot = await iconosRef.get();
 
         if (snapshot.empty) {
-          iconosLista.innerHTML = '<div class="col-span-3 text-center text-gray-400">No hay iconos guardados aún</div>';
+          // Verificar si hay iconos locales
+          const iconosLocal = JSON.parse(localStorage.getItem('subscriptionIcons') || '[]');
+          if (iconosLocal.length === 0) {
+            iconosLista.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-4">No hay iconos guardados aún</div>';
+          } else {
+            mostrarIconosLocales(iconosLocal);
+          }
           return;
         }
 
@@ -222,19 +355,19 @@
             <img 
               src="${icono.url}" 
               alt="${icono.nombre}" 
-              class="w-20 h-20 object-cover rounded-lg"
+              class="w-20 h-20 object-contain rounded-lg"
               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png'"
             />
             <p class="text-xs text-center text-gray-300">${icono.nombre}</p>
             <button 
-              onclick="copiarURL('${icono.url}')" 
+              onclick="copiarURL('${icono.url.replace(/'/g, "\\'")}')" 
               class="w-full bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded text-xs"
             >
               <i class="fas fa-copy mr-1"></i>
               Copiar URL
             </button>
             <button 
-              onclick="eliminarIcono('${doc.id}', '${icono.nombre}')" 
+              onclick="eliminarIcono('${doc.id}', '${icono.nombre.replace(/'/g, "\\'")}')" 
               class="w-full bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs"
             >
               <i class="fas fa-trash mr-1"></i>
@@ -245,8 +378,61 @@
         });
       } catch (error) {
         console.error('Error al cargar iconos:', error);
-        iconosLista.innerHTML = '<div class="col-span-3 text-center text-red-400">Error al cargar iconos</div>';
+        // Fallback a localStorage
+        const iconosLocal = JSON.parse(localStorage.getItem('subscriptionIcons') || '[]');
+        if (iconosLocal.length === 0) {
+          iconosLista.innerHTML = '<div class="col-span-3 text-center text-red-400 py-4">Error al cargar iconos</div>';
+        } else {
+          mostrarIconosLocales(iconosLocal);
+        }
       }
+    }
+
+    // Función para mostrar iconos locales (fallback)
+    function mostrarIconosLocales(iconos) {
+      const iconosLista = document.getElementById('iconos-lista');
+      iconosLista.innerHTML = '';
+      iconos.forEach((icono, index) => {
+        const div = document.createElement('div');
+        div.className = 'bg-[#2a1f3d] rounded-lg p-3 flex flex-col items-center space-y-2';
+        div.innerHTML = `
+          <img 
+            src="${icono.url}" 
+            alt="${icono.nombre}" 
+            class="w-20 h-20 object-contain rounded-lg"
+            onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png'"
+          />
+          <p class="text-xs text-center text-gray-300">${icono.nombre}</p>
+          <button 
+            onclick="copiarURL('${icono.url.replace(/'/g, "\\'")}')" 
+            class="w-full bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded text-xs"
+          >
+            <i class="fas fa-copy mr-1"></i>
+            Copiar URL
+          </button>
+          <button 
+            onclick="eliminarIconoLocal(${index})" 
+            class="w-full bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs"
+          >
+            <i class="fas fa-trash mr-1"></i>
+            Eliminar
+          </button>
+        `;
+        iconosLista.appendChild(div);
+      });
+    }
+
+    // Función para eliminar icono local
+    function eliminarIconoLocal(index) {
+      const iconos = JSON.parse(localStorage.getItem('subscriptionIcons') || '[]');
+      const icono = iconos[index];
+      if (confirm(`¿Estás seguro de que quieres eliminar el icono "${icono.nombre}"?`)) {
+        iconos.splice(index, 1);
+        localStorage.setItem('subscriptionIcons', JSON.stringify(iconos));
+        mostrarIconosLocales(iconos);
+        showNotification('Icono eliminado', 'success');
+      }
+    }
     }
 
     // Función para agregar icono desde URL (guardar en Firebase Storage si está disponible)
