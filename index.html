@@ -145,6 +145,11 @@
           firebaseService.onAuthStateChanged(() => {
             updateAuthButton();
           });
+          
+          // Forzar actualización después de un pequeño delay para asegurar que se actualice
+          setTimeout(() => {
+            updateAuthButton();
+          }, 100);
         }
         
         // Si Firebase está disponible y hay un usuario autenticado, cargar datos
@@ -152,6 +157,11 @@
           const user = firebaseService.getCurrentUser();
           if (user) {
             console.log('👤 Usuario autenticado detectado:', user.email);
+            // Asegurar que el botón muestre "Cuenta" inmediatamente
+            const authButtonText = document.getElementById('auth-button-text');
+            if (authButtonText) {
+              authButtonText.textContent = 'Cuenta';
+            }
             try {
               const loaded = await firebaseService.loadFromFirebase();
               if (loaded) {
