@@ -125,9 +125,10 @@
       </div>
     </div>
 
-    <!-- Lista de iconos guardados -->
+    <!-- Lista de iconos en uso -->
     <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
-      <h2 class="text-xl font-bold mb-4">Iconos Guardados</h2>
+      <h2 class="text-xl font-bold mb-4">Iconos en Uso</h2>
+      <p class="text-gray-400 text-sm mb-4">Iconos que están siendo utilizados en tus suscripciones actuales</p>
       
       <div id="iconos-lista" class="grid grid-cols-3 gap-4">
         <!-- Se cargará dinámicamente -->
@@ -248,7 +249,7 @@
       }
     }
 
-    // Función para agregar icono desde URL
+    // Función para agregar icono desde URL (guardar en Firebase Storage si está disponible)
     async function agregarIconoDesdeURL() {
       const urlInput = document.getElementById('icon-url-input');
       const nameInput = document.getElementById('icon-name-input');
@@ -260,40 +261,42 @@
         return;
       }
 
-      if (!isFirebaseAvailable()) {
-        showNotification('Firebase no está disponible', 'error');
-        return;
-      }
-
-      let user = firebaseService.getCurrentUser();
-      if (!user && auth) {
-        user = auth.currentUser;
-      }
-      if (!user) {
-        showNotification('Debes iniciar sesión para agregar iconos', 'error');
-        return;
-      }
-
       try {
         // Verificar que la URL sea válida
         const img = new Image();
         img.onload = async () => {
           try {
-            const iconosRef = db.collection('subscriptionIcons');
-            await iconosRef.add({
-              nombre: nombre,
-              url: url,
-              creadoPor: user.uid,
-              creadoEn: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            // Si Firebase está disponible y hay usuario, guardar en la nube
+            if (isFirebaseAvailable()) {
+              let user = firebaseService.getCurrentUser();
+              if (!user && typeof auth !== 'undefined' && auth) {
+                user = auth.currentUser;
+              }
+              
+              if (user) {
+                try {
+                  const iconosRef = db.collection('subscriptionIcons');
+                  await iconosRef.add({
+                    nombre: nombre,
+                    url: url,
+                    creadoPor: user.uid,
+                    creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+                  });
+                  showNotification('Icono guardado en la nube', 'success');
+                } catch (firebaseError) {
+                  console.warn('No se pudo guardar en Firebase, pero la URL es válida:', firebaseError);
+                  showNotification('URL válida (no se pudo guardar en la nube)', 'info');
+                }
+              }
+            }
 
-            showNotification('Icono agregado correctamente', 'success');
+            showNotification('URL de imagen válida', 'success');
             urlInput.value = '';
             nameInput.value = '';
             cargarIconos();
           } catch (error) {
-            console.error('Error al guardar icono:', error);
-            showNotification('Error al guardar icono: ' + (error.message || 'Error desconocido'), 'error');
+            console.error('Error al procesar icono:', error);
+            showNotification('Error: ' + (error.message || 'Error desconocido'), 'error');
           }
         };
         img.onerror = () => {
@@ -391,7 +394,7 @@
       }
     }
 
-    // Función para eliminar icono
+    // Función para eliminar icono (solo si está en Firebase)
     async function eliminarIcono(iconoId, nombre) {
       if (!confirm(`¿Estás seguro de que quieres eliminar el icono "${nombre}"?`)) {
         return;
@@ -403,7 +406,7 @@
       }
 
       let user = firebaseService.getCurrentUser();
-      if (!user && auth) {
+      if (!user && typeof auth !== 'undefined' && auth) {
         user = auth.currentUser;
       }
       if (!user) {
@@ -422,7 +425,7 @@
           await iconoRef.delete();
           
           // Si la URL es de Firebase Storage, eliminar el archivo también
-          if (icono.url && icono.url.includes('firebasestorage.googleapis.com')) {
+          if (icono.url && icono.url.includes('firebasestorage.googleapis.com') && storage) {
             try {
               const urlParts = icono.url.split('/');
               const encodedPath = urlParts.slice(urlParts.indexOf('o') + 1).join('/').split('?')[0];
@@ -431,7 +434,6 @@
               await fileRef.delete();
             } catch (storageError) {
               console.warn('No se pudo eliminar el archivo de Storage:', storageError);
-              // Continuar aunque falle la eliminación del archivo
             }
           }
           
