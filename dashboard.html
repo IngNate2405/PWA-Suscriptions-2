@@ -55,7 +55,7 @@
     <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
       <h2 class="text-xl font-bold mb-4">Métricas Generales</h2>
       
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-4 gap-4">
         <!-- Métrica 1 -->
         <div class="bg-[#2a1f3d] rounded-lg p-3 metric-card flex flex-col justify-between">
           <div class="flex items-center justify-between mb-1">
@@ -68,46 +68,64 @@
         <!-- Métrica 2 -->
         <div class="bg-[#2a1f3d] rounded-lg p-3 metric-card flex flex-col justify-between">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-gray-400 text-xs">Personas Activas</span>
-            <i class="fas fa-users text-blue-400 text-sm"></i>
+            <span class="text-gray-400 text-xs">Suscripciones Compartidas</span>
+            <i class="fas fa-share-alt text-blue-400 text-sm"></i>
           </div>
-          <p class="text-xl font-bold" id="metric-personas">0</p>
+          <p class="text-xl font-bold" id="metric-shared">0</p>
         </div>
 
         <!-- Métrica 3 -->
         <div class="bg-[#2a1f3d] rounded-lg p-3 metric-card flex flex-col justify-between">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-gray-400 text-xs">Gasto Mensual</span>
-            <i class="fas fa-dollar-sign text-red-400 text-sm"></i>
+            <span class="text-gray-400 text-xs">Personas Activas</span>
+            <i class="fas fa-users text-green-400 text-sm"></i>
           </div>
-          <p class="text-xl font-bold" id="metric-gasto-mensual">Q0</p>
+          <p class="text-xl font-bold" id="metric-personas">0</p>
         </div>
 
         <!-- Métrica 4 -->
         <div class="bg-[#2a1f3d] rounded-lg p-3 metric-card flex flex-col justify-between">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-gray-400 text-xs">Ingreso Mensual</span>
-            <i class="fas fa-chart-line text-green-400 text-sm"></i>
+            <span class="text-gray-400 text-xs">Cobro Mensual (USD)</span>
+            <i class="fas fa-dollar-sign text-yellow-400 text-sm"></i>
           </div>
-          <p class="text-xl font-bold" id="metric-ingreso-mensual">Q0</p>
+          <p class="text-xl font-bold" id="metric-cobro-usd">$0</p>
         </div>
 
         <!-- Métrica 5 -->
         <div class="bg-[#2a1f3d] rounded-lg p-3 metric-card flex flex-col justify-between">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-gray-400 text-xs">Gasto Semestral</span>
-            <i class="fas fa-calendar-alt text-orange-400 text-sm"></i>
+            <span class="text-gray-400 text-xs">Cobro Mensual (GTQ)</span>
+            <i class="fas fa-dollar-sign text-orange-400 text-sm"></i>
           </div>
-          <p class="text-xl font-bold" id="metric-gasto-semestral">Q0</p>
+          <p class="text-xl font-bold" id="metric-cobro-gtq">Q0</p>
         </div>
 
         <!-- Métrica 6 -->
         <div class="bg-[#2a1f3d] rounded-lg p-3 metric-card flex flex-col justify-between">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-gray-400 text-xs">Ingreso Semestral</span>
-            <i class="fas fa-chart-bar text-cyan-400 text-sm"></i>
+            <span class="text-gray-400 text-xs">Cobro Real por Persona</span>
+            <i class="fas fa-user-dollar text-cyan-400 text-sm"></i>
           </div>
-          <p class="text-xl font-bold" id="metric-ingreso-semestral">Q0</p>
+          <p class="text-xl font-bold" id="metric-cobro-persona">Q0</p>
+        </div>
+
+        <!-- Métrica 7 -->
+        <div class="bg-[#2a1f3d] rounded-lg p-3 metric-card flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-gray-400 text-xs">Ganancia Mensual</span>
+            <i class="fas fa-chart-line text-green-400 text-sm"></i>
+          </div>
+          <p class="text-xl font-bold" id="metric-ganancia-mensual">Q0</p>
+        </div>
+
+        <!-- Métrica 8 -->
+        <div class="bg-[#2a1f3d] rounded-lg p-3 metric-card flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-gray-400 text-xs">Ganancia Semestral</span>
+            <i class="fas fa-chart-bar text-purple-400 text-sm"></i>
+          </div>
+          <p class="text-xl font-bold" id="metric-ganancia-semestral">Q0</p>
         </div>
       </div>
     </div>
@@ -183,82 +201,170 @@
     function cargarMetricas() {
       const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
       const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const conversionRate = 8; // Tasa de conversión USD a GTQ
 
       // Filtrar personas desuscritas
       const personasActivas = personas.filter(p => !p.desuscrita);
 
-      // Contar suscripciones activas
+      // 1. Total de Suscripciones Activas
       const suscripcionesActivas = subscriptions.filter(s => s.status !== 'paused').length;
 
-      // Calcular gastos e ingresos
+      // 2. Total de Suscripciones Compartidas (las que tienen personas asignadas)
+      const suscripcionesCompartidas = subscriptions.filter(s => {
+        if (s.status === 'paused') return false;
+        return personasActivas.some(p => 
+          p.plataformas && p.plataformas.some(pl => pl.id === s.id || pl.nombre === s.name)
+        );
+      }).length;
+
+      // 3. Total de Personas Activas
+      const totalPersonasActivas = personasActivas.length;
+
+      // 4. Total de Cobro Mensual en Dólares (precio original USD convertido a mensual)
+      let cobroMensualUSD = 0;
+      // 5. Total de Cobro Mensual Convertido a Quetzales
+      let cobroMensualGTQ = 0;
+      // 6. Total de Cobro real a cada persona (suma de lo que realmente cobras)
+      let cobroRealPersonas = 0;
+      // Gasto mensual (debit_price_gtq convertido a mensual)
       let gastoMensual = 0;
-      let ingresoMensual = 0;
-      let gastoSemestral = 0;
-      let ingresoSemestral = 0;
+
+      subscriptions.forEach(sub => {
+        if (sub.status === 'paused') return;
+
+        // Obtener precio original en USD
+        const originalPriceUSD = parseFloat(sub.original_price_usd) || 0;
+        // Obtener precio debitado en GTQ
+        const debitPriceGTQ = parseFloat(sub.debit_price_gtq) || 0;
+        const billing = sub.billing || sub.billingCycle || 'mensual';
+
+        // Convertir a mensual según el ciclo de facturación
+        let precioMensualUSD = originalPriceUSD;
+        let precioMensualGTQ = debitPriceGTQ;
+        
+        switch (billing) {
+          case 'trimestral':
+            precioMensualUSD = originalPriceUSD / 3;
+            precioMensualGTQ = debitPriceGTQ / 3;
+            break;
+          case 'semestral':
+            precioMensualUSD = originalPriceUSD / 6;
+            precioMensualGTQ = debitPriceGTQ / 6;
+            break;
+          case 'anual':
+            precioMensualUSD = originalPriceUSD / 12;
+            precioMensualGTQ = debitPriceGTQ / 12;
+            break;
+        }
+
+        cobroMensualUSD += precioMensualUSD;
+        cobroMensualGTQ += (precioMensualUSD * conversionRate);
+        gastoMensual += precioMensualGTQ;
+
+        // Calcular cobro real por persona (sumar lo que cada persona paga)
+        personasActivas.forEach(persona => {
+          persona.plataformas?.forEach(plataforma => {
+            if (plataforma.id === sub.id || plataforma.nombre === sub.name) {
+              const precioPersona = parseFloat(plataforma.precio) || 0;
+              const tipoCobroPersona = plataforma.tipoCobro || 'mensual';
+              
+              // Convertir el precio de la persona a mensual
+              let precioMensualPersona = precioPersona;
+              switch (tipoCobroPersona) {
+                case 'trimestral':
+                  precioMensualPersona = precioPersona / 3;
+                  break;
+                case 'semestral':
+                  precioMensualPersona = precioPersona / 6;
+                  break;
+                case 'anual':
+                  precioMensualPersona = precioPersona / 12;
+                  break;
+              }
+              
+              cobroRealPersonas += precioMensualPersona;
+            }
+          });
+        });
+      });
+
+      // 7. Ganancia Mensual = Cobro real - Gasto mensual
+      const gananciaMensual = cobroRealPersonas - gastoMensual;
+      
+      // 8. Ganancia Semestral = Ganancia mensual * 6
+      const gananciaSemestral = gananciaMensual * 6;
+
+      // Actualizar métricas principales
+      document.getElementById('metric-subscriptions').textContent = suscripcionesActivas;
+      document.getElementById('metric-shared').textContent = suscripcionesCompartidas;
+      document.getElementById('metric-personas').textContent = totalPersonasActivas;
+      document.getElementById('metric-cobro-usd').textContent = `$${cobroMensualUSD.toFixed(2)}`;
+      document.getElementById('metric-cobro-gtq').textContent = `Q${cobroMensualGTQ.toFixed(2)}`;
+      document.getElementById('metric-cobro-persona').textContent = `Q${cobroRealPersonas.toFixed(2)}`;
+      document.getElementById('metric-ganancia-mensual').textContent = `Q${gananciaMensual.toFixed(2)}`;
+      document.getElementById('metric-ganancia-semestral').textContent = `Q${gananciaSemestral.toFixed(2)}`;
+
+      // Mantener las secciones de análisis detallado (gasto e ingreso por plataforma)
       const gastoPorPlataforma = {};
       const ingresoPorPlataforma = {};
 
       subscriptions.forEach(sub => {
         if (sub.status === 'paused') return;
 
-        const precio = parseFloat(sub.price) || 0;
-        let precioMensual = precio;
-        let precioSemestral = precio;
+        const debitPriceGTQ = parseFloat(sub.debit_price_gtq) || 0;
+        const billing = sub.billing || sub.billingCycle || 'mensual';
+        let precioMensualGTQ = debitPriceGTQ;
 
-        // Convertir a mensual según el ciclo de facturación
-        switch (sub.billing || sub.billingCycle || 'mensual') {
+        switch (billing) {
           case 'trimestral':
-            precioMensual = precio / 3;
-            precioSemestral = precio * 2;
+            precioMensualGTQ = debitPriceGTQ / 3;
             break;
           case 'semestral':
-            precioMensual = precio / 6;
-            precioSemestral = precio;
+            precioMensualGTQ = debitPriceGTQ / 6;
             break;
           case 'anual':
-            precioMensual = precio / 12;
-            precioSemestral = precio / 2;
-            break;
-          default:
-            precioSemestral = precio * 6;
+            precioMensualGTQ = debitPriceGTQ / 12;
             break;
         }
 
-        gastoMensual += precioMensual;
-        gastoSemestral += precioSemestral;
         if (!gastoPorPlataforma[sub.name]) {
           gastoPorPlataforma[sub.name] = 0;
         }
-        gastoPorPlataforma[sub.name] += precioMensual;
+        gastoPorPlataforma[sub.name] += precioMensualGTQ;
 
-        // Calcular ingreso (precio por persona)
-        const personasEnPlataforma = personasActivas.filter(p => 
-          p.plataformas && p.plataformas.some(pl => pl.id === sub.id)
-        ).length;
+        // Calcular ingreso por plataforma (cobro real de personas en esa plataforma)
+        let ingresoPlataforma = 0;
+        personasActivas.forEach(persona => {
+          persona.plataformas?.forEach(plataforma => {
+            if (plataforma.id === sub.id || plataforma.nombre === sub.name) {
+              const precioPersona = parseFloat(plataforma.precio) || 0;
+              const tipoCobroPersona = plataforma.tipoCobro || 'mensual';
+              
+              let precioMensualPersona = precioPersona;
+              switch (tipoCobroPersona) {
+                case 'trimestral':
+                  precioMensualPersona = precioPersona / 3;
+                  break;
+                case 'semestral':
+                  precioMensualPersona = precioPersona / 6;
+                  break;
+                case 'anual':
+                  precioMensualPersona = precioPersona / 12;
+                  break;
+              }
+              
+              ingresoPlataforma += precioMensualPersona;
+            }
+          });
+        });
 
-        if (personasEnPlataforma > 0) {
-          const precioPorPersona = precioMensual / personasEnPlataforma;
-          const ingresoPlataforma = precioPorPersona * personasEnPlataforma;
-          ingresoMensual += ingresoPlataforma;
-
-          const precioPorPersonaSemestral = precioSemestral / personasEnPlataforma;
-          const ingresoPlataformaSemestral = precioPorPersonaSemestral * personasEnPlataforma;
-          ingresoSemestral += ingresoPlataformaSemestral;
-
+        if (ingresoPlataforma > 0) {
           if (!ingresoPorPlataforma[sub.name]) {
             ingresoPorPlataforma[sub.name] = 0;
           }
           ingresoPorPlataforma[sub.name] += ingresoPlataforma;
         }
       });
-
-      // Actualizar métricas principales
-      document.getElementById('metric-subscriptions').textContent = suscripcionesActivas;
-      document.getElementById('metric-personas').textContent = personasActivas.length;
-      document.getElementById('metric-gasto-mensual').textContent = `Q${gastoMensual.toFixed(2)}`;
-      document.getElementById('metric-ingreso-mensual').textContent = `Q${ingresoMensual.toFixed(2)}`;
-      document.getElementById('metric-gasto-semestral').textContent = `Q${gastoSemestral.toFixed(2)}`;
-      document.getElementById('metric-ingreso-semestral').textContent = `Q${ingresoSemestral.toFixed(2)}`;
 
       // Mostrar gasto por plataforma
       const gastoPlataformasDiv = document.getElementById('gasto-plataformas');
