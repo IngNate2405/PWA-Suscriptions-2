@@ -427,8 +427,17 @@
       const subscriptionList = document.querySelector('.mt-4.space-y-3');
       subscriptionList.innerHTML = '';
 
+      // Obtener personas para calcular ganancia real
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+      const personasActivas = personas.filter(p => !p.desuscrita);
+      const conversionRate = 8;
+
       let totalMonthly = 0;
       let totalProfit = 0;
+      
+      // Calcular ganancia real: cobro real de personas - gasto real de suscripciones
+      let cobroRealPersonas = 0;
+      let gastoMensual = 0;
 
       sortedSubscriptions.forEach(sub => {
         const result = calculateDaysRemaining(sub.nextPayment, sub.billing);
@@ -439,7 +448,6 @@
         
         // Mostrar el precio de conversión
         const originalPriceUSD = parseFloat(sub.original_price_usd) || 0;
-        const conversionRate = 8;
         const displayPrice = (originalPriceUSD * conversionRate).toFixed(2);
         
         subscriptionElement.innerHTML = `
@@ -458,7 +466,59 @@
         subscriptionElement.addEventListener('click', () => handleSubscriptionClick(sub.id));
         subscriptionList.appendChild(subscriptionElement);
 
-        // Calcular el total debitado según el período seleccionado
+        // Verificar si la suscripción es compartida (tiene personas asignadas)
+        const esCompartida = personasActivas.some(p => 
+          p.plataformas && p.plataformas.some(pl => pl.id === sub.id || pl.nombre === sub.name)
+        );
+
+        // Solo calcular ganancia para suscripciones compartidas
+        if (esCompartida && sub.status !== 'paused') {
+          // Calcular gasto mensual de esta suscripción
+          const debitPriceGTQ = parseFloat(sub.debit_price_gtq) || 0;
+          const billing = sub.billing || sub.billingCycle || 'mensual';
+          
+          let precioMensualGTQ = debitPriceGTQ;
+          switch (billing) {
+            case 'trimestral':
+              precioMensualGTQ = debitPriceGTQ / 3;
+              break;
+            case 'semestral':
+              precioMensualGTQ = debitPriceGTQ / 6;
+              break;
+            case 'anual':
+              precioMensualGTQ = debitPriceGTQ / 12;
+              break;
+          }
+          gastoMensual += precioMensualGTQ;
+
+          // Calcular cobro real por persona (sumar lo que cada persona paga)
+          personasActivas.forEach(persona => {
+            persona.plataformas?.forEach(plataforma => {
+              if (plataforma.id === sub.id || plataforma.nombre === sub.name) {
+                const precioPersona = parseFloat(plataforma.precio) || 0;
+                const tipoCobroPersona = plataforma.tipoCobro || 'mensual';
+                
+                // Convertir el precio de la persona a mensual
+                let precioMensualPersona = precioPersona;
+                switch (tipoCobroPersona) {
+                  case 'trimestral':
+                    precioMensualPersona = precioPersona / 3;
+                    break;
+                  case 'semestral':
+                    precioMensualPersona = precioPersona / 6;
+                    break;
+                  case 'anual':
+                    precioMensualPersona = precioPersona / 12;
+                    break;
+                }
+                
+                cobroRealPersonas += precioMensualPersona;
+              }
+            });
+          });
+        }
+
+        // Calcular el total debitado según el período seleccionado (para mostrar)
         const debitPrice = originalPriceUSD * conversionRate;
         let debitMultiplier = 1;
         
@@ -477,48 +537,29 @@
             break;
         }
         totalMonthly += debitPrice * debitMultiplier;
-
-        // Calcular las ganancias según el período seleccionado
-        const ganancia = parseFloat(sub.ganancia) || 0;
-        let profitMultiplier = 1;
-        
-        switch(currentPeriod) {
-          case 'Mensual':
-            profitMultiplier = 1;
-            break;
-          case 'Trimestral':
-            profitMultiplier = 3;
-            break;
-          case 'Seis meses':
-            profitMultiplier = 6;
-            break;
-          case 'Anual':
-            profitMultiplier = 12;
-            break;
-        }
-        
-        // Calcular ganancia mensual promedio y multiplicar por el período
-        let months = 1;
-        switch ((sub.billing || '').toLowerCase()) {
-          case 'anual':
-            months = 12;
-            break;
-          case 'semestral':
-            months = 6;
-            break;
-          case 'trimestral':
-            months = 3;
-            break;
-          default:
-            months = 1;
-        }
-        
-        const gananciaCalculada = (ganancia / months) * profitMultiplier;
-        totalProfit += gananciaCalculada;
-        
-        // Debug: mostrar información de la suscripción
-        console.log(`Suscripción: ${sub.name}, Ganancia: ${ganancia}, Billing: ${sub.billing}, Months: ${months}, ProfitMultiplier: ${profitMultiplier}, GananciaCalculada: ${gananciaCalculada}`);
       });
+      
+      // Calcular ganancia mensual real
+      const gananciaMensual = cobroRealPersonas - gastoMensual;
+      
+      // Aplicar multiplicador según el período seleccionado
+      let profitMultiplier = 1;
+      switch(currentPeriod) {
+        case 'Mensual':
+          profitMultiplier = 1;
+          break;
+        case 'Trimestral':
+          profitMultiplier = 3;
+          break;
+        case 'Seis meses':
+          profitMultiplier = 6;
+          break;
+        case 'Anual':
+          profitMultiplier = 12;
+          break;
+      }
+      
+      totalProfit = gananciaMensual * profitMultiplier;
 
       // Actualizar el contador de suscripciones
       document.querySelector('.text-3xl.font-extrabold.leading-none').textContent = filteredByList.length;
