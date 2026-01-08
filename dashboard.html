@@ -43,70 +43,70 @@
 </head>
 <body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
   <div class="dashboard-container">
-    <div class="flex items-center justify-between mb-2.67">
-      <h1 class="text-lg font-extrabold leading-tight">Dashboard</h1>
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-extrabold leading-tight">Dashboard</h1>
       <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
-        <i class="fas fa-arrow-left text-xs"></i>
+        <i class="fas fa-arrow-left text-xl"></i>
       </button>
     </div>
 
     <!-- Sección de Métricas Generales -->
-    <div class="bg-[#1B1930] rounded-lg p-2 mb-2">
-      <h2 class="text-sm font-bold mb-1.33">Métricas Generales</h2>
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Métricas Generales</h2>
       
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid grid-cols-3 gap-4">
         <!-- Métrica 1 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-0.67">
-            <span class="text-gray-400 text-[8px]">Suscripciones Activas</span>
-            <i class="fas fa-tv text-purple-400 text-[10px]"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-4 metric-card flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Suscripciones Activas</span>
+            <i class="fas fa-tv text-purple-400"></i>
           </div>
-          <p class="text-lg font-bold" id="metric-subscriptions">0</p>
+          <p class="text-2xl font-bold" id="metric-subscriptions">0</p>
         </div>
 
         <!-- Métrica 2 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-0.67">
-            <span class="text-gray-400 text-[8px]">Personas Activas</span>
-            <i class="fas fa-users text-blue-400 text-[10px]"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-4 metric-card flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Personas Activas</span>
+            <i class="fas fa-users text-blue-400"></i>
           </div>
-          <p class="text-lg font-bold" id="metric-personas">0</p>
+          <p class="text-2xl font-bold" id="metric-personas">0</p>
         </div>
 
         <!-- Métrica 3 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-0.67">
-            <span class="text-gray-400 text-[8px]">Gasto Mensual</span>
-            <i class="fas fa-dollar-sign text-red-400 text-[10px]"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-4 metric-card flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Gasto Mensual</span>
+            <i class="fas fa-dollar-sign text-red-400"></i>
           </div>
-          <p class="text-lg font-bold" id="metric-gasto-mensual">Q0</p>
+          <p class="text-2xl font-bold" id="metric-gasto-mensual">Q0</p>
         </div>
 
         <!-- Métrica 4 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-0.67">
-            <span class="text-gray-400 text-[8px]">Ingreso Mensual</span>
-            <i class="fas fa-chart-line text-green-400 text-[10px]"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-4 metric-card flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Ingreso Mensual</span>
+            <i class="fas fa-chart-line text-green-400"></i>
           </div>
-          <p class="text-lg font-bold" id="metric-ingreso-mensual">Q0</p>
+          <p class="text-2xl font-bold" id="metric-ingreso-mensual">Q0</p>
         </div>
 
         <!-- Métrica 5 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-0.67">
-            <span class="text-gray-400 text-[8px]">Gasto Semestral</span>
-            <i class="fas fa-calendar-alt text-orange-400 text-[10px]"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-4 metric-card flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Gasto Semestral</span>
+            <i class="fas fa-calendar-alt text-orange-400"></i>
           </div>
-          <p class="text-lg font-bold" id="metric-gasto-semestral">Q0</p>
+          <p class="text-2xl font-bold" id="metric-gasto-semestral">Q0</p>
         </div>
 
         <!-- Métrica 6 -->
-        <div class="bg-[#2a1f3d] rounded-lg p-1.33 aspect-square flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-0.67">
-            <span class="text-gray-400 text-[8px]">Ingreso Semestral</span>
-            <i class="fas fa-chart-bar text-cyan-400 text-[10px]"></i>
+        <div class="bg-[#2a1f3d] rounded-lg p-4 metric-card flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Ingreso Semestral</span>
+            <i class="fas fa-chart-bar text-cyan-400"></i>
           </div>
-          <p class="text-lg font-bold" id="metric-ingreso-semestral">Q0</p>
+          <p class="text-2xl font-bold" id="metric-ingreso-semestral">Q0</p>
         </div>
       </div>
     </div>
