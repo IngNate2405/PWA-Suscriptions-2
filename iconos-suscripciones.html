@@ -438,8 +438,26 @@
     }
 
     // Cargar iconos al cargar la página
-    document.addEventListener('DOMContentLoaded', () => {
-      cargarIconos();
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Esperar a que Firebase se inicialice completamente
+      if (typeof firebaseService !== 'undefined' && firebaseService.onAuthStateChanged) {
+        firebaseService.onAuthStateChanged((user) => {
+          if (user) {
+            cargarIconos();
+          } else {
+            const iconosLista = document.getElementById('iconos-lista');
+            if (iconosLista) {
+              iconosLista.innerHTML = '<div class="col-span-3 text-center text-yellow-400">Debes iniciar sesión para ver los iconos. <a href="login.html" class="text-blue-400 underline">Iniciar sesión</a></div>';
+            }
+          }
+        });
+      }
+      
+      // Cargar iconos después de un pequeño delay
+      setTimeout(() => {
+        cargarIconos();
+      }, 500);
+      
       if (typeof cargarVersion === 'function') {
         cargarVersion();
       }
