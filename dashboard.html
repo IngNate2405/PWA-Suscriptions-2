@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <title>Dashboard - App Suscripciones</title>
+  <meta name="description" content="Dashboard y métricas de suscripciones">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <script src="version.js"></script>
+  <style>
+    html, body {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none !important;
+    }
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none !important;
+    }
+    body {
+      touch-action: manipulation;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    @media (max-width: 640px) {
+      .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-extrabold leading-tight">Dashboard</h1>
+      <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
+        <i class="fas fa-arrow-left text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Sección de Métricas -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Métricas Generales</h2>
+      
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Métrica 1 -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Suscripciones Activas</span>
+            <i class="fas fa-tv text-purple-400"></i>
+          </div>
+          <p class="text-2xl font-bold" id="metric-subscriptions">0</p>
+        </div>
+
+        <!-- Métrica 2 -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Personas Activas</span>
+            <i class="fas fa-users text-blue-400"></i>
+          </div>
+          <p class="text-2xl font-bold" id="metric-personas">0</p>
+        </div>
+
+        <!-- Métrica 3 -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Gasto Mensual</span>
+            <i class="fas fa-dollar-sign text-red-400"></i>
+          </div>
+          <p class="text-2xl font-bold" id="metric-gasto-mensual">Q0</p>
+        </div>
+
+        <!-- Métrica 4 -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Ingreso Mensual</span>
+            <i class="fas fa-chart-line text-green-400"></i>
+          </div>
+          <p class="text-2xl font-bold" id="metric-ingreso-mensual">Q0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Métricas Detalladas -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Análisis Detallado</h2>
+      
+      <div class="space-y-4">
+        <!-- Gasto por Plataforma -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <h3 class="font-semibold mb-3">Gasto por Plataforma (Mensual)</h3>
+          <div id="gasto-plataformas" class="space-y-2">
+            <!-- Se llenará dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Ingreso por Plataforma -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <h3 class="font-semibold mb-3">Ingreso por Plataforma (Mensual)</h3>
+          <div id="ingreso-plataformas" class="space-y-2">
+            <!-- Se llenará dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Beneficio Neto -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <h3 class="font-semibold mb-3">Beneficio Neto por Plataforma</h3>
+          <div id="beneficio-plataformas" class="space-y-2">
+            <!-- Se llenará dinámicamente -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-lg"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1 text-white" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+  <div class="fixed bottom-0 left-0 right-0 text-center text-[#6b6b7b] text-[10px] pb-1 pointer-events-none z-40">
+    <span id="app-version"></span>
+  </div>
+
+  <script>
+    // Función para cargar métricas
+    function cargarMetricas() {
+      const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+      const personas = JSON.parse(localStorage.getItem('personas') || '[]');
+
+      // Filtrar personas desuscritas
+      const personasActivas = personas.filter(p => !p.desuscrita);
+
+      // Contar suscripciones activas
+      const suscripcionesActivas = subscriptions.filter(s => s.status !== 'paused').length;
+
+      // Calcular gastos e ingresos
+      let gastoMensual = 0;
+      let ingresoMensual = 0;
+      const gastoPorPlataforma = {};
+      const ingresoPorPlataforma = {};
+
+      subscriptions.forEach(sub => {
+        if (sub.status === 'paused') return;
+
+        const precio = parseFloat(sub.price) || 0;
+        let precioMensual = precio;
+
+        // Convertir a mensual según el ciclo de facturación
+        switch (sub.billing || sub.billingCycle || 'mensual') {
+          case 'trimestral':
+            precioMensual = precio / 3;
+            break;
+          case 'semestral':
+            precioMensual = precio / 6;
+            break;
+          case 'anual':
+            precioMensual = precio / 12;
+            break;
+        }
+
+        gastoMensual += precioMensual;
+        if (!gastoPorPlataforma[sub.name]) {
+          gastoPorPlataforma[sub.name] = 0;
+        }
+        gastoPorPlataforma[sub.name] += precioMensual;
+
+        // Calcular ingreso (precio por persona)
+        const personasEnPlataforma = personasActivas.filter(p => 
+          p.plataformas && p.plataformas.some(pl => pl.id === sub.id)
+        ).length;
+
+        if (personasEnPlataforma > 0) {
+          const precioPorPersona = precioMensual / personasEnPlataforma;
+          const ingresoPlataforma = precioPorPersona * personasEnPlataforma;
+          ingresoMensual += ingresoPlataforma;
+
+          if (!ingresoPorPlataforma[sub.name]) {
+            ingresoPorPlataforma[sub.name] = 0;
+          }
+          ingresoPorPlataforma[sub.name] += ingresoPlataforma;
+        }
+      });
+
+      // Actualizar métricas principales
+      document.getElementById('metric-subscriptions').textContent = suscripcionesActivas;
+      document.getElementById('metric-personas').textContent = personasActivas.length;
+      document.getElementById('metric-gasto-mensual').textContent = `Q${gastoMensual.toFixed(2)}`;
+      document.getElementById('metric-ingreso-mensual').textContent = `Q${ingresoMensual.toFixed(2)}`;
+
+      // Mostrar gasto por plataforma
+      const gastoPlataformasDiv = document.getElementById('gasto-plataformas');
+      gastoPlataformasDiv.innerHTML = '';
+      Object.entries(gastoPorPlataforma)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([nombre, gasto]) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center';
+          div.innerHTML = `
+            <span class="text-gray-300">${nombre}</span>
+            <span class="font-semibold text-red-400">Q${gasto.toFixed(2)}</span>
+          `;
+          gastoPlataformasDiv.appendChild(div);
+        });
+
+      // Mostrar ingreso por plataforma
+      const ingresoPlataformasDiv = document.getElementById('ingreso-plataformas');
+      ingresoPlataformasDiv.innerHTML = '';
+      Object.entries(ingresoPorPlataforma)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([nombre, ingreso]) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center';
+          div.innerHTML = `
+            <span class="text-gray-300">${nombre}</span>
+            <span class="font-semibold text-green-400">Q${ingreso.toFixed(2)}</span>
+          `;
+          ingresoPlataformasDiv.appendChild(div);
+        });
+
+      // Mostrar beneficio neto por plataforma
+      const beneficioPlataformasDiv = document.getElementById('beneficio-plataformas');
+      beneficioPlataformasDiv.innerHTML = '';
+      const beneficios = {};
+      Object.keys(gastoPorPlataforma).forEach(nombre => {
+        beneficios[nombre] = (ingresoPorPlataforma[nombre] || 0) - gastoPorPlataforma[nombre];
+      });
+      Object.entries(beneficios)
+        .sort((a, b) => b[1] - a[1])
+        .forEach(([nombre, beneficio]) => {
+          const div = document.createElement('div');
+          div.className = 'flex justify-between items-center';
+          const colorClass = beneficio >= 0 ? 'text-green-400' : 'text-red-400';
+          div.innerHTML = `
+            <span class="text-gray-300">${nombre}</span>
+            <span class="font-semibold ${colorClass}">Q${beneficio.toFixed(2)}</span>
+          `;
+          beneficioPlataformasDiv.appendChild(div);
+        });
+    }
+
+    // Cargar versión
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarMetricas();
+      if (typeof cargarVersion === 'function') {
+        cargarVersion();
+      }
+    });
+
+    // Bloquear pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+    // Bloquear doble tap zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+</body>
+</html>
+
