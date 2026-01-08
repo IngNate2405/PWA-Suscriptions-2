@@ -15,9 +15,9 @@
   />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
-  <script src="version.js"></script>
     rel="stylesheet"
   />
+  <script src="version.js"></script>
   <style>
     html, body {
       overflow-y: auto !important;
@@ -725,26 +725,15 @@
     </button>
   </nav>
   <div class="fixed bottom-0 left-0 right-0 text-center text-[#6b6b7b] text-[10px] pb-1 pointer-events-none z-40">
-    <span id="app-version">v1.0.52</span>
+    <span id="app-version"></span>
   </div>
   <script>
-    // Función para cargar versión
-    function cargarVersion() {
-      const versionElement = document.getElementById('app-version');
-      if (!versionElement) return;
-      
-      const versionHTML = '1.0.52'; // Versión base del código
-      const savedVersion = localStorage.getItem('appVersion');
-      
-      // Si hay una versión guardada y es mayor, usarla
-      if (savedVersion && savedVersion > versionHTML) {
-        versionElement.textContent = `v${savedVersion}`;
-      } else {
-        versionElement.textContent = `v${versionHTML}`;
-        localStorage.setItem('appVersion', versionHTML);
+    // Cargar versión usando la función centralizada
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof cargarVersion === 'function') {
+        cargarVersion();
       }
-    }
-    document.addEventListener('DOMContentLoaded', cargarVersion);
+    });
   </script>
 </body>
 </html>
