@@ -15,6 +15,7 @@ const firebaseConfig = {
 let firebaseInitialized = false;
 let db = null;
 let auth = null;
+let storage = null;
 
 // Función para inicializar Firebase
 function initializeFirebase() {
@@ -38,6 +39,7 @@ function initializeFirebase() {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
+    storage = firebase.storage();
     firebaseInitialized = true;
     console.log('✅ Firebase inicializado correctamente');
     return true;
@@ -65,7 +67,7 @@ function isFirebaseAvailable() {
   if (!firebaseInitialized && typeof firebase !== 'undefined') {
     initializeFirebase();
   }
-  return firebaseInitialized && db && auth;
+  return firebaseInitialized && db && auth && storage;
 }
 
 

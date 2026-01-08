@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+  <title>Iconos de Suscripciones - App Suscripciones</title>
+  <meta name="description" content="Gestionar iconos de suscripciones">
+  <meta name="theme-color" content="#1B1930">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"/>
+  
+  <!-- Scripts de Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  
+  <script src="firebase-config.js"></script>
+  <script src="firebase-service.js"></script>
+  <script src="version.js"></script>
+  <style>
+    html, body {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: none !important;
+    }
+    body::-webkit-scrollbar, html::-webkit-scrollbar {
+      display: none !important;
+    }
+    body {
+      touch-action: manipulation;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    body, html {
+      overflow-x: hidden !important;
+      overscroll-behavior-x: none;
+      max-width: 100vw;
+      box-sizing: border-box;
+    }
+    body {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    html {
+      height: -webkit-fill-available;
+    }
+    @media (max-width: 640px) {
+      .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#0D0A1A] text-white min-h-screen flex flex-col justify-between">
+  <div class="container mx-auto px-4 pt-4 pb-20">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-extrabold leading-tight">Iconos de Suscripciones</h1>
+      <button onclick="window.location.href='settings.html'" class="text-gray-400 hover:text-white">
+        <i class="fas fa-arrow-left text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Sección para agregar nuevo icono -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Agregar Nuevo Icono</h2>
+      
+      <div class="space-y-4">
+        <!-- Agregar desde URL -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <h3 class="font-semibold mb-3">Agregar desde URL</h3>
+          <div class="space-y-3">
+            <input 
+              type="text" 
+              id="icon-url-input" 
+              placeholder="Pega la URL de la imagen aquí"
+              class="w-full bg-[#1B1930] border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+            />
+            <input 
+              type="text" 
+              id="icon-name-input" 
+              placeholder="Nombre del icono (ej: Netflix, Spotify)"
+              class="w-full bg-[#1B1930] border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+            />
+            <button 
+              onclick="agregarIconoDesdeURL()" 
+              class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm"
+            >
+              <i class="fas fa-link mr-2"></i>
+              Agregar desde URL
+            </button>
+          </div>
+        </div>
+
+        <!-- Agregar desde archivo -->
+        <div class="bg-[#2a1f3d] rounded-lg p-4">
+          <h3 class="font-semibold mb-3">Agregar desde archivo</h3>
+          <div class="space-y-3">
+            <input 
+              type="text" 
+              id="icon-name-file-input" 
+              placeholder="Nombre del icono (ej: Netflix, Spotify)"
+              class="w-full bg-[#1B1930] border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+            />
+            <input 
+              type="file" 
+              id="icon-file-input" 
+              accept="image/*"
+              class="w-full bg-[#1B1930] border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+            />
+            <button 
+              onclick="agregarIconoDesdeArchivo()" 
+              class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm"
+            >
+              <i class="fas fa-upload mr-2"></i>
+              Subir archivo
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de iconos guardados -->
+    <div class="bg-[#1B1930] rounded-xl p-6 mb-6">
+      <h2 class="text-xl font-bold mb-4">Iconos Guardados</h2>
+      
+      <div id="iconos-lista" class="grid grid-cols-3 gap-4">
+        <!-- Se cargará dinámicamente -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+      <i class="fas fa-moon text-lg"></i>
+      <span class="select-none">Subscriptions</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+      <i class="fas fa-th-large text-lg"></i>
+      <span class="select-none">Calendar</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+      <i class="fas fa-users text-lg"></i>
+      <span class="select-none">Personas</span>
+    </button>
+    <button class="flex flex-col items-center space-y-1 text-white" onclick="window.location.href='settings.html'">
+      <i class="fas fa-cog text-lg"></i>
+      <span class="select-none">Settings</span>
+    </button>
+  </nav>
+  <div class="fixed bottom-0 left-0 right-0 text-center text-[#6b6b7b] text-[10px] pb-1 pointer-events-none z-40">
+    <span id="app-version"></span>
+  </div>
+
+  <script>
+    // Función para mostrar notificación
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 max-w-sm ${
+        type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+      } text-white`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Función para cargar iconos desde Firebase
+    async function cargarIconos() {
+      const iconosLista = document.getElementById('iconos-lista');
+      iconosLista.innerHTML = '<div class="col-span-3 text-center text-gray-400">Cargando...</div>';
+
+      if (!isFirebaseAvailable()) {
+        iconosLista.innerHTML = '<div class="col-span-3 text-center text-red-400">Firebase no está disponible</div>';
+        return;
+      }
+
+      const user = firebaseService.getCurrentUser();
+      if (!user) {
+        iconosLista.innerHTML = '<div class="col-span-3 text-center text-yellow-400">Debes iniciar sesión para ver los iconos</div>';
+        return;
+      }
+
+      try {
+        const iconosRef = db.collection('subscriptionIcons');
+        const snapshot = await iconosRef.get();
+
+        if (snapshot.empty) {
+          iconosLista.innerHTML = '<div class="col-span-3 text-center text-gray-400">No hay iconos guardados aún</div>';
+          return;
+        }
+
+        iconosLista.innerHTML = '';
+        snapshot.forEach(doc => {
+          const icono = doc.data();
+          const div = document.createElement('div');
+          div.className = 'bg-[#2a1f3d] rounded-lg p-3 flex flex-col items-center space-y-2';
+          div.innerHTML = `
+            <img 
+              src="${icono.url}" 
+              alt="${icono.nombre}" 
+              class="w-20 h-20 object-cover rounded-lg"
+              onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Generic_Placeholder.svg/1920px-Generic_Placeholder.svg.png'"
+            />
+            <p class="text-xs text-center text-gray-300">${icono.nombre}</p>
+            <button 
+              onclick="copiarURL('${icono.url}')" 
+              class="w-full bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded text-xs"
+            >
+              <i class="fas fa-copy mr-1"></i>
+              Copiar URL
+            </button>
+            <button 
+              onclick="eliminarIcono('${doc.id}', '${icono.nombre}')" 
+              class="w-full bg-red-600 hover:bg-red-700 px-2 py-1 rounded text-xs"
+            >
+              <i class="fas fa-trash mr-1"></i>
+              Eliminar
+            </button>
+          `;
+          iconosLista.appendChild(div);
+        });
+      } catch (error) {
+        console.error('Error al cargar iconos:', error);
+        iconosLista.innerHTML = '<div class="col-span-3 text-center text-red-400">Error al cargar iconos</div>';
+      }
+    }
+
+    // Función para agregar icono desde URL
+    async function agregarIconoDesdeURL() {
+      const urlInput = document.getElementById('icon-url-input');
+      const nameInput = document.getElementById('icon-name-input');
+      const url = urlInput.value.trim();
+      const nombre = nameInput.value.trim();
+
+      if (!url || !nombre) {
+        showNotification('Por favor completa todos los campos', 'error');
+        return;
+      }
+
+      if (!isFirebaseAvailable()) {
+        showNotification('Firebase no está disponible', 'error');
+        return;
+      }
+
+      const user = firebaseService.getCurrentUser();
+      if (!user) {
+        showNotification('Debes iniciar sesión para agregar iconos', 'error');
+        return;
+      }
+
+      try {
+        // Verificar que la URL sea válida
+        const img = new Image();
+        img.onload = async () => {
+          try {
+            const iconosRef = db.collection('subscriptionIcons');
+            await iconosRef.add({
+              nombre: nombre,
+              url: url,
+              creadoPor: user.uid,
+              creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            showNotification('Icono agregado correctamente', 'success');
+            urlInput.value = '';
+            nameInput.value = '';
+            cargarIconos();
+          } catch (error) {
+            console.error('Error al guardar icono:', error);
+            showNotification('Error al guardar icono: ' + (error.message || 'Error desconocido'), 'error');
+          }
+        };
+        img.onerror = () => {
+          showNotification('La URL de la imagen no es válida', 'error');
+        };
+        img.src = url;
+      } catch (error) {
+        console.error('Error al agregar icono:', error);
+        showNotification('Error al agregar icono: ' + (error.message || 'Error desconocido'), 'error');
+      }
+    }
+
+    // Función para agregar icono desde archivo
+    async function agregarIconoDesdeArchivo() {
+      const fileInput = document.getElementById('icon-file-input');
+      const nameInput = document.getElementById('icon-name-file-input');
+      const file = fileInput.files[0];
+      const nombre = nameInput.value.trim();
+
+      if (!file || !nombre) {
+        showNotification('Por favor selecciona un archivo y completa el nombre', 'error');
+        return;
+      }
+
+      if (!isFirebaseAvailable()) {
+        showNotification('Firebase no está disponible', 'error');
+        return;
+      }
+
+      const user = firebaseService.getCurrentUser();
+      if (!user) {
+        showNotification('Debes iniciar sesión para agregar iconos', 'error');
+        return;
+      }
+
+      try {
+        // Subir imagen a Firebase Storage
+        const storageRef = storage.ref();
+        const fileName = `subscription-icons/${user.uid}/${Date.now()}_${file.name}`;
+        const fileRef = storageRef.child(fileName);
+        
+        const uploadTask = fileRef.put(file);
+        
+        uploadTask.on('state_changed', 
+          (snapshot) => {
+            // Progreso de subida
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Progreso de subida:', progress + '%');
+          },
+          (error) => {
+            console.error('Error al subir archivo:', error);
+            showNotification('Error al subir archivo: ' + (error.message || 'Error desconocido'), 'error');
+          },
+          async () => {
+            try {
+              // Obtener URL de descarga
+              const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+              
+              // Guardar metadata en Firestore
+              const iconosRef = db.collection('subscriptionIcons');
+              await iconosRef.add({
+                nombre: nombre,
+                url: downloadURL,
+                creadoPor: user.uid,
+                creadoEn: firebase.firestore.FieldValue.serverTimestamp()
+              });
+
+              showNotification('Icono subido correctamente', 'success');
+              fileInput.value = '';
+              nameInput.value = '';
+              cargarIconos();
+            } catch (error) {
+              console.error('Error al guardar metadata:', error);
+              showNotification('Error al guardar icono: ' + (error.message || 'Error desconocido'), 'error');
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Error al subir icono:', error);
+        showNotification('Error al subir icono: ' + (error.message || 'Error desconocido'), 'error');
+      }
+    }
+
+    // Función para copiar URL al portapapeles
+    async function copiarURL(url) {
+      try {
+        await navigator.clipboard.writeText(url);
+        showNotification('URL copiada al portapapeles', 'success');
+      } catch (error) {
+        console.error('Error al copiar:', error);
+        showNotification('Error al copiar URL', 'error');
+      }
+    }
+
+    // Función para eliminar icono
+    async function eliminarIcono(iconoId, nombre) {
+      if (!confirm(`¿Estás seguro de que quieres eliminar el icono "${nombre}"?`)) {
+        return;
+      }
+
+      if (!isFirebaseAvailable()) {
+        showNotification('Firebase no está disponible', 'error');
+        return;
+      }
+
+      const user = firebaseService.getCurrentUser();
+      if (!user) {
+        showNotification('Debes iniciar sesión para eliminar iconos', 'error');
+        return;
+      }
+
+      try {
+        const iconoRef = db.collection('subscriptionIcons').doc(iconoId);
+        const iconoDoc = await iconoRef.get();
+        
+        if (iconoDoc.exists) {
+          const icono = iconoDoc.data();
+          
+          // Eliminar de Firestore
+          await iconoRef.delete();
+          
+          // Si la URL es de Firebase Storage, eliminar el archivo también
+          if (icono.url && icono.url.includes('firebasestorage.googleapis.com')) {
+            try {
+              const urlParts = icono.url.split('/');
+              const encodedPath = urlParts.slice(urlParts.indexOf('o') + 1).join('/').split('?')[0];
+              const decodedPath = decodeURIComponent(encodedPath);
+              const fileRef = storage.ref(decodedPath);
+              await fileRef.delete();
+            } catch (storageError) {
+              console.warn('No se pudo eliminar el archivo de Storage:', storageError);
+              // Continuar aunque falle la eliminación del archivo
+            }
+          }
+          
+          showNotification('Icono eliminado correctamente', 'success');
+          cargarIconos();
+        }
+      } catch (error) {
+        console.error('Error al eliminar icono:', error);
+        showNotification('Error al eliminar icono: ' + (error.message || 'Error desconocido'), 'error');
+      }
+    }
+
+    // Cargar iconos al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+      cargarIconos();
+      if (typeof cargarVersion === 'function') {
+        cargarVersion();
+      }
+    });
+
+    // Bloquear pinch zoom
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+    // Bloquear doble tap zoom
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+</body>
+</html>
+
