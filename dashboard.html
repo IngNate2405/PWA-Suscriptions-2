@@ -232,6 +232,14 @@
       subscriptions.forEach(sub => {
         if (sub.status === 'paused') return;
 
+        // Verificar si la suscripción es compartida (tiene personas asignadas)
+        const esCompartida = personasActivas.some(p => 
+          p.plataformas && p.plataformas.some(pl => pl.id === sub.id || pl.nombre === sub.name)
+        );
+
+        // Solo contar suscripciones compartidas en cobros y ganancias
+        if (!esCompartida) return;
+
         // Obtener precio original en USD
         const originalPriceUSD = parseFloat(sub.original_price_usd) || 0;
         // Obtener precio debitado en GTQ
@@ -310,6 +318,14 @@
 
       subscriptions.forEach(sub => {
         if (sub.status === 'paused') return;
+
+        // Verificar si la suscripción es compartida (tiene personas asignadas)
+        const esCompartida = personasActivas.some(p => 
+          p.plataformas && p.plataformas.some(pl => pl.id === sub.id || pl.nombre === sub.name)
+        );
+
+        // Solo contar suscripciones compartidas en el análisis detallado
+        if (!esCompartida) return;
 
         const debitPriceGTQ = parseFloat(sub.debit_price_gtq) || 0;
         const billing = sub.billing || sub.billingCycle || 'mensual';
