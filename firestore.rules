@@ -13,7 +13,8 @@ service cloud.firestore {
       }
     }
     
-    // Reglas por defecto: denegar todo lo demás
+    // Permitir acceso a otras colecciones si es necesario (ajustar según necesidades)
+    // Por ahora, denegar todo lo demás
     match /{document=**} {
       allow read, write: if false;
     }

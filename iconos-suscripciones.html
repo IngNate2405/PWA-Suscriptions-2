@@ -332,6 +332,20 @@
       }
 
       try {
+        // Verificar que el usuario esté autenticado
+        if (!user || !user.uid) {
+          console.error('Usuario no autenticado');
+          const iconosLocal = JSON.parse(localStorage.getItem('subscriptionIcons') || '[]');
+          if (iconosLocal.length === 0) {
+            iconosLista.innerHTML = '<div class="col-span-3 text-center text-yellow-400 py-4">Debes iniciar sesión para ver iconos guardados en la nube</div>';
+          } else {
+            mostrarIconosLocales(iconosLocal);
+          }
+          return;
+        }
+
+        console.log('Cargando iconos para usuario:', user.uid);
+        
         // Cargar iconos desde la subcolección del usuario
         const iconosRef = db.collection('users').doc(user.uid).collection('subscription_icons');
         const snapshot = await iconosRef.get();
@@ -379,12 +393,23 @@
         });
       } catch (error) {
         console.error('Error al cargar iconos:', error);
+        console.error('Código de error:', error.code);
+        console.error('Mensaje de error:', error.message);
+        
+        let errorMessage = 'Error al cargar iconos';
+        if (error.code === 'permission-denied') {
+          errorMessage = 'Error de permisos. Verifica que las reglas de Firestore estén publicadas correctamente.';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
         // Fallback a localStorage
         const iconosLocal = JSON.parse(localStorage.getItem('subscriptionIcons') || '[]');
         if (iconosLocal.length === 0) {
-          iconosLista.innerHTML = '<div class="col-span-3 text-center text-red-400 py-4">Error al cargar iconos</div>';
+          iconosLista.innerHTML = `<div class="col-span-3 text-center text-red-400 py-4">${errorMessage}</div>`;
         } else {
           mostrarIconosLocales(iconosLocal);
+          showNotification('Error al cargar iconos de la nube. Mostrando iconos locales.', 'error');
         }
       }
     }
