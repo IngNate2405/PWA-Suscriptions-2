@@ -32,8 +32,17 @@ MINOR=${VERSION_PARTS[1]}
 PATCH=${VERSION_PARTS[2]}
 
 # Incrementar el patch version (último número)
+# Si el patch llega a 99, incrementar el minor y resetear patch a 0
 NEW_PATCH=$((PATCH + 1))
-NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+NEW_MINOR=$MINOR
+NEW_MAJOR=$MAJOR
+
+if [ $NEW_PATCH -gt 99 ]; then
+  NEW_PATCH=0
+  NEW_MINOR=$((MINOR + 1))
+fi
+
+NEW_VERSION="$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
 
 # Reemplazar la versión en el archivo usando sed
 if [[ "$OSTYPE" == "darwin"* ]]; then
