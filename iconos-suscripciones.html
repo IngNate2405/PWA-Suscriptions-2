@@ -521,12 +521,21 @@
         return;
       }
 
+      // Verificar que Storage esté disponible
+      if (!storage) {
+        showNotification('Firebase Storage no está disponible. Verifica que el script esté cargado.', 'error');
+        return;
+      }
+
       try {
-        // Subir imagen a Firebase Storage
+        showNotification('Subiendo imagen...', 'info');
+        
+        // Subir imagen a Firebase Storage usando la API de compatibilidad
         const storageRef = storage.ref();
         const fileName = `subscription-icons/${user.uid}/${Date.now()}_${file.name}`;
         const fileRef = storageRef.child(fileName);
         
+        // Usar put() para la API de compatibilidad
         const uploadTask = fileRef.put(file);
         
         uploadTask.on('state_changed', 
@@ -534,15 +543,25 @@
             // Progreso de subida
             const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             console.log('Progreso de subida:', progress + '%');
+            showNotification(`Subiendo... ${Math.round(progress)}%`, 'info');
           },
           (error) => {
             console.error('Error al subir archivo:', error);
-            showNotification('Error al subir archivo: ' + (error.message || 'Error desconocido'), 'error');
+            let errorMessage = 'Error al subir archivo';
+            if (error.code === 'storage/unauthorized') {
+              errorMessage = 'No tienes permisos para subir archivos. Verifica las reglas de Storage.';
+            } else if (error.code === 'storage/canceled') {
+              errorMessage = 'Subida cancelada';
+            } else if (error.message) {
+              errorMessage = error.message;
+            }
+            showNotification(errorMessage, 'error');
           },
           async () => {
             try {
               // Obtener URL de descarga
               const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+              console.log('✅ Archivo subido, URL:', downloadURL);
               
               // Guardar metadata en Firestore en la subcolección del usuario
               const iconosRef = db.collection('users').doc(user.uid).collection('subscription_icons');
