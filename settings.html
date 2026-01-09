@@ -348,7 +348,14 @@
       }
       
       try {
-        const registration = await navigator.serviceWorker.ready;
+        // Timeout de 10 segundos para evitar que se quede colgado
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: El service worker tardó demasiado en responder')), 10000)
+        );
+        
+        const registrationPromise = navigator.serviceWorker.ready;
+        const registration = await Promise.race([registrationPromise, timeoutPromise]);
+        
         const subscription = await registration.pushManager.getSubscription();
         
         if (subscription) {
@@ -358,7 +365,11 @@
           
           if (isFirebaseAvailable() && db && auth && auth.currentUser) {
             try {
-              const doc = await db.collection('userPushSubscriptions').doc(auth.currentUser.uid).get();
+              const docPromise = db.collection('userPushSubscriptions').doc(auth.currentUser.uid).get();
+              const docTimeout = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout consultando Firestore')), 5000)
+              );
+              const doc = await Promise.race([docPromise, docTimeout]);
               inFirestore = doc.exists;
             } catch (e) {
               errorMsg = e.message;
@@ -405,10 +416,13 @@
       } catch (error) {
         console.error('Error verificando suscripción:', error);
         if (statusDiv) {
-          statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message}</div>`;
+          statusDiv.innerHTML = `
+            <div class="text-red-400 mb-2">❌ Error: ${error.message || 'Error desconocido'}</div>
+            <div class="text-xs text-gray-400 mt-1">Intenta recargar la página</div>
+          `;
           statusDiv.classList.remove('hidden');
         }
-        showNotification('Error', `Error al verificar: ${error.message}`, 'error');
+        showNotification('❌ Error', `Error al verificar: ${error.message || 'Error desconocido'}`, 'error');
       }
     }
 
@@ -902,6 +916,12 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM cargado, verificando estado de notificaciones...');
       
+      // Inicializar pushNotificationService si no está disponible
+      if (typeof pushNotificationService === 'undefined' && typeof PushNotificationService !== 'undefined') {
+        window.pushNotificationService = new PushNotificationService();
+        console.log('✅ pushNotificationService inicializado');
+      }
+      
       // Cargar versión
       cargarVersion();
       
@@ -917,8 +937,10 @@
         });
       }
       
-      // Actualizar sección de Push Notifications
-      updatePushNotificationsSection();
+      // Actualizar sección de Push Notifications después de un momento
+      setTimeout(() => {
+        updatePushNotificationsSection();
+      }, 1000);
       
       // Sincronizar estado cuando la página vuelve a estar visible
       document.addEventListener('visibilitychange', () => {
