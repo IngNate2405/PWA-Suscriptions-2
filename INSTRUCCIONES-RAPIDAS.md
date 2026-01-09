@@ -1,16 +1,16 @@
 # ⚡ Instrucciones Rápidas - Generar VAPID Keys
 
-Como Node.js no está disponible en este entorno, aquí tienes **3 formas fáciles** de generar tus VAPID keys:
+Como Glitch ya no está disponible, aquí tienes **3 formas fáciles** de generar tus VAPID keys:
 
 ---
 
-## 🎯 Opción 1: Herramienta Online (MÁS FÁCIL) ⭐
+## 🎯 Opción 1: Generador HTML Local (RECOMENDADO) ⭐
 
-1. **Abre en tu navegador:**
-   - https://web-push-codelab.glitch.me/
-   - O busca "web push vapid keys generator" en Google
+1. **Abre el archivo `generate-vapid-keys.html` en tu navegador**
+   - Haz doble clic en el archivo, o
+   - Arrástralo a tu navegador
 
-2. **Haz clic en "Generate VAPID Keys"**
+2. **Haz clic en "Generar VAPID Keys"**
 
 3. **Copia las dos claves:**
    - **Public Key** (clave pública)
@@ -23,13 +23,11 @@ Como Node.js no está disponible en este entorno, aquí tienes **3 formas fácil
 
 ---
 
-## 🎯 Opción 2: Script HTML (En tu navegador)
+## 🎯 Opción 2: Herramienta Online Alternativa
 
-1. **Abre el archivo `generate-vapid-keys.html` en tu navegador**
-
-2. **Haz clic en "Generar VAPID Keys"**
-
-3. **Copia las claves y edita `functions/index.js`** (igual que Opción 1)
+1. **Busca en Google:** "vapid keys generator online"
+2. **O usa:** https://www.npmjs.com/package/web-push (instala y ejecuta)
+3. **O usa:** https://github.com/web-push-libs/web-push (lee la documentación)
 
 ---
 
@@ -61,5 +59,4 @@ Una vez que hayas hecho el deploy, las notificaciones funcionarán incluso con e
 
 ---
 
-**💡 Recomendación:** Usa la **Opción 1** (herramienta online), es la más rápida y confiable.
-
+**💡 Recomendación:** Usa la **Opción 1** (generador HTML local), es la más rápida y no requiere conexión a internet ni instalaciones.

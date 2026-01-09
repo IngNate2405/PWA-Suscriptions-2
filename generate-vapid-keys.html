@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            max-width: 800px;
+            max-width: 900px;
             margin: 50px auto;
             padding: 20px;
             background: #1B1930;
@@ -35,14 +35,19 @@
         button:hover {
             background: #45a049;
         }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
         .key-box {
             background: #1a1a2e;
-            padding: 15px;
+            padding: 20px;
             border-radius: 5px;
             margin: 15px 0;
             word-break: break-all;
             font-family: 'Courier New', monospace;
-            font-size: 12px;
+            font-size: 13px;
+            line-height: 1.6;
         }
         .key-label {
             color: #4CAF50;
@@ -72,60 +77,104 @@
         .copy-btn:hover {
             background: #0b7dda;
         }
+        .success {
+            background: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        code {
+            background: #1a1a2e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        .warning {
+            background: #ff9800;
+            color: #000;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🔑 Generador de VAPID Keys</h1>
-        <p>Haz clic en el botón para generar tus claves VAPID para Push Notifications:</p>
+        <p>Este generador crea las claves VAPID necesarias para Push Notifications. Es 100% seguro - las claves se generan en tu navegador y no se envían a ningún servidor.</p>
         
-        <button onclick="generateKeys()">Generar VAPID Keys</button>
+        <button id="generateBtn" onclick="generateKeys()">Generar VAPID Keys</button>
+        <div id="success" class="success">✅ Clave copiada al portapapeles</div>
         
         <div id="keys" style="display: none;">
             <div class="key-box">
                 <div class="key-label">📋 Public Key (Clave Pública):</div>
                 <div id="publicKey"></div>
-                <button class="copy-btn" onclick="copyToClipboard('publicKey')">Copiar</button>
+                <button class="copy-btn" onclick="copyToClipboard('publicKey')">📋 Copiar</button>
             </div>
             
             <div class="key-box">
                 <div class="key-label">🔐 Private Key (Clave Privada):</div>
                 <div id="privateKey"></div>
-                <button class="copy-btn" onclick="copyToClipboard('privateKey')">Copiar</button>
+                <button class="copy-btn" onclick="copyToClipboard('privateKey')">📋 Copiar</button>
             </div>
         </div>
         
         <div class="instructions">
             <h2>📝 Instrucciones:</h2>
             <ol>
-                <li>Haz clic en "Generar VAPID Keys"</li>
+                <li>Haz clic en <strong>"Generar VAPID Keys"</strong> arriba</li>
                 <li>Copia la <strong>Public Key</strong> y la <strong>Private Key</strong></li>
-                <li>Abre el archivo <code>functions/index.js</code></li>
-                <li>Reemplaza <code>TU_VAPID_PUBLIC_KEY_AQUI</code> con tu Public Key</li>
-                <li>Reemplaza <code>TU_VAPID_PRIVATE_KEY_AQUI</code> con tu Private Key</li>
-                <li>Reemplaza <code>tu-email@ejemplo.com</code> con tu email real</li>
+                <li>Abre el archivo <code>functions/index.js</code> en tu editor</li>
+                <li>Busca la línea 16 y reemplaza <code>TU_VAPID_PUBLIC_KEY_AQUI</code> con tu <strong>Public Key</strong></li>
+                <li>Busca la línea 17 y reemplaza <code>TU_VAPID_PRIVATE_KEY_AQUI</code> con tu <strong>Private Key</strong></li>
+                <li>Busca la línea 22 y reemplaza <code>tu-email@ejemplo.com</code> con tu <strong>email real</strong></li>
                 <li>Guarda el archivo</li>
+                <li>Ejecuta: <code>firebase deploy --only functions</code></li>
             </ol>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Importante:</strong> Guarda estas claves en un lugar seguro. Las necesitarás cada vez que hagas deploy de las functions.
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/web-push@3.6.6/lib/index.min.js"></script>
     <script>
-        // Función para convertir ArrayBuffer a base64 URL-safe
-        function arrayBufferToBase64(buffer) {
-            const bytes = new Uint8Array(buffer);
-            let binary = '';
-            for (let i = 0; i < bytes.byteLength; i++) {
-                binary += String.fromCharCode(bytes[i]);
+        // Función para generar VAPID keys usando la librería web-push
+        async function generateKeys() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.textContent = 'Generando...';
+
+            try {
+                // Usar la librería web-push si está disponible
+                if (typeof webpush !== 'undefined') {
+                    const vapidKeys = webpush.generateVAPIDKeys();
+                    
+                    document.getElementById('publicKey').textContent = vapidKeys.publicKey;
+                    document.getElementById('privateKey').textContent = vapidKeys.privateKey;
+                    document.getElementById('keys').style.display = 'block';
+                    btn.textContent = '✅ Claves Generadas';
+                } else {
+                    // Fallback: generar usando Web Crypto API
+                    await generateKeysWithWebCrypto();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                // Intentar con Web Crypto API como fallback
+                await generateKeysWithWebCrypto();
+            } finally {
+                btn.disabled = false;
             }
-            return btoa(binary)
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=/g, '');
         }
 
-        async function generateKeys() {
+        // Método alternativo usando Web Crypto API
+        async function generateKeysWithWebCrypto() {
             try {
-                // Generar par de claves usando Web Crypto API
+                // Generar par de claves ECDH P-256
                 const keyPair = await crypto.subtle.generateKey(
                     {
                         name: 'ECDH',
@@ -135,77 +184,89 @@
                     ['deriveBits']
                 );
 
-                // Exportar clave pública
+                // Exportar claves
                 const publicKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
                 const privateKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
 
                 // Convertir a formato VAPID (base64 URL-safe)
-                // Para VAPID, necesitamos las coordenadas x e y de la curva elíptica
-                const publicKey = arrayBufferToBase64(
-                    Uint8Array.from(atob(publicKeyJwk.x.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
-                        .concat(Uint8Array.from(atob(publicKeyJwk.y.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)))
-                );
+                // VAPID usa formato uncompressed point (0x04 + x + y)
+                const xBytes = base64UrlToBytes(publicKeyJwk.x);
+                const yBytes = base64UrlToBytes(publicKeyJwk.y);
+                
+                // Formato: 0x04 (uncompressed) + x (32 bytes) + y (32 bytes) = 65 bytes
+                const publicKeyBytes = new Uint8Array(65);
+                publicKeyBytes[0] = 0x04; // Uncompressed point indicator
+                publicKeyBytes.set(xBytes, 1);
+                publicKeyBytes.set(yBytes, 33);
 
-                const privateKey = arrayBufferToBase64(
-                    Uint8Array.from(atob(privateKeyJwk.d.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
-                );
+                const publicKey = bytesToBase64Url(publicKeyBytes);
+                const privateKey = base64UrlToBase64Url(publicKeyJwk.d);
 
-                // Mostrar las claves
                 document.getElementById('publicKey').textContent = publicKey;
                 document.getElementById('privateKey').textContent = privateKey;
                 document.getElementById('keys').style.display = 'block';
-
-                // También actualizar el archivo functions/index.js automáticamente
-                updateFunctionsFile(publicKey, privateKey);
-
+                document.getElementById('generateBtn').textContent = '✅ Claves Generadas';
             } catch (error) {
                 console.error('Error generando claves:', error);
-                alert('Error al generar las claves. Por favor, usa el método alternativo con Node.js.');
+                alert('Error al generar las claves. Por favor, instala Node.js y ejecuta: web-push generate-vapid-keys');
             }
+        }
+
+        // Funciones auxiliares
+        function base64UrlToBytes(base64Url) {
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const padding = '='.repeat((4 - base64.length % 4) % 4);
+            const binary = atob(base64 + padding);
+            return new Uint8Array([...binary].map(c => c.charCodeAt(0)));
+        }
+
+        function bytesToBase64Url(bytes) {
+            const base64 = btoa(String.fromCharCode(...bytes));
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        function base64UrlToBase64Url(str) {
+            // Ya está en formato base64url, solo asegurarse de que no tenga padding
+            return str.replace(/=/g, '');
         }
 
         function copyToClipboard(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('✅ Clave copiada al portapapeles');
-            }).catch(err => {
-                console.error('Error copiando:', err);
-                // Fallback: seleccionar texto
-                const range = document.createRange();
-                range.selectNode(document.getElementById(elementId));
-                window.getSelection().removeAllRanges();
-                window.getSelection().addRange(range);
-                document.execCommand('copy');
-                alert('✅ Clave copiada (método alternativo)');
-            });
+            const text = document.getElementById(elementId).textContent.trim();
+            const successDiv = document.getElementById('success');
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    successDiv.style.display = 'block';
+                    setTimeout(() => {
+                        successDiv.style.display = 'none';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Error copiando:', err);
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
         }
 
-        async function updateFunctionsFile(publicKey, privateKey) {
-            // Intentar leer y actualizar functions/index.js
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
             try {
-                const response = await fetch('functions/index.js');
-                if (response.ok) {
-                    let content = await response.text();
-                    
-                    // Reemplazar las claves
-                    content = content.replace(
-                        /publicKey: 'TU_VAPID_PUBLIC_KEY_AQUI'/,
-                        `publicKey: '${publicKey}'`
-                    );
-                    content = content.replace(
-                        /privateKey: 'TU_VAPID_PRIVATE_KEY_AQUI'/,
-                        `privateKey: '${privateKey}'`
-                    );
-
-                    // Mostrar instrucciones para guardar
-                    console.log('Claves generadas. Por favor, actualiza functions/index.js manualmente con las claves mostradas arriba.');
-                }
-            } catch (error) {
-                // No es crítico si no podemos actualizar el archivo automáticamente
-                console.log('No se pudo actualizar el archivo automáticamente. Por favor, cópialo manualmente.');
+                document.execCommand('copy');
+                document.getElementById('success').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('success').style.display = 'none';
+                }, 2000);
+            } catch (err) {
+                alert('No se pudo copiar. Por favor, selecciona y copia manualmente.');
             }
+            document.body.removeChild(textarea);
         }
     </script>
 </body>
 </html>
-

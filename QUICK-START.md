@@ -6,20 +6,24 @@
 - Ve a: https://nodejs.org/
 - Descarga e instala la versión LTS
 
-### 2️⃣ Ejecuta estos comandos en tu terminal:
+### 2️⃣ Genera las VAPID Keys:
 
+**Opción A - Generador HTML (Más Fácil):**
+1. Abre `generate-vapid-keys.html` en tu navegador
+2. Haz clic en "Generar VAPID Keys"
+3. Copia las dos claves (Public Key y Private Key)
+
+**Opción B - Si tienes Node.js:**
 ```bash
 # Ir al directorio del proyecto
 cd /Users/rutgiron/Downloads/PWA-Suscriptions-2-main
 
-# Instalar Firebase CLI y web-push
-npm install -g firebase-tools web-push
+# Instalar web-push
+npm install -g web-push
 
 # Generar VAPID keys
 web-push generate-vapid-keys
 ```
-
-**Copia las dos claves que aparecen (Public Key y Private Key)**
 
 ### 3️⃣ Edita `functions/index.js`
 

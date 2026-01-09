@@ -2,9 +2,9 @@
 
 ## Paso 1: Generar VAPID Keys
 
-**Opción A - Herramienta Online (Recomendado):**
-1. Ve a: https://web-push-codelab.glitch.me/
-2. Haz clic en "Generate VAPID Keys"
+**Opción A - Generador HTML Local (Recomendado):**
+1. Abre el archivo `generate-vapid-keys.html` en tu navegador
+2. Haz clic en "Generar VAPID Keys"
 3. Copia las dos claves
 
 **Opción B - Si tienes Node.js:**
