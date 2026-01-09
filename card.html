@@ -289,7 +289,16 @@
               }
               if (notif.startsWith('trial_customdate_')) {
                 const parts = notif.split('_');
-                if (parts.length === 3 && !isNaN(parts[1]) && /^\d{1,2}:\d{2}$/.test(parts[2])) {
+                // Nuevo formato: trial_customdate_YYYY_MM_DD_HH:MM
+                if (parts.length >= 5) {
+                  const year = parts[1];
+                  const month = parts[2];
+                  const day = parts[3];
+                  const time = parts[4];
+                  return `Prueba gratuita: ${day}/${month}/${year} a las ${time}`;
+                }
+                // Formato legacy: trial_customdate_DD_HH:MM
+                else if (parts.length === 3 && !isNaN(parts[1]) && /^\d{1,2}:\d{2}$/.test(parts[2])) {
                   return `Prueba gratuita: Día ${parts[1]} a las ${parts[2]}`;
                 } else {
                   return 'Prueba gratuita: Notificación personalizada inválida';
@@ -304,12 +313,23 @@
                 case 'sameday': return 'El mismo día';
                 default:
                   if (notif.startsWith('custom_')) {
-                    const days = notif.split('_')[1];
-                    return `${days} días antes`;
+                    const parts = notif.split('_');
+                    const days = parts[1];
+                    const time = parts.length > 2 && parts[2].includes(':') ? ` a las ${parts[2]}` : '';
+                    return `${days} días antes${time}`;
                   }
                   if (notif.startsWith('customdate_')) {
                     const parts = notif.split('_');
-                    if (parts.length === 3 && !isNaN(parts[1]) && /^\d{1,2}:\d{2}$/.test(parts[2])) {
+                    // Nuevo formato: customdate_YYYY_MM_DD_HH:MM
+                    if (parts.length >= 5) {
+                      const year = parts[1];
+                      const month = parts[2];
+                      const day = parts[3];
+                      const time = parts[4];
+                      return `${day}/${month}/${year} a las ${time}`;
+                    }
+                    // Formato legacy: customdate_DD_HH:MM
+                    else if (parts.length === 3 && !isNaN(parts[1]) && /^\d{1,2}:\d{2}$/.test(parts[2])) {
                       return `Día ${parts[1]} a las ${parts[2]}`;
                     } else {
                       return 'Notificación personalizada inválida';
