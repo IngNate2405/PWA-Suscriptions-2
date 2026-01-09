@@ -71,18 +71,77 @@
     }
 
     // Función para mostrar notificación en la página
-    function showNotification(title, message) {
+    function showNotification(title, message, type = 'success') {
+      const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        warning: 'bg-yellow-500',
+        info: 'bg-blue-500'
+      };
+      
+      const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+      };
+      
       const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.className = `fixed top-4 right-4 ${colors[type] || colors.success} text-white px-6 py-4 rounded-lg shadow-2xl z-[9999] max-w-sm animate-slide-in`;
+      notification.style.animation = 'slideIn 0.3s ease-out';
       notification.innerHTML = `
-        <div class="font-semibold">${title}</div>
-        <div class="text-sm">${message}</div>
+        <div class="flex items-start space-x-3">
+          <i class="fas ${icons[type] || icons.success} text-xl flex-shrink-0 mt-0.5"></i>
+          <div class="flex-1">
+            <strong class="block mb-1 text-base">${title}</strong>
+            <div class="text-sm opacity-95">${message}</div>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200 flex-shrink-0">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       `;
       document.body.appendChild(notification);
       
       setTimeout(() => {
-        notification.remove();
-      }, 3000);
+        if (notification.parentElement) {
+          notification.style.animation = 'slideOut 0.3s ease-out';
+          setTimeout(() => {
+            if (notification.parentElement) {
+              notification.remove();
+            }
+          }, 300);
+        }
+      }, 5000);
+    }
+    
+    // Agregar estilos de animación
+    if (!document.getElementById('notification-styles')) {
+      const style = document.createElement('style');
+      style.id = 'notification-styles';
+      style.textContent = `
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        @keyframes slideOut {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
     }
 
     // Función para solicitar permisos de notificación
