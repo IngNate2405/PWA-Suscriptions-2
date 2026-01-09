@@ -192,6 +192,31 @@
             // Solicitar permisos de notificación después del registro
             await requestNotificationPermission();
             
+            // Suscribirse a Push API si está disponible y el usuario está autenticado
+            // Basado en: https://github.com/mutebg/pwa-weather
+            if (pushNotificationService && isFirebaseAvailable() && auth) {
+              // Esperar a que el usuario se autentique o usar el usuario actual
+              const currentUser = auth.currentUser;
+              if (currentUser) {
+                try {
+                  await pushNotificationService.subscribeToPush();
+                } catch (error) {
+                  console.error('Error al suscribirse a Push API:', error);
+                }
+              } else {
+                // Escuchar cuando el usuario se autentique (similar a pwa-weather)
+                auth.onAuthStateChanged(async (user) => {
+                  if (user && pushNotificationService) {
+                    try {
+                      await pushNotificationService.subscribeToPush();
+                    } catch (error) {
+                      console.error('Error al suscribirse a Push API después de login:', error);
+                    }
+                  }
+                });
+              }
+            }
+            
             // Despertar el service worker para verificar notificaciones pendientes
             if (registration.active) {
               registration.active.postMessage({ type: 'WAKE_UP_CHECK' });
