@@ -117,18 +117,32 @@ class PushNotificationService {
 
   // Guardar suscripción en Firestore
   async saveSubscriptionToFirestore(subscription) {
-    if (!isFirebaseAvailable() || !auth || !db) {
-      console.warn('Firebase no disponible para guardar suscripción');
+    if (!isFirebaseAvailable()) {
+      console.error('❌ Firebase no disponible para guardar suscripción');
+      return false;
+    }
+    
+    if (!auth) {
+      console.error('❌ auth no disponible');
+      return false;
+    }
+    
+    if (!db) {
+      console.error('❌ db (Firestore) no disponible');
       return false;
     }
 
     const user = auth.currentUser;
     if (!user) {
-      console.warn('Usuario no autenticado');
+      console.error('❌ Usuario no autenticado. No se puede guardar suscripción.');
       return false;
     }
 
     try {
+      console.log('💾 Guardando suscripción en Firestore...');
+      console.log('   User ID:', user.uid);
+      console.log('   Subscription:', subscription.toJSON());
+      
       const subscriptionData = {
         userId: user.uid,
         subscription: subscription.toJSON(),
@@ -141,10 +155,15 @@ class PushNotificationService {
         .doc(user.uid)
         .set(subscriptionData, { merge: true });
 
-      console.log('✅ Suscripción guardada en Firestore');
+      console.log('✅ Suscripción guardada en Firestore correctamente');
+      console.log('   Colección: userPushSubscriptions');
+      console.log('   Documento ID:', user.uid);
       return true;
     } catch (error) {
-      console.error('Error al guardar suscripción en Firestore:', error);
+      console.error('❌ Error al guardar suscripción en Firestore:', error);
+      console.error('   Error code:', error.code);
+      console.error('   Error message:', error.message);
+      console.error('   Stack:', error.stack);
       return false;
     }
   }

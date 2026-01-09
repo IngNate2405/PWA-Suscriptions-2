@@ -136,6 +136,112 @@
       }
     }
 
+    // Función para suscribirse manualmente a Push API
+    async function subscribeToPushManually() {
+      if (!pushNotificationService) {
+        showNotification('Error', 'Push Notification Service no disponible');
+        return;
+      }
+      
+      if (!isFirebaseAvailable() || !auth || !auth.currentUser) {
+        showNotification('Error', 'Debes estar autenticado para suscribirte a Push Notifications');
+        return;
+      }
+      
+      try {
+        showNotification('Suscribiendo...', 'Configurando Push Notifications...');
+        const subscription = await pushNotificationService.subscribeToPush();
+        if (subscription) {
+          showNotification('Éxito', 'Suscrito a Push Notifications correctamente');
+          console.log('✅ Suscripción Push API:', subscription.toJSON());
+        } else {
+          showNotification('Error', 'No se pudo suscribir a Push Notifications. Revisa la consola.');
+        }
+      } catch (error) {
+        console.error('Error al suscribirse:', error);
+        showNotification('Error', `Error: ${error.message}`);
+      }
+    }
+
+    // Función para actualizar sección de Push Notifications
+    function updatePushNotificationsSection() {
+      const section = document.getElementById('push-notifications-section');
+      const statusDiv = document.getElementById('push-status');
+      
+      if (!isFirebaseAvailable() || !auth || !auth.currentUser) {
+        if (section) section.classList.add('hidden');
+        return;
+      }
+      
+      if (section) section.classList.remove('hidden');
+      
+      // Verificar estado automáticamente
+      checkPushSubscriptionStatus().catch(() => {
+        // Ignorar errores silenciosamente
+      });
+    }
+
+    // Función para verificar estado de suscripción
+    async function checkPushSubscriptionStatus() {
+      const statusDiv = document.getElementById('push-status');
+      
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        if (statusDiv) {
+          statusDiv.innerHTML = '<div class="text-red-400">❌ Push API no disponible en este navegador</div>';
+          statusDiv.classList.remove('hidden');
+        }
+        showNotification('No disponible', 'Push API no está disponible en este navegador');
+        return;
+      }
+      
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+          console.log('✅ Suscripción Push API activa:', subscription.toJSON());
+          
+          // Verificar si está guardada en Firestore
+          let inFirestore = false;
+          if (isFirebaseAvailable() && db && auth && auth.currentUser) {
+            try {
+              const doc = await db.collection('userPushSubscriptions').doc(auth.currentUser.uid).get();
+              inFirestore = doc.exists;
+            } catch (e) {
+              console.error('Error verificando Firestore:', e);
+            }
+          }
+          
+          if (statusDiv) {
+            statusDiv.innerHTML = `
+              <div class="text-green-400 mb-2">✅ Suscrito a Push API</div>
+              <div class="text-xs text-gray-400">
+                ${inFirestore ? '✅ Guardado en Firestore' : '⚠️ No guardado en Firestore'}
+              </div>
+            `;
+            statusDiv.classList.remove('hidden');
+          }
+          
+          if (!inFirestore) {
+            showNotification('Advertencia', 'Suscripción activa pero no guardada en Firestore. Usa "Suscribirse" para guardarla.');
+          }
+        } else {
+          console.log('❌ No hay suscripción Push API');
+          if (statusDiv) {
+            statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ No suscrito a Push API</div><div class="text-xs text-gray-400 mt-1">Usa el botón "Suscribirse" para activar notificaciones con app cerrada</div>';
+            statusDiv.classList.remove('hidden');
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando suscripción:', error);
+        if (statusDiv) {
+          statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message}</div>`;
+          statusDiv.classList.remove('hidden');
+        }
+        showNotification('Error', 'Error al verificar suscripción');
+      }
+    }
+
     // Función para programar notificaciones
     async function scheduleNotifications() {
       if ('serviceWorker' in navigator) {
@@ -637,8 +743,12 @@
       if (isFirebaseAvailable()) {
         firebaseService.onAuthStateChanged(() => {
           updateFirebaseUI();
+          updatePushNotificationsSection();
         });
       }
+      
+      // Actualizar sección de Push Notifications
+      updatePushNotificationsSection();
       
       // Sincronizar estado cuando la página vuelve a estar visible
       document.addEventListener('visibilitychange', () => {
