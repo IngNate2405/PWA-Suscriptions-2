@@ -239,7 +239,13 @@
         // Esperar un poco para asegurar que Firebase esté listo
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        const subscription = await pushNotificationService.subscribeToPush();
+        // Timeout de 30 segundos para evitar que se quede colgado
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: La suscripción tardó demasiado. Verifica tu conexión y las VAPID keys.')), 30000)
+        );
+        
+        const subscriptionPromise = pushNotificationService.subscribeToPush();
+        const subscription = await Promise.race([subscriptionPromise, timeoutPromise]);
         if (subscription) {
           showNotification('✅ Éxito', 'Suscrito a Push Notifications correctamente. Las notificaciones funcionarán incluso con la app cerrada.', 'success');
           
