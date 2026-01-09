@@ -438,6 +438,7 @@ async function scheduleNotificationsWithBackgroundSync() {
 }
 
 // Escuchar eventos de sync para verificar notificaciones (Background Sync)
+// Basado en: https://github.com/gokulkrishh/demo-progressive-web-app
 self.addEventListener('sync', event => {
   if (event.tag === 'check-notifications') {
     event.waitUntil(
@@ -445,8 +446,8 @@ self.addEventListener('sync', event => {
         if (notificationService) {
           try {
             const count = await notificationService.checkAndSendNotifications();
-            console.log(`✅ Verificadas ${count} notificaciones`);
-            // Reprogramar para la próxima verificación (cada minuto)
+            console.log(`✅ Verificadas ${count} notificaciones (Background Sync)`);
+            // Reprogramar para la próxima verificación
             try {
               await self.registration.sync.register('check-notifications');
             } catch (e) {
@@ -460,6 +461,21 @@ self.addEventListener('sync', event => {
         }
       })()
     );
+  }
+});
+
+// También escuchar cuando el service worker se activa (cuando el navegador se abre)
+self.addEventListener('message', async event => {
+  // Si recibimos un mensaje de "wake up", verificar notificaciones
+  if (event.data && event.data.type === 'WAKE_UP_CHECK') {
+    if (notificationService) {
+      try {
+        const count = await notificationService.checkAndSendNotifications();
+        console.log(`✅ Verificadas ${count} notificaciones (wake up)`);
+      } catch (err) {
+        console.error('Error en wake up check:', err);
+      }
+    }
   }
 });
 

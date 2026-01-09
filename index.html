@@ -187,9 +187,14 @@
         const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '.';
         const swPath = basePath === '.' ? './sw.js' : `${basePath}/sw.js`;
         navigator.serviceWorker.register(swPath)
-          .then(registration => {
+          .then(async registration => {
             // Solicitar permisos de notificación después del registro
-            requestNotificationPermission();
+            await requestNotificationPermission();
+            
+            // Despertar el service worker para verificar notificaciones pendientes
+            if (registration.active) {
+              registration.active.postMessage({ type: 'WAKE_UP_CHECK' });
+            }
           })
           .catch(error => {
             // console.log('Error al registrar ServiceWorker:', error);

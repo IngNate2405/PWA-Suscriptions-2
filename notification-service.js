@@ -245,15 +245,16 @@ class NotificationService {
       const store = transaction.objectStore('scheduledNotifications');
       const index = store.index('notificationDate');
       
-      // Obtener TODAS las notificaciones programadas (no solo las próximas 5 minutos)
+      // Obtener TODAS las notificaciones programadas
       const request = index.getAll();
       
       request.onsuccess = async () => {
         const notifications = request.result || [];
         const toSend = notifications.filter(n => {
           const notifDate = new Date(n.notificationDate);
-          // Enviar si la fecha ya pasó (con margen de 1 minuto para evitar problemas de timing)
-          return notifDate <= new Date(now.getTime() + 60000);
+          // Enviar si la fecha ya pasó (con margen de 2 minutos para evitar problemas de timing)
+          // Esto permite que se envíe incluso si la verificación se retrasa un poco
+          return notifDate <= new Date(now.getTime() + 2 * 60 * 1000);
         });
         
         const sent = [];
