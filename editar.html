@@ -18,6 +18,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
   <script src="firebase-service.js"></script>
+  <script src="push-notification-service.js"></script>
   <script src="notification-service.js"></script>
   <script src="version.js"></script>
   <style>
@@ -731,7 +732,23 @@
       }
 
       // Intentar reprogramar notificaciones en segundo plano (no bloquear el guardado)
-      // Enviar mensaje de forma asíncrona sin esperar respuesta
+      // Programar notificaciones en Firestore (para Push API) y localmente
+      if (pushNotificationService && isFirebaseAvailable() && auth && auth.currentUser) {
+        try {
+          const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+          // Programar notificaciones en Firestore para que Firebase Functions las envíe
+          for (const subscription of subscriptions) {
+            if (subscription.notifications && subscription.notifications.length > 0) {
+              await pushNotificationService.scheduleSubscriptionNotifications(subscription);
+            }
+          }
+          console.log('✅ Notificaciones programadas en Firestore para Push API');
+        } catch (error) {
+          console.error('Error al programar notificaciones en Firestore:', error);
+        }
+      }
+
+      // También programar localmente (fallback)
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready
           .then(registration => {
@@ -741,7 +758,7 @@
                 type: 'SCHEDULE_NOTIFICATIONS',
                 subscriptions
               });
-              console.log('✅ Notificaciones reprogramadas');
+              console.log('✅ Notificaciones reprogramadas localmente');
             } else {
               console.log('⚠️ Service Worker no está activo aún');
             }

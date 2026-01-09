@@ -89,13 +89,31 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Manejo de notificaciones push (mejorado basado en ejemplo PWA)
+// Manejo de notificaciones push desde Firebase Cloud Functions
+// Basado en: https://github.com/gokulkrishh/demo-progressive-web-app
 self.addEventListener('push', event => {
   let notificationData = {
     title: 'Recordatorio de Pago',
     body: 'Tienes una suscripción por pagar',
     icon: 'icons/icon-192x192.png'
   };
+  
+  // Parsear datos JSON del servidor (Firebase Cloud Functions)
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      notificationData = {
+        title: data.title || notificationData.title,
+        body: data.body || notificationData.body,
+        icon: data.icon || notificationData.icon,
+        badge: data.badge || 'icons/icon-96x96.png',
+        tag: data.tag || 'subscription-reminder',
+        data: data.data || {}
+      };
+    } catch (e) {
+      console.error('Error parseando datos push:', e);
+    }
+  }
   
   // Intentar parsear datos JSON si están disponibles
   if (event.data) {
