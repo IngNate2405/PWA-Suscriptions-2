@@ -57,7 +57,10 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/PWA-Suscriptions-2/sw.js')
+        // Detectar ruta base dinámicamente
+        const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '.';
+        const swPath = basePath === '.' ? './sw.js' : `${basePath}/sw.js`;
+        navigator.serviceWorker.register(swPath)
           .then(registration => {
           })
           .catch(error => {

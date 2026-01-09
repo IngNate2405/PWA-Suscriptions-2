@@ -2,8 +2,8 @@
   "name": "App Suscripciones",
   "short_name": "SubsApp",
   "description": "Aplicación para gestionar suscripciones",
-  "start_url": "/PWA-Suscriptions-2/index.html",
-  "scope": "/PWA-Suscriptions-2/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0D0A1A",
@@ -14,7 +14,7 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/PWA-Suscriptions-2/icons/icon-72x72.png",
+      "src": "./icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "any maskable"
