@@ -1,4 +1,4 @@
-# 🚀 Guía Completa: Notificaciones Push con Firebase
+# 🚀 Push Notifications - Guía Completa
 
 Esta guía te permitirá recibir notificaciones **incluso cuando el navegador está cerrado**.
 
@@ -12,151 +12,79 @@ Esta guía te permitirá recibir notificaciones **incluso cuando el navegador es
 
 ---
 
-## 🔧 Paso 1: Instalar Firebase CLI
+## 🔧 Paso 1: Instalar Node.js (si no lo tienes)
 
+**macOS:**
 ```bash
-npm install -g firebase-tools
+brew install node
 ```
 
-Inicia sesión:
-```bash
-firebase login
-```
+**O descarga desde:** https://nodejs.org/ (versión LTS)
 
 ---
 
 ## 🔑 Paso 2: Generar VAPID Keys
 
-Las VAPID keys son necesarias para autenticar las notificaciones push.
+### Opción A: Generador HTML (Recomendado)
 
-### Opción A: Herramienta Online (Más Fácil)
-1. Ve a: https://web-push-codelab.glitch.me/
-2. Haz clic en **"Generate VAPID Keys"**
-3. Copia las dos claves:
-   - **Public Key** (la necesitarás)
-   - **Private Key** (la necesitarás)
+1. Abre `generate-vapid-keys.html` en tu navegador
+2. Haz clic en "Generar VAPID Keys"
+3. Copia las dos claves (Public Key y Private Key)
 
-### Opción B: Desde Terminal
+### Opción B: Con Node.js
+
 ```bash
 npm install -g web-push
 web-push generate-vapid-keys
 ```
 
-**⚠️ IMPORTANTE:** Guarda estas claves en un lugar seguro.
+---
+
+## ⚙️ Paso 3: Configurar VAPID Keys
+
+1. Abre `functions/index.js`
+2. Reemplaza:
+   - Línea 16: `TU_VAPID_PUBLIC_KEY_AQUI` → Tu Public Key
+   - Línea 17: `TU_VAPID_PRIVATE_KEY_AQUI` → Tu Private Key
+   - Línea 22: `tu-email@ejemplo.com` → Tu email real
 
 ---
 
-## 📁 Paso 3: Configurar Firebase Functions
+## 🔥 Paso 4: Configurar Firebase
 
-1. **Inicializar Firebase Functions:**
 ```bash
-cd /Users/rutgiron/Downloads/PWA-Suscriptions-2-main
+# Iniciar sesión
+firebase login
+
+# Inicializar functions
 firebase init functions
-```
+# Selecciona: JavaScript, No a ESLint, Yes a instalar dependencias
 
-2. **Selecciona:**
-   - ✅ JavaScript
-   - ✅ ESLint (opcional, puedes decir "No")
-   - ✅ Instalar dependencias ahora (Sí)
+# Si no se instalaron dependencias:
+cd functions && npm install && cd ..
 
-3. **Si no instalaste dependencias, instálalas ahora:**
-```bash
-cd functions
-npm install
-```
-
----
-
-## ⚙️ Paso 4: Configurar VAPID Keys
-
-1. **Edita el archivo `functions/index.js`**
-2. **Busca estas líneas:**
-```javascript
-const vapidKeys = {
-  publicKey: 'TU_VAPID_PUBLIC_KEY_AQUI',
-  privateKey: 'TU_VAPID_PRIVATE_KEY_AQUI'
-};
-```
-
-3. **Reemplaza con tus claves:**
-```javascript
-const vapidKeys = {
-  publicKey: 'TU_CLAVE_PUBLICA_AQUI',
-  privateKey: 'TU_CLAVE_PRIVADA_AQUI'
-};
-```
-
-4. **Reemplaza el email:**
-```javascript
-webpush.setVapidDetails(
-  'mailto:tu-email-real@gmail.com', // Tu email real
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-);
-```
-
----
-
-## 📤 Paso 5: Deploy de Functions
-
-```bash
-cd /Users/rutgiron/Downloads/PWA-Suscriptions-2-main
+# Deploy
 firebase deploy --only functions
 ```
 
-Esto puede tardar unos minutos la primera vez.
+---
+
+## ✅ Paso 5: Probar
+
+1. Abre tu PWA
+2. Inicia sesión
+3. Permite notificaciones
+4. Crea una suscripción con notificaciones
+5. Cierra el navegador
+6. Espera la notificación (puede tardar hasta 1 minuto)
 
 ---
 
-## ✅ Paso 6: Probar
+## 🔍 Verificar Logs
 
-1. **Abre tu PWA en el navegador**
-2. **Inicia sesión con tu cuenta**
-3. **Permite notificaciones** cuando te lo pida
-4. **Crea una suscripción** con notificaciones
-5. **Cierra completamente el navegador**
-6. **Espera a que llegue la notificación** (puede tardar hasta 1 minuto)
-
----
-
-## 🔍 Verificar que Funciona
-
-### Ver logs de Firebase Functions:
 ```bash
 firebase functions:log
 ```
-
-### Ver suscripciones en Firestore:
-1. Ve a Firebase Console
-2. Firestore Database
-3. Busca la colección `userPushSubscriptions`
-4. Deberías ver tu suscripción con tu `userId`
-
-### Ver notificaciones programadas:
-1. En Firestore, busca la colección `scheduledNotifications`
-2. Deberías ver las notificaciones programadas con sus fechas
-
----
-
-## 🐛 Troubleshooting
-
-### Error: "VAPID keys not set"
-- Verifica que hayas configurado las VAPID keys en `functions/index.js`
-- Asegúrate de haber hecho deploy: `firebase deploy --only functions`
-
-### Error: "Permission denied" en Firestore
-- Ve a Firebase Console > Firestore Database > Reglas
-- Asegúrate de que las reglas permitan lectura/escritura para usuarios autenticados
-
-### No llegan notificaciones
-1. Verifica que el service worker esté registrado (DevTools > Application > Service Workers)
-2. Verifica que tengas permisos de notificación (DevTools > Application > Notifications)
-3. Revisa los logs: `firebase functions:log`
-4. Verifica que la suscripción esté guardada en Firestore
-
-### Error: "functions not found"
-- Asegúrate de haber ejecutado `firebase init functions`
-- Verifica que el directorio `functions/` exista
 
 ---
 
@@ -164,24 +92,26 @@ firebase functions:log
 
 - **Firebase Cloud Functions**: Gratis hasta 2 millones de invocaciones/mes
 - **Cloud Scheduler**: Gratis hasta 3 jobs programados
-- **Firestore**: Gratis hasta 50K lecturas/día y 20K escrituras/día
+- **Firestore**: Gratis hasta 50K lecturas/día
 
 **Total: GRATIS para uso personal** 🎉
 
 ---
 
-## 📝 Archivos Creados/Modificados
+## 🐛 Troubleshooting
 
-1. ✅ `push-notification-service.js` - Servicio para manejar Push API
-2. ✅ `functions/index.js` - Cloud Functions para enviar notificaciones
-3. ✅ `functions/package.json` - Dependencias de Functions
-4. ✅ `index.html` - Actualizado para suscribirse a Push API
-5. ✅ `editar.html` - Actualizado para programar en Firestore
-6. ✅ `sw.js` - Actualizado para recibir push notifications
+### Error: "VAPID keys not set"
+- Verifica que hayas configurado las claves en `functions/index.js`
+- Asegúrate de haber hecho deploy: `firebase deploy --only functions`
+
+### No llegan notificaciones
+1. Verifica los logs: `firebase functions:log`
+2. Verifica permisos de notificación en el navegador
+3. Verifica que la suscripción esté guardada en Firestore (Firebase Console)
 
 ---
 
-## 🎯 Cómo Funciona
+## 📝 Cómo Funciona
 
 1. **Usuario se suscribe**: El cliente se suscribe a Push API usando VAPID public key
 2. **Suscripción guardada**: Se guarda en Firestore (`userPushSubscriptions`)
@@ -192,12 +122,4 @@ firebase functions:log
 
 ---
 
-## 🚀 Próximos Pasos
-
-1. Configura las VAPID keys
-2. Haz deploy de las functions
-3. Prueba creando una suscripción
-4. Cierra el navegador y espera la notificación
-
 ¡Listo! 🎉
-
