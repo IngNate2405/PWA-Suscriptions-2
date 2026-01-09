@@ -55,9 +55,9 @@
 </IfModule>
 
 # Redirección de HTTP a HTTPS (descomenta si tienes SSL)
-# RewriteEngine On
-# RewriteCond %{HTTPS} off
-# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Manejo de errores 404
 ErrorDocument 404 /index.html
