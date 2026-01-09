@@ -32,6 +32,7 @@ build/
 *.bak
 *.backup
 *~
+vapid-keys-backup.txt
 
 # Firebase config con credenciales reales
 # NOTA: Para GitHub Pages, este archivo DEBE estar en el repositorio
