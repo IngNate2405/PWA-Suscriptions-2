@@ -74,20 +74,46 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Manejo de notificaciones push
+// Manejo de notificaciones push (mejorado basado en ejemplo PWA)
 self.addEventListener('push', event => {
+  let notificationData = {
+    title: 'Recordatorio de Pago',
+    body: 'Tienes una suscripción por pagar',
+    icon: 'icons/icon-192x192.png'
+  };
+  
+  // Intentar parsear datos JSON si están disponibles
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      notificationData = {
+        title: data.title || notificationData.title,
+        body: data.body || notificationData.body,
+        icon: data.icon || notificationData.icon,
+        image: data.image,
+        data: data.data || {}
+      };
+    } catch (e) {
+      // Si no es JSON, usar como texto
+      notificationData.body = event.data.text() || notificationData.body;
+    }
+  }
+  
   const options = {
-    body: event.data ? event.data.text() : 'Tienes una suscripción por pagar',
-    icon: 'icons/icon-192x192.png',
+    body: notificationData.body,
+    icon: notificationData.icon,
     badge: 'icons/icon-192x192.png',
+    image: notificationData.image,
     vibrate: [100, 50, 100],
+    tag: 'payment-reminder', // Evitar duplicados
+    requireInteraction: false,
     data: {
-      dateOfArrival: Date.now(),
-      primaryKey: 1
+      ...notificationData.data,
+      dateOfArrival: Date.now()
     },
     actions: [
       {
-        action: 'explore',
+        action: 'view',
         title: 'Ver detalles',
         icon: 'icons/icon-192x192.png'
       },
@@ -100,20 +126,41 @@ self.addEventListener('push', event => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Recordatorio de Pago', options)
+    self.registration.showNotification(notificationData.title, options)
   );
 });
 
-// Manejo de clics en notificaciones
+// Manejo de clics en notificaciones (mejorado basado en ejemplo PWA)
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-
-  if (event.action === 'explore') {
-    // Abrir la aplicación
-    event.waitUntil(
-      clients.openWindow('index.html')
-    );
-  }
+  
+  const action = event.action;
+  const data = event.notification.data;
+  const urlToOpen = data && data.subscriptionId 
+    ? `card.html?id=${data.subscriptionId}` 
+    : 'index.html';
+  
+  event.waitUntil(
+    clients.matchAll({ 
+      type: 'window', 
+      includeUncontrolled: true 
+    }).then(clientList => {
+      // Buscar si hay una ventana abierta de la aplicación
+      for (let client of clientList) {
+        if (client.url.includes('index.html') || client.url.includes('card.html')) {
+          // Si hay una ventana abierta, enfocarla y navegar si es necesario
+          if (data && data.subscriptionId && !client.url.includes(`id=${data.subscriptionId}`)) {
+            return client.navigate(urlToOpen).then(() => client.focus());
+          }
+          return client.focus();
+        }
+      }
+      // Si no hay ventana abierta, abrir una nueva
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
 });
 
 // IDs de timeouts programados en memoria (no disponible localStorage en SW)
@@ -164,14 +211,20 @@ async function scheduleNotifications(subscriptionsFromClient = []) {
           const delay = notificationDate.getTime() - now.getTime();
           
           const timeoutId = setTimeout(() => {
-            self.registration.showNotification('Recordatorio de Pago', {
+            const notificationOptions = {
               body: `Tu suscripción a ${subscription.name} vence el ${formatDate(subscription.nextPayment)}`,
-              icon: 'icons/icon-192x192.png',
+              icon: subscription.logo || 'icons/icon-192x192.png',
               badge: 'icons/icon-192x192.png',
+              image: subscription.logo || undefined, // Imagen grande (si está disponible)
               vibrate: [100, 50, 100],
+              tag: `subscription-${subscription.id}`, // Evitar notificaciones duplicadas
+              requireInteraction: false,
+              silent: false,
               data: {
                 subscriptionId: subscription.id,
-                subscriptionName: subscription.name
+                subscriptionName: subscription.name,
+                nextPayment: subscription.nextPayment,
+                dateOfArrival: Date.now()
               },
               actions: [
                 {
@@ -185,7 +238,9 @@ async function scheduleNotifications(subscriptionsFromClient = []) {
                   icon: 'icons/icon-192x192.png'
                 }
               ]
-            });
+            };
+            
+            self.registration.showNotification('Recordatorio de Pago', notificationOptions);
           }, delay);
           
           scheduledNotifications.push(timeoutId);
@@ -314,14 +369,19 @@ async function checkAndSendNotifications() {
         
         // Enviar notificación si estamos dentro de los 5 minutos de la hora programada
         if (minutesDiff <= 5 && notificationDate > now) {
-          await self.registration.showNotification('Recordatorio de Pago', {
+          const notificationOptions = {
             body: `Tu suscripción a ${subscription.name} vence el ${formatDate(subscription.nextPayment)}`,
-            icon: 'icons/icon-192x192.png',
+            icon: subscription.logo || 'icons/icon-192x192.png',
             badge: 'icons/icon-192x192.png',
+            image: subscription.logo || undefined,
             vibrate: [100, 50, 100],
+            tag: `subscription-${subscription.id}`,
+            requireInteraction: false,
             data: {
               subscriptionId: subscription.id,
-              subscriptionName: subscription.name
+              subscriptionName: subscription.name,
+              nextPayment: subscription.nextPayment,
+              dateOfArrival: Date.now()
             },
             actions: [
               {
@@ -335,7 +395,9 @@ async function checkAndSendNotifications() {
                 icon: 'icons/icon-192x192.png'
               }
             ]
-          });
+          };
+          
+          await self.registration.showNotification('Recordatorio de Pago', notificationOptions);
         }
       }
     }
@@ -384,14 +446,19 @@ async function reloadNotifications() {
         
         // Enviar notificación si estamos dentro de los 5 minutos de la hora programada
         if (minutesDiff <= 5 && notificationDate > now) {
-          await self.registration.showNotification('Recordatorio de Pago', {
+          const notificationOptions = {
             body: `Tu suscripción a ${subscription.name} vence el ${formatDate(subscription.nextPayment)}`,
-            icon: 'icons/icon-192x192.png',
+            icon: subscription.logo || 'icons/icon-192x192.png',
             badge: 'icons/icon-192x192.png',
+            image: subscription.logo || undefined,
             vibrate: [100, 50, 100],
+            tag: `subscription-${subscription.id}`,
+            requireInteraction: false,
             data: {
               subscriptionId: subscription.id,
-              subscriptionName: subscription.name
+              subscriptionName: subscription.name,
+              nextPayment: subscription.nextPayment,
+              dateOfArrival: Date.now()
             },
             actions: [
               {
@@ -405,7 +472,9 @@ async function reloadNotifications() {
                 icon: 'icons/icon-192x192.png'
               }
             ]
-          });
+          };
+          
+          await self.registration.showNotification('Recordatorio de Pago', notificationOptions);
         }
       }
     }
