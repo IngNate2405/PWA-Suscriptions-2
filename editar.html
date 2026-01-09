@@ -18,6 +18,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
   <script src="firebase-service.js"></script>
+  <script src="notification-service.js"></script>
   <script src="version.js"></script>
   <style>
     body, html {
@@ -604,8 +605,10 @@
         if (checkbox.checked) {
           if (checkbox.name === 'notification_custom') {
             const customDays = document.querySelector('input[name="notification_custom_days"]');
+            const customTime = document.querySelector('input[name="notification_custom_time"]');
             if (customDays && customDays.value) {
-              notifications.push(`custom_${customDays.value}`);
+              const time = customTime && customTime.value ? customTime.value : '09:00';
+              notifications.push(`custom_${customDays.value}_${time}`);
             }
           } else if (checkbox.name === 'notification_custom_date') {
             const customDateInput = document.querySelector('input[name="custom_date"]');
@@ -620,11 +623,18 @@
               const dayStr = String(day).padStart(2, '0');
               notifications.push(`customdate_${dayStr}_${time}`);
             }
-          } else if (checkbox.name === 'notification_1day' || checkbox.name === 'notification_2days' || checkbox.name === 'notification_sameday') {
-            // Notificaciones estándar
-            if (checkbox.name === 'notification_1day') notifications.push('1day');
-            if (checkbox.name === 'notification_2days') notifications.push('2days');
-            if (checkbox.name === 'notification_sameday') notifications.push('sameday');
+          } else if (checkbox.name === 'notification_1day') {
+            const timeInput = document.querySelector('input[name="notification_1day_time"]');
+            const time = timeInput && timeInput.value ? timeInput.value : '09:00';
+            notifications.push(`1day_${time}`);
+          } else if (checkbox.name === 'notification_2days') {
+            const timeInput = document.querySelector('input[name="notification_2days_time"]');
+            const time = timeInput && timeInput.value ? timeInput.value : '09:00';
+            notifications.push(`2days_${time}`);
+          } else if (checkbox.name === 'notification_sameday') {
+            const timeInput = document.querySelector('input[name="notification_sameday_time"]');
+            const time = timeInput && timeInput.value ? timeInput.value : '09:00';
+            notifications.push(`sameday_${time}`);
           }
         }
       });
@@ -1582,50 +1592,80 @@
           <input type="text" name="category" class="text-[#6b6b7b] text-base font-normal bg-transparent border-none" />
         </div>
       </div>
-      <div class="flex justify-between items-center px-4 py-3">
-        <div class="text-white text-base font-normal">Notificaciones</div>
-        <div class="flex flex-col w-full" id="notificaciones-container">
-          <div id="activeNotificationsContainer"></div>
-          <button type="button" id="addNotificationBtn" class="text-[#6b6b7b] text-sm hover:text-white mb-2 text-right w-full">
-            + Agregar notificación
+      <div class="px-4 py-3">
+        <div class="flex justify-between items-center mb-3">
+          <div class="text-white text-base font-normal">Notificaciones de Recordatorio</div>
+          <span class="text-xs text-[#6b6b7b]">Funcionan sin abrir la app</span>
+        </div>
+        <div class="flex flex-col w-full space-y-3" id="notificaciones-container">
+          <div id="activeNotificationsContainer" class="space-y-2"></div>
+          <button type="button" id="addNotificationBtn" class="text-[#6b6b7b] text-sm hover:text-white text-left w-full flex items-center">
+            <i class="fas fa-plus-circle mr-2"></i>
+            Agregar recordatorio
           </button>
-          <div id="additionalNotifications" class="hidden flex-col items-end space-y-2 w-full">
-            <div class="flex flex-row items-center w-full mb-2" id="notif-1day">
-              <input type="checkbox" name="notification_1day" class="notification-checkbox mt-1" />
-              <div class="flex flex-col flex-1 ml-2">
-                <span class="text-[#6b6b7b] text-base text-right">1 día antes</span>
-                <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+          <div id="additionalNotifications" class="hidden flex-col space-y-3 w-full">
+            <div class="bg-[#2a2736] rounded-lg p-3 flex items-center space-x-3" id="notif-1day">
+              <input type="checkbox" name="notification_1day" class="notification-checkbox flex-shrink-0" />
+              <div class="flex-1">
+                <div class="text-white text-sm font-medium mb-1">1 día antes del pago</div>
+                <div class="flex items-center space-x-2">
+                  <i class="fas fa-clock text-[#6b6b7b] text-xs"></i>
+                  <input type="time" name="notification_1day_time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-xs" value="09:00" />
+                </div>
               </div>
             </div>
-            <div class="flex flex-row items-center w-full mb-2" id="notif-2days">
-              <input type="checkbox" name="notification_2days" class="notification-checkbox mt-1" />
-              <div class="flex flex-col flex-1 ml-2">
-                <span class="text-[#6b6b7b] text-base text-right">2 días antes</span>
-                <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+            <div class="bg-[#2a2736] rounded-lg p-3 flex items-center space-x-3" id="notif-2days">
+              <input type="checkbox" name="notification_2days" class="notification-checkbox flex-shrink-0" />
+              <div class="flex-1">
+                <div class="text-white text-sm font-medium mb-1">2 días antes del pago</div>
+                <div class="flex items-center space-x-2">
+                  <i class="fas fa-clock text-[#6b6b7b] text-xs"></i>
+                  <input type="time" name="notification_2days_time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-xs" value="09:00" />
+                </div>
               </div>
             </div>
-            <div class="flex flex-row items-center w-full mb-2" id="notif-sameday">
-              <input type="checkbox" name="notification_sameday" class="notification-checkbox mt-1" />
-              <div class="flex flex-col flex-1 ml-2">
-                <span class="text-[#6b6b7b] text-base text-right">El mismo día</span>
-                <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
+            <div class="bg-[#2a2736] rounded-lg p-3 flex items-center space-x-3" id="notif-sameday">
+              <input type="checkbox" name="notification_sameday" class="notification-checkbox flex-shrink-0" />
+              <div class="flex-1">
+                <div class="text-white text-sm font-medium mb-1">El mismo día del pago</div>
+                <div class="flex items-center space-x-2">
+                  <i class="fas fa-clock text-[#6b6b7b] text-xs"></i>
+                  <input type="time" name="notification_sameday_time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-xs" value="09:00" />
+                </div>
               </div>
             </div>
-            <div class="flex flex-row items-center w-full mb-2 mt-2" id="customDateNotificationDropdown">
-              <input type="checkbox" name="notification_custom_date" class="notification-checkbox mt-1" />
-              <div class="flex flex-col flex-1 space-y-2">
-                <span class="text-[#6b6b7b] text-base text-right">Personalizado por fecha</span>
-                <input type="date" name="custom_date" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" />
-                <input type="time" name="custom_time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 self-end" value="09:00" />
-                <span class="text-xs text-[#6b6b7b]">Se repetirá cada mes en el día y hora elegidos</span>
+            <div class="bg-[#2a2736] rounded-lg p-3 flex items-start space-x-3" id="customDateNotificationDropdown">
+              <input type="checkbox" name="notification_custom_date" class="notification-checkbox flex-shrink-0 mt-1" />
+              <div class="flex-1">
+                <div class="text-white text-sm font-medium mb-2">Fecha y hora personalizada</div>
+                <div class="space-y-2">
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-calendar text-[#6b6b7b] text-xs"></i>
+                    <input type="date" name="custom_date" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-xs flex-1" />
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-clock text-[#6b6b7b] text-xs"></i>
+                    <input type="time" name="custom_time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-xs flex-1" value="09:00" />
+                  </div>
+                  <span class="text-xs text-[#6b6b7b] block">Se repetirá cada mes en el día y hora elegidos</span>
+                </div>
               </div>
             </div>
-            <div class="flex flex-row items-center w-full mb-2" id="notif-custom">
-              <input type="checkbox" name="notification_custom" class="notification-checkbox mt-1" />
-              <div class="flex flex-col flex-1">
-                <span class="text-[#6b6b7b] text-base text-right">Personalizado</span>
-                <input type="number" name="notification_custom_days" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-16 mb-2" placeholder="días" min="1" max="30" disabled />
-                <input type="time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-sm w-1/2 mb-2 self-end" value="09:00" disabled />
+            <div class="bg-[#2a2736] rounded-lg p-3 flex items-start space-x-3" id="notif-custom">
+              <input type="checkbox" name="notification_custom" class="notification-checkbox flex-shrink-0 mt-1" />
+              <div class="flex-1">
+                <div class="text-white text-sm font-medium mb-2">Días personalizados antes</div>
+                <div class="space-y-2">
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-calendar-day text-[#6b6b7b] text-xs"></i>
+                    <input type="number" name="notification_custom_days" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-xs w-20" placeholder="días" min="1" max="30" disabled />
+                    <span class="text-xs text-[#6b6b7b]">días antes</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-clock text-[#6b6b7b] text-xs"></i>
+                    <input type="time" name="notification_custom_time" class="bg-[#3f3f46] rounded-md px-2 py-1 text-white text-xs flex-1" value="09:00" disabled />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

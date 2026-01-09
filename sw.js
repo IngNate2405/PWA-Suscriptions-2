@@ -1,5 +1,12 @@
+// Importar NotificationService
+try {
+  importScripts('notification-service.js');
+} catch (e) {
+  console.error('Error al importar notification-service.js:', e);
+}
+
 // Nombre del caché con versión
-const CACHE_NAME = 'subs-app-v2';
+const CACHE_NAME = 'subs-app-v3';
 const urlsToCache = [
   './',
   'index.html',
@@ -17,6 +24,7 @@ const urlsToCache = [
   'archivo-datos.html',
   'manifest.json',
   'sw.js',
+  'notification-service.js',
   'icons/icon-72x72.png',
   'icons/icon-96x96.png',
   'icons/icon-128x128.png',
@@ -26,6 +34,13 @@ const urlsToCache = [
   'icons/icon-384x384.png',
   'icons/icon-512x512.png'
 ];
+
+// Inicializar NotificationService si está disponible
+let notificationService = null;
+if (typeof NotificationService !== 'undefined') {
+  notificationService = new NotificationService();
+  notificationService.initDB().catch(err => console.error('Error al inicializar DB:', err));
+}
 
 self.addEventListener('install', event => {
   // Forzar actualización inmediata
@@ -163,11 +178,33 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-// IDs de timeouts programados en memoria (no disponible localStorage en SW)
-let scheduledNotifications = [];
-
-// Función para programar notificaciones
+// Función legacy para programar notificaciones (mantener por compatibilidad)
+// Ahora usa NotificationService si está disponible
 async function scheduleNotifications(subscriptionsFromClient = []) {
+  if (notificationService) {
+    try {
+      await notificationService.saveSubscriptions(subscriptionsFromClient);
+      const count = await notificationService.scheduleNotifications(subscriptionsFromClient);
+      console.log(`✅ ${count} notificaciones programadas`);
+      // Registrar Background Sync
+      try {
+        await self.registration.sync.register('check-notifications');
+      } catch (e) {
+        console.log('Background Sync no disponible:', e);
+      }
+      return count;
+    } catch (error) {
+      console.error('Error al programar notificaciones:', error);
+      return 0;
+    }
+  } else {
+    // Fallback a método legacy si NotificationService no está disponible
+    return scheduleNotificationsLegacy(subscriptionsFromClient);
+  }
+}
+
+// Función legacy para programar notificaciones (mantener por compatibilidad)
+async function scheduleNotificationsLegacy(subscriptionsFromClient = []) {
   try {
     const subscriptions = Array.isArray(subscriptionsFromClient) ? subscriptionsFromClient : [];
     const now = new Date();
@@ -285,9 +322,31 @@ self.addEventListener('activate', event => {
 });
 
 // Escuchar mensajes del cliente para reprogramar notificaciones
-self.addEventListener('message', event => {
+self.addEventListener('message', async event => {
   if (event.data && event.data.type === 'SCHEDULE_NOTIFICATIONS') {
-    scheduleNotifications(event.data.subscriptions || []);
+    const subscriptions = event.data.subscriptions || [];
+    if (notificationService) {
+      try {
+        // Guardar suscripciones en IndexedDB
+        await notificationService.saveSubscriptions(subscriptions);
+        // Programar notificaciones
+        const count = await notificationService.scheduleNotifications(subscriptions);
+        console.log(`✅ ${count} notificaciones programadas`);
+        // Registrar Background Sync para verificación periódica
+        try {
+          await self.registration.sync.register('check-notifications');
+        } catch (e) {
+          console.log('Background Sync no disponible:', e);
+        }
+      } catch (error) {
+        console.error('Error al programar notificaciones:', error);
+        // Fallback a método legacy
+        scheduleNotificationsLegacy(subscriptions);
+      }
+    } else {
+      // Fallback a método legacy si NotificationService no está disponible
+      scheduleNotificationsLegacy(subscriptions);
+    }
   } else if (event.data && event.data.type === 'TEST_NOTIFICATION') {
     self.registration.showNotification(event.data.data.title, {
       body: event.data.data.body,
@@ -321,11 +380,67 @@ async function scheduleNotificationsWithBackgroundSync() {
   }
 }
 
-// Escuchar eventos de sync para verificar notificaciones
+// Escuchar eventos de sync para verificar notificaciones (Background Sync)
 self.addEventListener('sync', event => {
   if (event.tag === 'check-notifications') {
-    event.waitUntil(checkAndSendNotifications());
+    event.waitUntil(
+      (async () => {
+        if (notificationService) {
+          try {
+            const count = await notificationService.checkAndSendNotifications();
+            console.log(`✅ Verificadas ${count} notificaciones`);
+            // Reprogramar para la próxima verificación
+            try {
+              await self.registration.sync.register('check-notifications');
+            } catch (e) {
+              console.log('No se pudo reprogramar Background Sync:', e);
+            }
+          } catch (err) {
+            console.error('Error en Background Sync:', err);
+          }
+        } else {
+          console.log('NotificationService no disponible para Background Sync');
+        }
+      })()
+    );
   }
+});
+
+// Verificar notificaciones periódicamente (cada vez que se activa el service worker)
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    Promise.all([
+      // Limpiar cachés antiguos
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (!cacheName.startsWith('subs-app-v') || cacheName !== CACHE_NAME) {
+              console.log('Eliminando caché antiguo:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Tomar control inmediatamente
+      self.clients.claim(),
+      // Verificar notificaciones pendientes
+      (async () => {
+        if (notificationService) {
+          try {
+            await notificationService.checkAndSendNotifications();
+            // Registrar Background Sync
+            try {
+              await self.registration.sync.register('check-notifications');
+            } catch (e) {
+              console.log('Background Sync no disponible:', e);
+            }
+          } catch (err) {
+            console.error('Error al verificar notificaciones:', err);
+          }
+        }
+      })()
+    ])
+  );
 });
 
 // Función para verificar y enviar notificaciones
