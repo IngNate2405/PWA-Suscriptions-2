@@ -90,7 +90,7 @@ self.addEventListener('fetch', event => {
 });
 
 // Manejo de notificaciones push desde Firebase Cloud Functions
-// Basado en: https://github.com/gokulkrishh/demo-progressive-web-app
+// Basado en: https://github.com/mutebg/pwa-weather y https://github.com/gokulkrishh/demo-progressive-web-app
 self.addEventListener('push', event => {
   let notificationData = {
     title: 'Recordatorio de Pago',
@@ -99,6 +99,7 @@ self.addEventListener('push', event => {
   };
   
   // Parsear datos JSON del servidor (Firebase Cloud Functions)
+  // Similar a pwa-weather: maneja datos JSON del servidor
   if (event.data) {
     try {
       const data = event.data.json();
@@ -108,27 +109,18 @@ self.addEventListener('push', event => {
         icon: data.icon || notificationData.icon,
         badge: data.badge || 'icons/icon-96x96.png',
         tag: data.tag || 'subscription-reminder',
-        data: data.data || {}
-      };
-    } catch (e) {
-      console.error('Error parseando datos push:', e);
-    }
-  }
-  
-  // Intentar parsear datos JSON si están disponibles
-  if (event.data) {
-    try {
-      const data = event.data.json();
-      notificationData = {
-        title: data.title || notificationData.title,
-        body: data.body || notificationData.body,
-        icon: data.icon || notificationData.icon,
         image: data.image,
-        data: data.data || {}
+        data: data.data || {},
+        requireInteraction: data.requireInteraction || false,
+        vibrate: data.vibrate || [200, 100, 200]
       };
     } catch (e) {
-      // Si no es JSON, usar como texto
-      notificationData.body = event.data.text() || notificationData.body;
+      // Si no es JSON, intentar como texto
+      try {
+        notificationData.body = event.data.text() || notificationData.body;
+      } catch (textError) {
+        console.error('Error parseando datos push:', e, textError);
+      }
     }
   }
   
