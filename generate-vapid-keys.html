@@ -98,6 +98,25 @@
             border-radius: 5px;
             margin: 20px 0;
         }
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -107,6 +126,7 @@
         
         <button id="generateBtn" onclick="generateKeys()">Generar VAPID Keys</button>
         <div id="success" class="success">✅ Clave copiada al portapapeles</div>
+        <div id="error" class="error" style="display: none;"></div>
         
         <div id="keys" style="display: none;">
             <div class="key-box">
@@ -141,95 +161,121 @@
         </div>
     </div>
 
+    <!-- Cargar web-push desde CDN -->
     <script src="https://cdn.jsdelivr.net/npm/web-push@3.6.6/lib/index.min.js"></script>
     <script>
-        // Función para generar VAPID keys usando la librería web-push
+        let webpush = null;
+
+        // Intentar cargar web-push desde CDN
+        if (typeof window.webpush !== 'undefined') {
+            webpush = window.webpush;
+        } else if (typeof webpush !== 'undefined') {
+            // Ya está disponible globalmente
+        } else {
+            // Cargar dinámicamente
+            loadWebPush();
+        }
+
+        async function loadWebPush() {
+            try {
+                // Intentar cargar desde unpkg
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/web-push@3.6.6/lib/index.js';
+                script.onload = () => {
+                    if (typeof webpush !== 'undefined') {
+                        console.log('✅ web-push cargado desde unpkg');
+                    }
+                };
+                document.head.appendChild(script);
+            } catch (error) {
+                console.error('Error cargando web-push:', error);
+            }
+        }
+
+        // Función principal para generar VAPID keys
         async function generateKeys() {
             const btn = document.getElementById('generateBtn');
+            const errorDiv = document.getElementById('error');
+            errorDiv.style.display = 'none';
+            
             btn.disabled = true;
-            btn.textContent = 'Generando...';
+            btn.innerHTML = '<span class="loading"></span> Generando...';
 
             try {
-                // Usar la librería web-push si está disponible
-                if (typeof webpush !== 'undefined') {
+                // Método 1: Intentar usar web-push si está disponible
+                if (typeof webpush !== 'undefined' && webpush.generateVAPIDKeys) {
                     const vapidKeys = webpush.generateVAPIDKeys();
-                    
-                    document.getElementById('publicKey').textContent = vapidKeys.publicKey;
-                    document.getElementById('privateKey').textContent = vapidKeys.privateKey;
-                    document.getElementById('keys').style.display = 'block';
+                    displayKeys(vapidKeys.publicKey, vapidKeys.privateKey);
                     btn.textContent = '✅ Claves Generadas';
-                } else {
-                    // Fallback: generar usando Web Crypto API
-                    await generateKeysWithWebCrypto();
+                    return;
                 }
+
+                // Método 2: Generar usando Web Crypto API (implementación manual)
+                const keys = await generateVAPIDKeysManual();
+                displayKeys(keys.publicKey, keys.privateKey);
+                btn.textContent = '✅ Claves Generadas';
+
             } catch (error) {
-                console.error('Error:', error);
-                // Intentar con Web Crypto API como fallback
-                await generateKeysWithWebCrypto();
+                console.error('Error generando claves:', error);
+                errorDiv.innerHTML = `
+                    <strong>❌ Error al generar las claves</strong><br>
+                    <p>Error: ${error.message}</p>
+                    <p><strong>Alternativa:</strong> Si tienes Node.js instalado, ejecuta:</p>
+                    <code>npm install -g web-push && web-push generate-vapid-keys</code>
+                `;
+                errorDiv.style.display = 'block';
+                btn.textContent = 'Generar VAPID Keys';
             } finally {
                 btn.disabled = false;
             }
         }
 
-        // Método alternativo usando Web Crypto API
-        async function generateKeysWithWebCrypto() {
-            try {
-                // Generar par de claves ECDH P-256
-                const keyPair = await crypto.subtle.generateKey(
-                    {
-                        name: 'ECDH',
-                        namedCurve: 'P-256'
-                    },
-                    true,
-                    ['deriveBits']
-                );
+        // Generar VAPID keys manualmente usando Web Crypto API
+        async function generateVAPIDKeysManual() {
+            // VAPID usa curva elíptica P-256 (secp256r1)
+            const keyPair = await crypto.subtle.generateKey(
+                {
+                    name: 'ECDSA',
+                    namedCurve: 'P-256'
+                },
+                true,
+                ['sign', 'verify']
+            );
 
-                // Exportar claves
-                const publicKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
-                const privateKeyJwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
+            // Exportar clave pública en formato raw
+            const publicKeyRaw = await crypto.subtle.exportKey('raw', keyPair.publicKey);
+            
+            // Exportar clave privada en formato PKCS8
+            const privateKeyPkcs8 = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
 
-                // Convertir a formato VAPID (base64 URL-safe)
-                // VAPID usa formato uncompressed point (0x04 + x + y)
-                const xBytes = base64UrlToBytes(publicKeyJwk.x);
-                const yBytes = base64UrlToBytes(publicKeyJwk.y);
-                
-                // Formato: 0x04 (uncompressed) + x (32 bytes) + y (32 bytes) = 65 bytes
-                const publicKeyBytes = new Uint8Array(65);
-                publicKeyBytes[0] = 0x04; // Uncompressed point indicator
-                publicKeyBytes.set(xBytes, 1);
-                publicKeyBytes.set(yBytes, 33);
+            // Convertir a base64url
+            const publicKey = arrayBufferToBase64URL(publicKeyRaw);
+            const privateKey = arrayBufferToBase64URL(privateKeyPkcs8);
 
-                const publicKey = bytesToBase64Url(publicKeyBytes);
-                const privateKey = base64UrlToBase64Url(publicKeyJwk.d);
+            return { publicKey, privateKey };
+        }
 
-                document.getElementById('publicKey').textContent = publicKey;
-                document.getElementById('privateKey').textContent = privateKey;
-                document.getElementById('keys').style.display = 'block';
-                document.getElementById('generateBtn').textContent = '✅ Claves Generadas';
-            } catch (error) {
-                console.error('Error generando claves:', error);
-                alert('Error al generar las claves. Por favor, instala Node.js y ejecuta: web-push generate-vapid-keys');
+        // Convertir ArrayBuffer a base64 URL-safe
+        function arrayBufferToBase64URL(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
             }
+            return btoa(binary)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
         }
 
-        // Funciones auxiliares
-        function base64UrlToBytes(base64Url) {
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const padding = '='.repeat((4 - base64.length % 4) % 4);
-            const binary = atob(base64 + padding);
-            return new Uint8Array([...binary].map(c => c.charCodeAt(0)));
+        // Mostrar las claves generadas
+        function displayKeys(publicKey, privateKey) {
+            document.getElementById('publicKey').textContent = publicKey;
+            document.getElementById('privateKey').textContent = privateKey;
+            document.getElementById('keys').style.display = 'block';
         }
 
-        function bytesToBase64Url(bytes) {
-            const base64 = btoa(String.fromCharCode(...bytes));
-            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        }
-
-        function base64UrlToBase64Url(str) {
-            // Ya está en formato base64url, solo asegurarse de que no tenga padding
-            return str.replace(/=/g, '');
-        }
-
+        // Copiar al portapapeles
         function copyToClipboard(elementId) {
             const text = document.getElementById(elementId).textContent.trim();
             const successDiv = document.getElementById('success');
@@ -249,11 +295,13 @@
             }
         }
 
+        // Método alternativo para copiar
         function fallbackCopy(text) {
             const textarea = document.createElement('textarea');
             textarea.value = text;
             textarea.style.position = 'fixed';
             textarea.style.opacity = '0';
+            textarea.style.left = '-9999px';
             document.body.appendChild(textarea);
             textarea.select();
             try {
@@ -263,10 +311,28 @@
                     document.getElementById('success').style.display = 'none';
                 }, 2000);
             } catch (err) {
-                alert('No se pudo copiar. Por favor, selecciona y copia manualmente.');
+                alert('No se pudo copiar automáticamente. Por favor, selecciona y copia manualmente.');
             }
             document.body.removeChild(textarea);
         }
+
+        // Verificar si web-push está disponible después de cargar
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (typeof webpush === 'undefined') {
+                    // Intentar acceder desde diferentes ubicaciones
+                    if (typeof window.webpush !== 'undefined') {
+                        webpush = window.webpush;
+                    } else if (typeof require !== 'undefined') {
+                        try {
+                            webpush = require('web-push');
+                        } catch (e) {
+                            console.log('web-push no disponible, usando método manual');
+                        }
+                    }
+                }
+            }, 1000);
+        });
     </script>
 </body>
 </html>
