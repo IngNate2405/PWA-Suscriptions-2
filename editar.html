@@ -426,19 +426,35 @@
               if (daysInput) daysInput.value = days;
             } else if (notif.startsWith('customdate_')) {
               const cb = document.querySelector('input[name="notification_custom_date"]');
-              if (cb) cb.checked = true;
-              const parts = notif.split('_');
-              if (parts.length === 3) {
-                const day = parts[1];
-                const time = parts[2];
-                const now = new Date();
-                const year = now.getFullYear();
-                const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                const dayStr = day.toString().padStart(2, '0');
+              if (cb) {
+                cb.checked = true;
+                const parts = notif.split('_');
                 const dateInput = document.querySelector('input[name="custom_date"]');
                 const timeInput = document.querySelector('input[name="custom_time"]');
-                if (dateInput) dateInput.value = `${year}-${month}-${dayStr}`;
-                if (timeInput) timeInput.value = time;
+                
+                // Nuevo formato: customdate_YYYY_MM_DD_HH:MM
+                if (parts.length >= 5) {
+                  const year = parts[1];
+                  const month = parts[2];
+                  const day = parts[3];
+                  const time = parts[4];
+                  
+                  // Formatear fecha para input type="date" (YYYY-MM-DD)
+                  const dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                  if (dateInput) dateInput.value = dateStr;
+                  if (timeInput) timeInput.value = time;
+                }
+                // Formato legacy: customdate_DD_HH:MM
+                else if (parts.length === 3) {
+                  const day = parts[1];
+                  const time = parts[2];
+                  const now = new Date();
+                  const year = now.getFullYear();
+                  const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                  const dayStr = day.toString().padStart(2, '0');
+                  if (dateInput) dateInput.value = `${year}-${month}-${dayStr}`;
+                  if (timeInput) timeInput.value = time;
+                }
               }
             } else if (notif === 'trial_1day') {
               const cb = document.querySelector('input[name="trial_notification_1day"]');
@@ -614,14 +630,16 @@
             const customDateInput = document.querySelector('input[name="custom_date"]');
             const customTimeInput = document.querySelector('input[name="custom_time"]');
             if (customDateInput && customDateInput.value && customTimeInput && customTimeInput.value) {
-              const dateObj = new Date(customDateInput.value);
-              const day = dateObj.getDate();
+              // Usar métodos locales para evitar problemas de zona horaria
+              const dateStr = customDateInput.value; // Formato: YYYY-MM-DD
+              const [year, month, day] = dateStr.split('-').map(Number);
               let [hour, minute] = customTimeInput.value.split(':');
               hour = hour.padStart(2, '0');
               minute = minute.padStart(2, '0');
               const time = `${hour}:${minute}`;
               const dayStr = String(day).padStart(2, '0');
-              notifications.push(`customdate_${dayStr}_${time}`);
+              // Guardar también año y mes para cálculo correcto
+              notifications.push(`customdate_${year}_${month}_${dayStr}_${time}`);
             }
           } else if (checkbox.name === 'notification_1day') {
             const timeInput = document.querySelector('input[name="notification_1day_time"]');

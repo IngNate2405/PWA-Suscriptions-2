@@ -225,11 +225,25 @@ async function scheduleNotificationsLegacy(subscriptionsFromClient = []) {
         // Procesar notificaciones de prueba gratuita igual que las normales
         if (notification.startsWith('customdate_') || notification.startsWith('trial_customdate_')) {
           const parts = notification.split('_');
-          const day = parts[1];
-          const time = parts[2];
-          const [hours, minutes] = time.split(':');
-          notificationDate.setDate(parseInt(day));
-          notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          
+          // Nuevo formato: customdate_YYYY_MM_DD_HH:MM
+          if (parts.length >= 5) {
+            const year = parseInt(parts[1]);
+            const month = parseInt(parts[2]) - 1; // Los meses en JS son 0-indexed
+            const day = parseInt(parts[3]);
+            const time = parts[4];
+            const [hours, minutes] = time.split(':');
+            
+            notificationDate = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
+          }
+          // Formato legacy: customdate_DD_HH:MM
+          else if (parts.length >= 3) {
+            const day = parseInt(parts[1]);
+            const time = parts[2];
+            const [hours, minutes] = time.split(':');
+            notificationDate.setDate(parseInt(day));
+            notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          }
         } else if (notification.startsWith('custom_') || notification.startsWith('trial_custom_')) {
           const days = parseInt(notification.split('_')[2] || notification.split('_')[1]);
           notificationDate.setDate(nextPayment.getDate() - days);
@@ -460,11 +474,25 @@ async function checkAndSendNotifications() {
         // Procesar notificaciones de prueba gratuita igual que las normales
         if (notification.startsWith('customdate_') || notification.startsWith('trial_customdate_')) {
           const parts = notification.split('_');
-          const day = parts[1];
-          const time = parts[2];
-          const [hours, minutes] = time.split(':');
-          notificationDate.setDate(parseInt(day));
-          notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          
+          // Nuevo formato: customdate_YYYY_MM_DD_HH:MM
+          if (parts.length >= 5) {
+            const year = parseInt(parts[1]);
+            const month = parseInt(parts[2]) - 1; // Los meses en JS son 0-indexed
+            const day = parseInt(parts[3]);
+            const time = parts[4];
+            const [hours, minutes] = time.split(':');
+            
+            notificationDate = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
+          }
+          // Formato legacy: customdate_DD_HH:MM
+          else if (parts.length >= 3) {
+            const day = parseInt(parts[1]);
+            const time = parts[2];
+            const [hours, minutes] = time.split(':');
+            notificationDate.setDate(parseInt(day));
+            notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          }
         } else if (notification.startsWith('custom_') || notification.startsWith('trial_custom_')) {
           const days = parseInt(notification.split('_')[2] || notification.split('_')[1]);
           notificationDate.setDate(nextPayment.getDate() - days);
@@ -537,11 +565,25 @@ async function reloadNotifications() {
         // Procesar notificaciones de prueba gratuita igual que las normales
         if (notification.startsWith('customdate_') || notification.startsWith('trial_customdate_')) {
           const parts = notification.split('_');
-          const day = parts[1];
-          const time = parts[2];
-          const [hours, minutes] = time.split(':');
-          notificationDate.setDate(parseInt(day));
-          notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          
+          // Nuevo formato: customdate_YYYY_MM_DD_HH:MM
+          if (parts.length >= 5) {
+            const year = parseInt(parts[1]);
+            const month = parseInt(parts[2]) - 1; // Los meses en JS son 0-indexed
+            const day = parseInt(parts[3]);
+            const time = parts[4];
+            const [hours, minutes] = time.split(':');
+            
+            notificationDate = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
+          }
+          // Formato legacy: customdate_DD_HH:MM
+          else if (parts.length >= 3) {
+            const day = parseInt(parts[1]);
+            const time = parts[2];
+            const [hours, minutes] = time.split(':');
+            notificationDate.setDate(parseInt(day));
+            notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          }
         } else if (notification.startsWith('custom_') || notification.startsWith('trial_custom_')) {
           const days = parseInt(notification.split('_')[2] || notification.split('_')[1]);
           notificationDate.setDate(nextPayment.getDate() - days);

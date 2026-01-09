@@ -138,11 +138,44 @@ class NotificationService {
     
     if (notification.startsWith('customdate_')) {
       const parts = notification.split('_');
-      const day = parseInt(parts[1]);
-      const time = parts[2];
-      const [hours, minutes] = time.split(':');
-      date.setDate(day);
-      date.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Nuevo formato: customdate_YYYY_MM_DD_HH:MM
+      if (parts.length >= 5) {
+        const year = parseInt(parts[1]);
+        const month = parseInt(parts[2]) - 1; // Los meses en JS son 0-indexed
+        const day = parseInt(parts[3]);
+        const time = parts[4];
+        const [hours, minutes] = time.split(':');
+        
+        // Crear fecha usando hora local para evitar problemas de zona horaria
+        const notificationDate = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
+        return notificationDate;
+      } 
+      // Formato legacy: customdate_DD_HH:MM (usar día del mes del próximo pago)
+      else if (parts.length >= 3) {
+        const day = parseInt(parts[1]);
+        const time = parts[2];
+        const [hours, minutes] = time.split(':');
+        
+        // Usar el día especificado del mes del próximo pago
+        const nextPaymentDate = new Date(nextPayment);
+        const notificationDate = new Date(
+          nextPaymentDate.getFullYear(),
+          nextPaymentDate.getMonth(),
+          day,
+          parseInt(hours),
+          parseInt(minutes),
+          0,
+          0
+        );
+        
+        // Si la fecha calculada es después del próximo pago, usar el mes anterior
+        if (notificationDate > nextPaymentDate) {
+          notificationDate.setMonth(notificationDate.getMonth() - 1);
+        }
+        
+        return notificationDate;
+      }
     } else if (notification.startsWith('custom_')) {
       const parts = notification.split('_');
       const days = parseInt(parts[1]);
