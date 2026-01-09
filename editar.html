@@ -735,16 +735,37 @@
       // Programar notificaciones en Firestore (para Push API) y localmente
       if (pushNotificationService && isFirebaseAvailable() && auth && auth.currentUser) {
         try {
+          console.log('📬 Iniciando programación de notificaciones en Firestore...');
           const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+          let totalScheduled = 0;
+          
           // Programar notificaciones en Firestore para que Firebase Functions las envíe
           for (const subscription of subscriptions) {
-            if (subscription.notifications && subscription.notifications.length > 0) {
-              await pushNotificationService.scheduleSubscriptionNotifications(subscription);
+            if (subscription.notifications && subscription.notifications.length > 0 && subscription.nextPayment) {
+              const count = await pushNotificationService.scheduleSubscriptionNotifications(subscription);
+              totalScheduled += count;
             }
           }
-          console.log('✅ Notificaciones programadas en Firestore para Push API');
+          
+          if (totalScheduled > 0) {
+            console.log(`✅ ${totalScheduled} notificaciones programadas en Firestore para Push API`);
+            console.log('💡 Las notificaciones se enviarán automáticamente cuando llegue la fecha');
+          } else {
+            console.warn('⚠️ No se programaron notificaciones. Verifica que las suscripciones tengan notificaciones y fechas válidas.');
+          }
         } catch (error) {
-          console.error('Error al programar notificaciones en Firestore:', error);
+          console.error('❌ Error al programar notificaciones en Firestore:', error);
+          console.error('Detalles:', error.message, error.stack);
+        }
+      } else {
+        if (!pushNotificationService) {
+          console.warn('⚠️ pushNotificationService no disponible');
+        }
+        if (!isFirebaseAvailable()) {
+          console.warn('⚠️ Firebase no disponible');
+        }
+        if (!auth || !auth.currentUser) {
+          console.warn('⚠️ Usuario no autenticado');
         }
       }
 
@@ -1707,3 +1728,4 @@
   </div>
 </body>
 </html>
+

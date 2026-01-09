@@ -52,7 +52,7 @@ class PushNotificationService {
   // Suscribirse a Push API
   async subscribeToPush() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn('Push API no está disponible en este navegador');
+      console.warn('❌ Push API no está disponible en este navegador');
       return null;
     }
 
@@ -60,40 +60,57 @@ class PushNotificationService {
       // Solicitar permisos de notificación
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        console.warn('Permisos de notificación denegados');
+        console.warn('❌ Permisos de notificación denegados');
         return null;
       }
+      console.log('✅ Permisos de notificación concedidos');
 
       // Obtener registro del service worker
       const registration = await navigator.serviceWorker.ready;
+      console.log('✅ Service Worker listo');
 
       // Obtener VAPID public key
       const vapidPublicKey = await this.getVapidPublicKey();
       if (!vapidPublicKey) {
-        console.warn('VAPID key no disponible. Usando notificaciones locales.');
+        console.error('❌ VAPID key no disponible. Configura las VAPID keys en functions/index.js y despliega las functions.');
+        console.log('📝 Pasos:');
+        console.log('   1. Genera VAPID keys con generate-vapid-keys.html');
+        console.log('   2. Configura en functions/index.js');
+        console.log('   3. Ejecuta: firebase deploy --only functions');
         return null;
       }
+      console.log('✅ VAPID public key obtenida');
 
       // Verificar si ya existe una suscripción
       let subscription = await registration.pushManager.getSubscription();
       
       if (!subscription) {
+        console.log('📝 Creando nueva suscripción a Push API...');
         // Crear nueva suscripción
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey)
         });
+        console.log('✅ Nueva suscripción creada');
+      } else {
+        console.log('✅ Ya existe una suscripción a Push API');
       }
 
       this.subscription = subscription;
 
       // Guardar suscripción en Firestore
-      await this.saveSubscriptionToFirestore(subscription);
+      const saved = await this.saveSubscriptionToFirestore(subscription);
+      if (saved) {
+        console.log('✅ Suscripción guardada en Firestore');
+      } else {
+        console.error('❌ Error al guardar suscripción en Firestore');
+      }
 
-      console.log('✅ Suscrito a Push Notifications');
+      console.log('✅ Suscrito a Push Notifications correctamente');
       return subscription;
     } catch (error) {
-      console.error('Error al suscribirse a Push API:', error);
+      console.error('❌ Error al suscribirse a Push API:', error);
+      console.error('Detalles:', error.message, error.stack);
       return null;
     }
   }
@@ -169,16 +186,27 @@ class PushNotificationService {
   // Programar todas las notificaciones de una suscripción
   async scheduleSubscriptionNotifications(subscription) {
     if (!subscription.notifications || subscription.notifications.length === 0) {
+      console.log('⚠️ Suscripción sin notificaciones configuradas');
+      return 0;
+    }
+
+    if (!subscription.nextPayment) {
+      console.error('❌ Suscripción sin fecha de próximo pago');
       return 0;
     }
 
     const nextPayment = new Date(subscription.nextPayment);
+    console.log(`📅 Programando notificaciones para suscripción "${subscription.name}"`);
+    console.log(`   Próximo pago: ${nextPayment.toISOString()}`);
+    console.log(`   Notificaciones: ${subscription.notifications.join(', ')}`);
+
     let scheduledCount = 0;
+    const now = new Date();
 
     for (const notification of subscription.notifications) {
       const notificationDate = this.calculateNotificationDate(nextPayment, notification);
       
-      if (notificationDate && notificationDate > new Date()) {
+      if (notificationDate && notificationDate > now) {
         const notificationData = {
           subscriptionId: subscription.id,
           title: `Recordatorio: ${subscription.name}`,
@@ -187,13 +215,22 @@ class PushNotificationService {
           notificationDate: notificationDate
         };
 
+        console.log(`   📬 Programando notificación para: ${notificationDate.toISOString()}`);
         const success = await this.scheduleNotificationInFirestore(notificationData);
         if (success) {
           scheduledCount++;
+          console.log(`   ✅ Notificación programada`);
+        } else {
+          console.error(`   ❌ Error al programar notificación`);
         }
+      } else if (notificationDate) {
+        console.log(`   ⚠️ Notificación ya pasó: ${notificationDate.toISOString()}`);
+      } else {
+        console.error(`   ❌ Fecha de notificación inválida para: ${notification}`);
       }
     }
 
+    console.log(`✅ Total notificaciones programadas: ${scheduledCount}/${subscription.notifications.length}`);
     return scheduledCount;
   }
 
