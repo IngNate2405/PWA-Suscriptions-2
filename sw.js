@@ -313,6 +313,31 @@ function formatDate(dateString) {
   return `${day}/${month}/${year}`;
 }
 
+// Verificar notificaciones periódicamente (cada minuto cuando el service worker está activo)
+let notificationCheckInterval = null;
+
+function startPeriodicNotificationCheck() {
+  if (notificationCheckInterval) {
+    clearInterval(notificationCheckInterval);
+  }
+  
+  // Verificar inmediatamente
+  if (notificationService) {
+    notificationService.checkAndSendNotifications().catch(err => {
+      console.error('Error en verificación periódica:', err);
+    });
+  }
+  
+  // Verificar cada minuto
+  notificationCheckInterval = setInterval(() => {
+    if (notificationService) {
+      notificationService.checkAndSendNotifications().catch(err => {
+        console.error('Error en verificación periódica:', err);
+      });
+    }
+  }, 60000); // 60 segundos
+}
+
 // Limpiar cachés antiguos cuando se activa el service worker
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -330,7 +355,25 @@ self.addEventListener('activate', event => {
         );
       }),
       // Tomar control inmediatamente de todas las páginas
-      self.clients.claim()
+      self.clients.claim(),
+      // Verificar notificaciones pendientes e iniciar verificación periódica
+      (async () => {
+        if (notificationService) {
+          try {
+            await notificationService.checkAndSendNotifications();
+            // Registrar Background Sync
+            try {
+              await self.registration.sync.register('check-notifications');
+            } catch (e) {
+              console.log('Background Sync no disponible:', e);
+            }
+            // Iniciar verificación periódica
+            startPeriodicNotificationCheck();
+          } catch (err) {
+            console.error('Error al verificar notificaciones:', err);
+          }
+        }
+      })()
     ])
   );
 });
@@ -403,7 +446,7 @@ self.addEventListener('sync', event => {
           try {
             const count = await notificationService.checkAndSendNotifications();
             console.log(`✅ Verificadas ${count} notificaciones`);
-            // Reprogramar para la próxima verificación
+            // Reprogramar para la próxima verificación (cada minuto)
             try {
               await self.registration.sync.register('check-notifications');
             } catch (e) {
@@ -420,14 +463,40 @@ self.addEventListener('sync', event => {
   }
 });
 
-// Verificar notificaciones periódicamente (cada vez que se activa el service worker)
+// Verificar notificaciones periódicamente (cada minuto cuando el service worker está activo)
+let notificationCheckInterval = null;
+
+function startPeriodicNotificationCheck() {
+  if (notificationCheckInterval) {
+    clearInterval(notificationCheckInterval);
+  }
+  
+  // Verificar inmediatamente
+  if (notificationService) {
+    notificationService.checkAndSendNotifications().catch(err => {
+      console.error('Error en verificación periódica:', err);
+    });
+  }
+  
+  // Verificar cada minuto
+  notificationCheckInterval = setInterval(() => {
+    if (notificationService) {
+      notificationService.checkAndSendNotifications().catch(err => {
+        console.error('Error en verificación periódica:', err);
+      });
+    }
+  }, 60000); // 60 segundos
+}
+
+// Iniciar verificación periódica cuando el service worker se activa
 self.addEventListener('activate', event => {
   event.waitUntil(
     Promise.all([
-      // Limpiar cachés antiguos
+      // Limpiar todos los cachés antiguos
       caches.keys().then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
+            // Eliminar todos los cachés que no sean el actual
             if (!cacheName.startsWith('subs-app-v') || cacheName !== CACHE_NAME) {
               console.log('Eliminando caché antiguo:', cacheName);
               return caches.delete(cacheName);
@@ -448,6 +517,8 @@ self.addEventListener('activate', event => {
             } catch (e) {
               console.log('Background Sync no disponible:', e);
             }
+            // Iniciar verificación periódica
+            startPeriodicNotificationCheck();
           } catch (err) {
             console.error('Error al verificar notificaciones:', err);
           }
@@ -457,96 +528,8 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Función para verificar y enviar notificaciones
-async function checkAndSendNotifications() {
-  try {
-    const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
-    const now = new Date();
-    
-    for (const subscription of subscriptions) {
-      if (!subscription.notifications || subscription.status === 'paused') continue;
-      
-      const nextPayment = new Date(subscription.nextPayment);
-      
-      for (const notification of subscription.notifications) {
-        let notificationDate = new Date(nextPayment);
-        
-        // Procesar notificaciones de prueba gratuita igual que las normales
-        if (notification.startsWith('customdate_') || notification.startsWith('trial_customdate_')) {
-          const parts = notification.split('_');
-          
-          // Nuevo formato: customdate_YYYY_MM_DD_HH:MM
-          if (parts.length >= 5) {
-            const year = parseInt(parts[1]);
-            const month = parseInt(parts[2]) - 1; // Los meses en JS son 0-indexed
-            const day = parseInt(parts[3]);
-            const time = parts[4];
-            const [hours, minutes] = time.split(':');
-            
-            notificationDate = new Date(year, month, day, parseInt(hours), parseInt(minutes), 0, 0);
-          }
-          // Formato legacy: customdate_DD_HH:MM
-          else if (parts.length >= 3) {
-            const day = parseInt(parts[1]);
-            const time = parts[2];
-            const [hours, minutes] = time.split(':');
-            notificationDate.setDate(parseInt(day));
-            notificationDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-          }
-        } else if (notification.startsWith('custom_') || notification.startsWith('trial_custom_')) {
-          const days = parseInt(notification.split('_')[2] || notification.split('_')[1]);
-          notificationDate.setDate(nextPayment.getDate() - days);
-        } else if (notification === '1day' || notification === 'trial_1day') {
-          notificationDate.setDate(nextPayment.getDate() - 1);
-        } else if (notification === '2days' || notification === 'trial_2days') {
-          notificationDate.setDate(nextPayment.getDate() - 2);
-        } else if (notification === 'sameday' || notification === 'trial_sameday') {
-          // Ya está configurado para el mismo día
-        } else {
-          continue;
-        }
-        
-        // Verificar si es hora de enviar la notificación
-        const timeDiff = Math.abs(notificationDate.getTime() - now.getTime());
-        const minutesDiff = Math.floor(timeDiff / (1000 * 60));
-        
-        // Enviar notificación si estamos dentro de los 5 minutos de la hora programada
-        if (minutesDiff <= 5 && notificationDate > now) {
-          const notificationOptions = {
-            body: `Tu suscripción a ${subscription.name} vence el ${formatDate(subscription.nextPayment)}`,
-            icon: subscription.logo || 'icons/icon-192x192.png',
-            badge: 'icons/icon-192x192.png',
-            image: subscription.logo || undefined,
-            vibrate: [100, 50, 100],
-            tag: `subscription-${subscription.id}`,
-            requireInteraction: false,
-            data: {
-              subscriptionId: subscription.id,
-              subscriptionName: subscription.name,
-              nextPayment: subscription.nextPayment,
-              dateOfArrival: Date.now()
-            },
-            actions: [
-              {
-                action: 'view',
-                title: 'Ver detalles',
-                icon: 'icons/icon-192x192.png'
-              },
-              {
-                action: 'close',
-                title: 'Cerrar',
-                icon: 'icons/icon-192x192.png'
-              }
-            ]
-          };
-          
-          await self.registration.showNotification('Recordatorio de Pago', notificationOptions);
-        }
-      }
-    }
-  } catch (error) {
-  }
-}
+
+// Función legacy eliminada - ahora usa NotificationService con IndexedDB
 
 // Función para recargar notificaciones desde localStorage
 async function reloadNotifications() {

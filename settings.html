@@ -1038,23 +1038,36 @@
   </div>
 
   <!-- Bottom Navigation -->
-  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs">
-    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='index.html'">
+  <nav class="fixed bottom-0 left-0 right-0 bg-[#1B1930]/80 backdrop-blur-md flex justify-between items-center px-16 py-4 border-t border-white/10 text-white/50 text-xs z-50">
+    <button class="flex flex-col items-center space-y-1" onclick="navigateTo('index.html')">
       <i class="fas fa-moon text-lg"></i>
       <span class="select-none">Subscriptions</span>
     </button>
-    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='calendar.html'">
+    <button class="flex flex-col items-center space-y-1" onclick="navigateTo('calendar.html')">
       <i class="fas fa-th-large text-xl"></i>
       <span class="select-none">Calendar</span>
     </button>
-    <button class="flex flex-col items-center space-y-1" onclick="window.location.href='personas.html'">
+    <button class="flex flex-col items-center space-y-1" onclick="navigateTo('personas.html')">
       <i class="fas fa-users text-lg"></i>
       <span class="select-none">Personas</span>
     </button>
-    <button class="flex flex-col items-center space-y-1 text-white" onclick="window.location.href='settings.html'">
+    <button class="flex flex-col items-center space-y-1 text-white" onclick="navigateTo('settings.html')">
       <i class="fas fa-cog text-lg"></i>
       <span class="select-none">Settings</span>
     </button>
   </nav>
+  
+  <script>
+    // Función de navegación mejorada
+    function navigateTo(page) {
+      try {
+        window.location.href = page;
+      } catch (e) {
+        console.error('Error al navegar:', e);
+        // Fallback
+        window.location.assign(page);
+      }
+    }
+  </script>
 </body>
 </html> 
