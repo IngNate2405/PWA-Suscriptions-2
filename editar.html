@@ -730,58 +730,31 @@
         console.log('Guardado en localStorage:', localStorage.getItem('subscriptions'));
       }
 
-      // Intentar reprogramar notificaciones, pero no bloquear el guardado si falla
-      let swError = null;
-      let swTimeout;
-      let swResponded = false;
+      // Intentar reprogramar notificaciones en segundo plano (no bloquear el guardado)
+      // Enviar mensaje de forma asíncrona sin esperar respuesta
       if ('serviceWorker' in navigator) {
-        try {
-          console.log('Obteniendo Service Worker ready...');
-          swTimeout = setTimeout(() => {
-            if (!swResponded) {
-              swError = 'El Service Worker tardó demasiado en responder.';
-              finishSave();
+        navigator.serviceWorker.ready
+          .then(registration => {
+            if (registration.active) {
+              const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
+              registration.active.postMessage({
+                type: 'SCHEDULE_NOTIFICATIONS',
+                subscriptions
+              });
+              console.log('✅ Notificaciones reprogramadas');
+            } else {
+              console.log('⚠️ Service Worker no está activo aún');
             }
-          }, 2000); // 2 segundos máximo de espera
-          const registration = await navigator.serviceWorker.ready;
-          swResponded = true;
-          clearTimeout(swTimeout);
-          console.log('Service Worker ready obtenido:', registration);
-          if (registration.active) {
-            console.log('Service Worker activo, enviando mensaje...');
-            const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
-            registration.active.postMessage({
-              type: 'SCHEDULE_NOTIFICATIONS',
-              subscriptions
-            });
-            console.log('Notificaciones reprogramadas después de guardar');
-          } else {
-            swError = 'El Service Worker no está activo. Intenta recargar la página.';
-            console.error(swError, registration);
-          }
-        } catch (error) {
-          swResponded = true;
-          clearTimeout(swTimeout);
-          swError = 'Error al reprogramar notificaciones: ' + (error && error.message ? error.message : error);
-          console.error(swError);
-        }
-      } else {
-        swError = 'Service Worker no disponible en este navegador.';
-        console.error(swError);
+          })
+          .catch(error => {
+            console.error('Error al comunicarse con Service Worker:', error);
+            // No mostrar error al usuario, solo log
+          });
       }
 
-      finishSave();
-
-      function finishSave() {
-        if (swTimeout) clearTimeout(swTimeout);
-        // Mostrar siempre el mensaje de éxito si el guardado fue correcto
-        if (swError) {
-          alert((isNew ? 'Suscripción creada' : 'Suscripción actualizada') + '\n\nAdvertencia: ' + swError);
-        } else {
-          alert(isNew ? 'Suscripción creada' : 'Suscripción actualizada');
-        }
-        window.location.href = 'index.html';
-      }
+      // Continuar con el guardado inmediatamente (no esperar al Service Worker)
+      alert(isNew ? 'Suscripción creada' : 'Suscripción actualizada');
+      window.location.href = 'index.html';
     }
 
     // Función para generar los iconos de perfiles
