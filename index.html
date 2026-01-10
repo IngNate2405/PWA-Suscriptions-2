@@ -196,55 +196,7 @@
             // Solicitar permisos de notificación después del registro
             await requestNotificationPermission();
             
-            // Suscribirse a Push API si está disponible y el usuario está autenticado
-            // Basado en: https://github.com/mutebg/pwa-weather
-            async function subscribeToPushIfReady() {
-              if (!pushNotificationService) {
-                console.warn('⚠️ pushNotificationService no disponible');
-                return;
-              }
-              
-              if (!isFirebaseAvailable()) {
-                console.warn('⚠️ Firebase no disponible');
-                return;
-              }
-              
-              if (!auth) {
-                console.warn('⚠️ auth no disponible');
-                return;
-              }
-              
-              // Esperar un poco para que Firebase se inicialice completamente
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-              const currentUser = auth.currentUser;
-              if (currentUser) {
-                console.log('✅ Usuario autenticado, suscribiendo a Push API...');
-                try {
-                  await pushNotificationService.subscribeToPush();
-                } catch (error) {
-                  console.error('❌ Error al suscribirse a Push API:', error);
-                }
-              } else {
-                console.log('⏳ Usuario no autenticado aún, esperando...');
-                // Escuchar cuando el usuario se autentique (similar a pwa-weather)
-                auth.onAuthStateChanged(async (user) => {
-                  if (user && pushNotificationService) {
-                    console.log('✅ Usuario autenticado, suscribiendo a Push API...');
-                    // Esperar un poco más para asegurar que todo esté listo
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    try {
-                      await pushNotificationService.subscribeToPush();
-                    } catch (error) {
-                      console.error('❌ Error al suscribirse a Push API después de login:', error);
-                    }
-                  }
-                });
-              }
-            }
-            
-            // Intentar suscribirse
-            subscribeToPushIfReady();
+            // OneSignal se inicializa automáticamente más abajo
             
             // Despertar el service worker para verificar notificaciones pendientes
             if (registration.active) {
