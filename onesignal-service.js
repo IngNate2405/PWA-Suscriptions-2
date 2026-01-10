@@ -126,12 +126,25 @@ class OneSignalService {
         } catch (e) {
           // Si hay error, probablemente no está completamente inicializado, continuar
         }
+        
+        // También verificar si OneSignal ya está inicializado intentando acceder a una propiedad interna
+        // Si OneSignal está inicializado, no deberíamos intentar inicializarlo de nuevo
+        try {
+          // Verificar si OneSignal tiene alguna propiedad que indique que está inicializado
+          if (OneSignal.init && typeof OneSignal.init === 'function') {
+            // Intentar verificar el estado de inicialización de otra manera
+            // Si OneSignal ya está inicializado, intentar inicializarlo lanzará "SDK already initialized"
+            // Pero es mejor verificar antes para evitar el error
+          }
+        } catch (e) {
+          // Continuar con la inicialización
+        }
       }
 
       // Inicializar OneSignal
       // Nuestro Service Worker (sw.js) ya importa el Service Worker de OneSignal
       // Por lo tanto, OneSignal puede funcionar sin registrar su propio Service Worker separado
-      // Le decimos a OneSignal que use nuestro Service Worker híbrido
+      // Intentar inicializar sin configuración personalizada primero para evitar errores innecesarios
       try {
         await OneSignal.init({
           appId: appId,
@@ -140,52 +153,18 @@ class OneSignalService {
             enable: false,
           },
           allowLocalhostAsSecureOrigin: true,
-          // Configurar para que use nuestro Service Worker híbrido
-          // Nuestro sw.js ya importa el Service Worker de OneSignal
-          serviceWorkerPath: './sw.js',
-          serviceWorkerParam: {
-            scope: './'
-          }
         });
-        console.log('✅ OneSignal inicializado correctamente usando nuestro Service Worker híbrido');
-      } catch (swError) {
+        console.log('✅ OneSignal inicializado correctamente (nuestro SW ya importa el de OneSignal)');
+      } catch (initError) {
         // Si el error es "SDK already initialized", significa que ya está inicializado
-        if (swError.message && swError.message.includes('already initialized')) {
+        if (initError.message && initError.message.includes('already initialized')) {
           console.log('✅ OneSignal ya estaba inicializado, usando la instancia existente');
           this.initialized = true;
           return true;
         }
         
-        // Si falla por el Service Worker, puede ser porque OneSignal intenta registrar el suyo
-        // Intentar sin configuración de Service Worker - nuestro SW ya importa el de OneSignal
-        if (swError.message && swError.message.includes('Service Worker')) {
-          console.warn('⚠️ OneSignal no pudo usar configuración personalizada de Service Worker');
-          console.warn('💡 Intentando sin configuración - nuestro SW ya importa el de OneSignal');
-          
-          try {
-            await OneSignal.init({
-              appId: appId,
-              safari_web_id: ONESIGNAL_CONFIG.safariWebId || appId,
-              notifyButton: {
-                enable: false,
-              },
-              allowLocalhostAsSecureOrigin: true,
-            });
-            console.log('✅ OneSignal inicializado (nuestro SW ya tiene el código de OneSignal)');
-          } catch (secondError) {
-            // Si el error es "SDK already initialized", significa que ya está inicializado
-            if (secondError.message && secondError.message.includes('already initialized')) {
-              console.log('✅ OneSignal ya estaba inicializado, usando la instancia existente');
-              this.initialized = true;
-              return true;
-            }
-            // Si aún falla, puede ser por otras razones
-            console.error('❌ Error al inicializar OneSignal:', secondError);
-            throw secondError;
-          }
-        } else {
-          throw swError;
-        }
+        // Si es otro error, lanzarlo
+        throw initError;
       }
 
       // Esperar un momento para asegurar que la inicialización se complete
