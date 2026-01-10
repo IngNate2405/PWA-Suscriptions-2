@@ -72,6 +72,21 @@ class OneSignalService {
       return true;
     }
 
+    // Verificar si OneSignal ya está inicializado por otro código
+    if (typeof OneSignal !== 'undefined' && OneSignal.SDK_VERSION) {
+      // Verificar si ya está inicializado intentando acceder a una propiedad que solo existe después de init
+      try {
+        // Si OneSignal ya está inicializado, no intentar inicializarlo de nuevo
+        if (OneSignal.User && OneSignal.User.PushSubscription) {
+          console.log('✅ OneSignal ya está inicializado, usando la instancia existente');
+          this.initialized = true;
+          return true;
+        }
+      } catch (e) {
+        // Si hay error, probablemente no está inicializado, continuar
+      }
+    }
+
     // Esperar a que OneSignal SDK esté cargado
     const sdkLoaded = await this.waitForOneSignal();
     if (!sdkLoaded) {
@@ -96,6 +111,23 @@ class OneSignalService {
         console.log('OneSignal SDK versión:', OneSignal.SDK_VERSION);
       }
 
+      // Verificar si OneSignal ya está inicializado antes de intentar inicializarlo
+      // Esto puede pasar si OneSignalDeferred.push() se ejecutó antes
+      if (typeof OneSignal !== 'undefined' && OneSignal.SDK_VERSION) {
+        try {
+          // Intentar acceder a una propiedad que solo existe después de init
+          // Si no lanza error, significa que ya está inicializado
+          const test = OneSignal.User;
+          if (test) {
+            console.log('✅ OneSignal ya está inicializado (probablemente por OneSignalDeferred), usando la instancia existente');
+            this.initialized = true;
+            return true;
+          }
+        } catch (e) {
+          // Si hay error, probablemente no está completamente inicializado, continuar
+        }
+      }
+
       // Inicializar OneSignal
       // Nuestro Service Worker (sw.js) ya importa el Service Worker de OneSignal
       // Por lo tanto, OneSignal puede funcionar sin registrar su propio Service Worker separado
@@ -117,6 +149,13 @@ class OneSignalService {
         });
         console.log('✅ OneSignal inicializado correctamente usando nuestro Service Worker híbrido');
       } catch (swError) {
+        // Si el error es "SDK already initialized", significa que ya está inicializado
+        if (swError.message && swError.message.includes('already initialized')) {
+          console.log('✅ OneSignal ya estaba inicializado, usando la instancia existente');
+          this.initialized = true;
+          return true;
+        }
+        
         // Si falla por el Service Worker, puede ser porque OneSignal intenta registrar el suyo
         // Intentar sin configuración de Service Worker - nuestro SW ya importa el de OneSignal
         if (swError.message && swError.message.includes('Service Worker')) {
@@ -134,6 +173,12 @@ class OneSignalService {
             });
             console.log('✅ OneSignal inicializado (nuestro SW ya tiene el código de OneSignal)');
           } catch (secondError) {
+            // Si el error es "SDK already initialized", significa que ya está inicializado
+            if (secondError.message && secondError.message.includes('already initialized')) {
+              console.log('✅ OneSignal ya estaba inicializado, usando la instancia existente');
+              this.initialized = true;
+              return true;
+            }
             // Si aún falla, puede ser por otras razones
             console.error('❌ Error al inicializar OneSignal:', secondError);
             throw secondError;
@@ -150,6 +195,14 @@ class OneSignalService {
       this.initialized = true;
       return true;
     } catch (error) {
+      // Si el error es "SDK already initialized", significa que ya está inicializado
+      // Esto puede pasar si OneSignalDeferred.push() se ejecutó antes
+      if (error.message && error.message.includes('already initialized')) {
+        console.log('✅ OneSignal ya estaba inicializado, usando la instancia existente');
+        this.initialized = true;
+        return true;
+      }
+      
       // Si el error es del Service Worker, ignorarlo y continuar
       // OneSignal puede funcionar parcialmente sin su Service Worker
       if (error.message && error.message.includes('Service Worker')) {
