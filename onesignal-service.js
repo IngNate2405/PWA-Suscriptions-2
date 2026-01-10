@@ -159,9 +159,9 @@ class OneSignalService {
       }
 
       // Inicializar OneSignal
-      // Nuestro Service Worker (sw.js) ya importa el Service Worker de OneSignal
-      // Por lo tanto, OneSignal puede funcionar sin registrar su propio Service Worker separado
-      // Intentar inicializar sin configuración personalizada primero para evitar errores innecesarios
+      // Según la documentación de OneSignal, podemos usar nuestro Service Worker híbrido
+      // o dejar que OneSignal use su propio Service Worker (OneSignalSDKWorker.js)
+      // Intentar inicializar sin configuración personalizada primero
       try {
         await OneSignal.init({
           appId: appId,
@@ -170,18 +170,46 @@ class OneSignalService {
             enable: false,
           },
           allowLocalhostAsSecureOrigin: true,
+          // Opcional: especificar el Service Worker de OneSignal si existe
+          // Si no se especifica, OneSignal intentará usar OneSignalSDKWorker.js en la raíz
+          serviceWorkerPath: './OneSignalSDKWorker.js',
+          serviceWorkerParam: {
+            scope: './'
+          }
         });
-        console.log('✅ OneSignal inicializado correctamente (nuestro SW ya importa el de OneSignal)');
+        console.log('✅ OneSignal inicializado correctamente');
       } catch (initError) {
-        // Si el error es "SDK already initialized", significa que ya está inicializado
-        if (initError.message && initError.message.includes('already initialized')) {
+        // Si falla por el Service Worker, intentar sin configuración de SW
+        if (initError.message && (initError.message.includes('Service Worker') || initError.message.includes('serviceWorker'))) {
+          console.warn('⚠️ OneSignal no pudo usar Service Worker personalizado, intentando sin configuración...');
+          try {
+            await OneSignal.init({
+              appId: appId,
+              safari_web_id: ONESIGNAL_CONFIG.safariWebId || appId,
+              notifyButton: {
+                enable: false,
+              },
+              allowLocalhostAsSecureOrigin: true,
+            });
+            console.log('✅ OneSignal inicializado (usando Service Worker por defecto)');
+          } catch (secondError) {
+            // Si el error es "SDK already initialized", significa que ya está inicializado
+            if (secondError.message && secondError.message.includes('already initialized')) {
+              console.log('✅ OneSignal ya estaba inicializado, usando la instancia existente');
+              this.initialized = true;
+              return true;
+            }
+            throw secondError;
+          }
+        } else if (initError.message && initError.message.includes('already initialized')) {
+          // Si el error es "SDK already initialized", significa que ya está inicializado
           console.log('✅ OneSignal ya estaba inicializado, usando la instancia existente');
           this.initialized = true;
           return true;
+        } else {
+          // Si es otro error, lanzarlo
+          throw initError;
         }
-        
-        // Si es otro error, lanzarlo
-        throw initError;
       }
 
       // Esperar un momento para asegurar que la inicialización se complete
