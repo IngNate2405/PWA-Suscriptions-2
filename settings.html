@@ -891,73 +891,109 @@
         });
       }
       
-      // Inicializar OneSignal después de un momento
-      // En PWA, esperar más tiempo para que OneSignalDeferred se cargue
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone || 
-                   document.referrer.includes('android-app://');
-      const waitTime = isPWA ? 5000 : 3000; // Más tiempo en PWA
-      
-      setTimeout(async () => {
-        if (!oneSignalService) {
-          const statusDiv = document.getElementById('onesignal-status');
-          if (statusDiv) {
-            statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal Service no disponible</div>';
-          }
-          return;
+      // Inicializar OneSignal solo si no está ya inicializado
+      // Verificar si OneSignal ya está inicializado globalmente
+      const isOneSignalAlreadyInitialized = () => {
+        // Verificar si oneSignalService ya está inicializado
+        if (oneSignalService && oneSignalService.initialized) {
+          return true;
         }
-
-        if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
-          const statusDiv = document.getElementById('onesignal-status');
-          if (statusDiv) {
-            statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Configura tu App ID en onesignal-config.js</div>';
+        // Verificar si OneSignal SDK ya está inicializado
+        if (typeof OneSignal !== 'undefined' && OneSignal.SDK_VERSION) {
+          try {
+            // Si OneSignal tiene User, probablemente ya está inicializado
+            if (OneSignal.User) {
+              return true;
+            }
+          } catch (e) {
+            // Si hay error, probablemente no está inicializado
           }
-          return;
         }
+        return false;
+      };
 
-        try {
-          const statusDiv = document.getElementById('onesignal-status');
-          if (statusDiv) {
-            statusDiv.innerHTML = '<div class="text-blue-400">⏳ Inicializando OneSignal...</div>';
+      // Solo inicializar si no está ya inicializado
+      if (!isOneSignalAlreadyInitialized()) {
+        // En PWA, esperar más tiempo para que OneSignalDeferred se cargue
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                     window.navigator.standalone || 
+                     document.referrer.includes('android-app://');
+        const waitTime = isPWA ? 5000 : 3000; // Más tiempo en PWA
+        
+        setTimeout(async () => {
+          // Verificar de nuevo antes de inicializar (por si se inicializó en otro lugar)
+          if (isOneSignalAlreadyInitialized()) {
+            console.log('✅ OneSignal ya está inicializado, verificando estado...');
+            checkOneSignalStatus();
+            return;
           }
 
-          // Verificar si OneSignalDeferred está disponible, si no, esperar más
-          if (typeof window.OneSignalDeferred === 'undefined') {
-            console.log('⏳ OneSignalDeferred no disponible aún, esperando...');
-            let attempts = 0;
-            const maxAttempts = 10;
-            
-            while (typeof window.OneSignalDeferred === 'undefined' && attempts < maxAttempts) {
-              await new Promise(resolve => setTimeout(resolve, 500));
-              attempts++;
-            }
-            
-            if (typeof window.OneSignalDeferred === 'undefined') {
-              console.warn('⚠️ OneSignalDeferred aún no disponible después de esperar');
-            }
-          }
-
-          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
-          
-          if (initialized) {
-            // Verificar estado después de inicializar (más tiempo en PWA)
-            setTimeout(() => {
-              checkOneSignalStatus();
-            }, isPWA ? 2000 : 1000);
-          } else {
+          if (!oneSignalService) {
             const statusDiv = document.getElementById('onesignal-status');
             if (statusDiv) {
-              statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal. Revisa la consola para más detalles.</div>';
+              statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal Service no disponible</div>';
+            }
+            return;
+          }
+
+          if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
+            const statusDiv = document.getElementById('onesignal-status');
+            if (statusDiv) {
+              statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Configura tu App ID en onesignal-config.js</div>';
+            }
+            return;
+          }
+
+          try {
+            const statusDiv = document.getElementById('onesignal-status');
+            if (statusDiv) {
+              statusDiv.innerHTML = '<div class="text-blue-400">⏳ Inicializando OneSignal...</div>';
+            }
+
+            // Verificar si OneSignalDeferred está disponible, si no, esperar más
+            if (typeof window.OneSignalDeferred === 'undefined') {
+              console.log('⏳ OneSignalDeferred no disponible aún, esperando...');
+              let attempts = 0;
+              const maxAttempts = 10;
+              
+              while (typeof window.OneSignalDeferred === 'undefined' && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+              }
+              
+              if (typeof window.OneSignalDeferred === 'undefined') {
+                console.warn('⚠️ OneSignalDeferred aún no disponible después de esperar');
+              }
+            }
+
+            const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
+            
+            if (initialized) {
+              // Verificar estado después de inicializar (más tiempo en PWA)
+              setTimeout(() => {
+                checkOneSignalStatus();
+              }, isPWA ? 2000 : 1000);
+            } else {
+              const statusDiv = document.getElementById('onesignal-status');
+              if (statusDiv) {
+                statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal. Revisa la consola para más detalles.</div>';
+              }
+            }
+          } catch (error) {
+            console.error('Error inicializando OneSignal:', error);
+            const statusDiv = document.getElementById('onesignal-status');
+            if (statusDiv) {
+              statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message || 'Error desconocido'}</div>`;
             }
           }
-        } catch (error) {
-          console.error('Error inicializando OneSignal:', error);
-          const statusDiv = document.getElementById('onesignal-status');
-          if (statusDiv) {
-            statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message || 'Error desconocido'}</div>`;
-          }
-        }
-      }, waitTime);
+        }, waitTime);
+      } else {
+        // Si ya está inicializado, solo verificar el estado
+        console.log('✅ OneSignal ya está inicializado, verificando estado...');
+        setTimeout(() => {
+          checkOneSignalStatus();
+        }, 500);
+      }
       
       // Sincronizar estado cuando la página vuelve a estar visible
       document.addEventListener('visibilitychange', () => {
