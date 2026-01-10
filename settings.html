@@ -688,6 +688,154 @@
       }
     }
 
+    // Función para verificar estado de OneSignal
+    async function checkOneSignalStatus() {
+      const statusDiv = document.getElementById('onesignal-status');
+      
+      if (!statusDiv) {
+        console.error('Elemento onesignal-status no encontrado');
+        return;
+      }
+
+      // Mostrar estado de carga
+      statusDiv.innerHTML = '<div class="text-blue-400">⏳ Verificando...</div>';
+
+      // Verificar que OneSignal esté disponible
+      if (typeof OneSignal === 'undefined') {
+        statusDiv.innerHTML = `
+          <div class="text-red-400 mb-2">❌ OneSignal SDK no cargado</div>
+          <div class="text-xs text-gray-400">Recarga la página</div>
+        `;
+        showNotification('❌ Error', 'OneSignal SDK no está cargado. Recarga la página.', 'error');
+        return;
+      }
+
+      if (!oneSignalService) {
+        statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal Service no disponible</div>';
+        showNotification('❌ Error', 'OneSignal Service no disponible', 'error');
+        return;
+      }
+
+      if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
+        statusDiv.innerHTML = `
+          <div class="text-yellow-400 mb-2">⚠️ OneSignal no configurado</div>
+          <div class="text-xs text-gray-400">Configura tu App ID en onesignal-config.js</div>
+        `;
+        showNotification('⚠️ Advertencia', 'Configura tu App ID de OneSignal en onesignal-config.js', 'warning');
+        return;
+      }
+
+      try {
+        // Asegurar que OneSignal esté inicializado
+        if (!oneSignalService.initialized) {
+          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+          if (!initialized) {
+            statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal</div>';
+            return;
+          }
+        }
+
+        // Obtener información del usuario
+        const userInfo = await oneSignalService.getUserInfo();
+        
+        if (userInfo && userInfo.subscribed) {
+          statusDiv.innerHTML = `
+            <div class="text-green-400 mb-2">✅ Suscrito a OneSignal</div>
+            <div class="text-xs text-gray-400">Las notificaciones funcionarán incluso con el navegador cerrado</div>
+          `;
+          showNotification('✅ Verificado', 'Estás suscrito a OneSignal. Las notificaciones funcionarán con el navegador cerrado.', 'success');
+        } else if (userInfo && userInfo.permission === 'denied') {
+          statusDiv.innerHTML = `
+            <div class="text-red-400 mb-2">❌ Permisos denegados</div>
+            <div class="text-xs text-gray-400">Habilita las notificaciones en la configuración del navegador</div>
+          `;
+          showNotification('❌ Permisos denegados', 'Habilita las notificaciones en la configuración del navegador', 'error');
+        } else {
+          statusDiv.innerHTML = `
+            <div class="text-yellow-400 mb-2">⚠️ No suscrito</div>
+            <div class="text-xs text-gray-400">Haz clic en "Suscribirse" para activar las notificaciones</div>
+          `;
+        }
+      } catch (error) {
+        console.error('Error verificando OneSignal:', error);
+        statusDiv.innerHTML = `
+          <div class="text-red-400 mb-2">❌ Error: ${error.message || 'Error desconocido'}</div>
+          <div class="text-xs text-gray-400 mt-1">Revisa la consola para más detalles</div>
+        `;
+        showNotification('❌ Error', `Error al verificar: ${error.message || 'Error desconocido'}`, 'error');
+      }
+    }
+
+    // Función para suscribirse a OneSignal
+    async function subscribeToOneSignal() {
+      const statusDiv = document.getElementById('onesignal-status');
+      
+      if (typeof OneSignal === 'undefined') {
+        if (statusDiv) {
+          statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal SDK no cargado. Recarga la página.</div>';
+        }
+        showNotification('❌ Error', 'OneSignal SDK no está cargado. Recarga la página.', 'error');
+        return;
+      }
+
+      if (!oneSignalService) {
+        if (statusDiv) {
+          statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal Service no disponible</div>';
+        }
+        showNotification('❌ Error', 'OneSignal Service no está disponible', 'error');
+        return;
+      }
+
+      if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
+        if (statusDiv) {
+          statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Configura tu App ID en onesignal-config.js</div>';
+        }
+        showNotification('⚠️ Advertencia', 'Configura tu App ID de OneSignal en onesignal-config.js', 'warning');
+        return;
+      }
+
+      try {
+        if (statusDiv) {
+          statusDiv.innerHTML = '<div class="text-blue-400">⏳ Suscribiendo...</div>';
+        }
+        
+        showNotification('⏳ Suscribiendo...', 'Configurando OneSignal...', 'info');
+        
+        // Asegurar que OneSignal esté inicializado
+        if (!oneSignalService.initialized) {
+          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+          if (!initialized) {
+            if (statusDiv) {
+              statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal</div>';
+            }
+            showNotification('❌ Error', 'No se pudo inicializar OneSignal', 'error');
+            return;
+          }
+        }
+        
+        const subscribed = await oneSignalService.subscribe();
+        
+        if (subscribed) {
+          showNotification('✅ Éxito', 'Suscrito a OneSignal correctamente. Las notificaciones funcionarán incluso con el navegador cerrado.', 'success');
+          // Actualizar estado después de un momento
+          setTimeout(() => {
+            checkOneSignalStatus();
+          }, 1000);
+        } else {
+          if (statusDiv) {
+            statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Permisos denegados. Habilita las notificaciones en la configuración del navegador.</div>';
+          }
+          showNotification('⚠️ Permisos denegados', 'Habilita las notificaciones en la configuración del navegador', 'warning');
+        }
+      } catch (error) {
+        console.error('Error al suscribirse:', error);
+        if (statusDiv) {
+          statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message || 'Error desconocido'}</div>`;
+        }
+        showNotification('❌ Error', `Error: ${error.message || 'Error desconocido'}`, 'error');
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM cargado, verificando estado de notificaciones...');
       
