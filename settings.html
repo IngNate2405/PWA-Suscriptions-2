@@ -906,12 +906,6 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM cargado, verificando estado de notificaciones...');
       
-      // Inicializar pushNotificationService si no está disponible
-      if (typeof pushNotificationService === 'undefined' && typeof PushNotificationService !== 'undefined') {
-        window.pushNotificationService = new PushNotificationService();
-        console.log('✅ pushNotificationService inicializado');
-      }
-      
       // Cargar versión
       cargarVersion();
       
