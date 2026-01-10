@@ -13,13 +13,13 @@ admin.initializeApp();
 // Genera tus VAPID keys con: web-push generate-vapid-keys
 // O usa: https://web-push-codelab.glitch.me/
 const vapidKeys = {
-  publicKey: 'TU_VAPID_PUBLIC_KEY_AQUI',
-  privateKey: 'TU_VAPID_PRIVATE_KEY_AQUI'
+  publicKey: 'BK_Skl0maHvDuOUqJ5kwLG5ZtR_tFQ5CX9evW-eb-HybqLuUHaBTYzKfV6cdrwqFIAwkHTNh9DadoAaJXjwfrr0',
+  privateKey: 'kkjc4me2It7ZlApFcp4z1lDDpOpbrsxa8ZYxOnMqv9c'
 };
 
 // Configurar VAPID details
 webpush.setVapidDetails(
-  'mailto:tu-email@ejemplo.com', // Reemplaza con tu email
+  'mailto:rolandogironfernan@gmail.com', // Reemplaza con tu email
   vapidKeys.publicKey,
   vapidKeys.privateKey
 );
