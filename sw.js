@@ -347,14 +347,14 @@ function startPeriodicNotificationCheck() {
     });
   }
   
-  // Verificar cada minuto
+  // Verificar cada 30 segundos para mejor precisión
   notificationCheckInterval = setInterval(() => {
     if (notificationService) {
       notificationService.checkAndSendNotifications().catch(err => {
         console.error('Error en verificación periódica:', err);
       });
     }
-  }, 60000); // 60 segundos
+  }, 30000); // 30 segundos para mejor precisión
 }
 
 // Limpiar cachés antiguos cuando se activa el service worker

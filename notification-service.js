@@ -252,16 +252,25 @@ class NotificationService {
         const notifications = request.result || [];
         const toSend = notifications.filter(n => {
           const notifDate = new Date(n.notificationDate);
-          // Enviar si la fecha ya pasó (con margen de 2 minutos para evitar problemas de timing)
-          // Esto permite que se envíe incluso si la verificación se retrasa un poco
-          return notifDate <= new Date(now.getTime() + 2 * 60 * 1000);
+          // Enviar solo si la fecha ya pasó (sin margen hacia adelante)
+          // Permitir un pequeño margen hacia atrás (30 segundos) para evitar problemas de timing
+          const timeDiff = now.getTime() - notifDate.getTime();
+          return timeDiff >= -30000 && timeDiff <= 60000; // Entre 30 seg antes y 1 min después
         });
         
         const sent = [];
+        const sentIds = new Set(); // Para evitar duplicados
+        
         for (const notif of toSend) {
+          // Evitar enviar la misma notificación dos veces
+          if (sentIds.has(notif.id)) {
+            continue;
+          }
+          
           try {
             await this.sendNotification(notif);
             sent.push(notif.id);
+            sentIds.add(notif.id);
           } catch (error) {
             console.error('Error al enviar notificación:', error);
           }
