@@ -858,6 +858,12 @@
       }
       
       // Inicializar OneSignal después de un momento
+      // En PWA, esperar más tiempo para que OneSignalDeferred se cargue
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                   window.navigator.standalone || 
+                   document.referrer.includes('android-app://');
+      const waitTime = isPWA ? 5000 : 3000; // Más tiempo en PWA
+      
       setTimeout(async () => {
         if (!oneSignalService) {
           const statusDiv = document.getElementById('onesignal-status');
@@ -881,13 +887,29 @@
             statusDiv.innerHTML = '<div class="text-blue-400">⏳ Inicializando OneSignal...</div>';
           }
 
+          // Verificar si OneSignalDeferred está disponible, si no, esperar más
+          if (typeof window.OneSignalDeferred === 'undefined') {
+            console.log('⏳ OneSignalDeferred no disponible aún, esperando...');
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            while (typeof window.OneSignalDeferred === 'undefined' && attempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+              attempts++;
+            }
+            
+            if (typeof window.OneSignalDeferred === 'undefined') {
+              console.warn('⚠️ OneSignalDeferred aún no disponible después de esperar');
+            }
+          }
+
           const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
           
           if (initialized) {
-            // Verificar estado después de inicializar
+            // Verificar estado después de inicializar (más tiempo en PWA)
             setTimeout(() => {
               checkOneSignalStatus();
-            }, 1000);
+            }, isPWA ? 2000 : 1000);
           } else {
             const statusDiv = document.getElementById('onesignal-status');
             if (statusDiv) {
@@ -901,7 +923,7 @@
             statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message || 'Error desconocido'}</div>`;
           }
         }
-      }, 3000); // Aumentar tiempo de espera para que el SDK se cargue
+      }, waitTime);
       
       // Sincronizar estado cuando la página vuelve a estar visible
       document.addEventListener('visibilitychange', () => {
