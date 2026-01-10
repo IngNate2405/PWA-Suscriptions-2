@@ -24,15 +24,32 @@ class OneSignalService {
       return true;
     }
 
-    // Esperar hasta 15 segundos a que OneSignal se cargue
-    const maxWait = 15000; // 15 segundos
-    const checkInterval = 200; // Verificar cada 200ms
+    // En PWA, esperar más tiempo (hasta 30 segundos)
+    const isPWA = typeof window !== 'undefined' && (
+      window.matchMedia('(display-mode: standalone)').matches || 
+      window.navigator.standalone || 
+      document.referrer.includes('android-app://')
+    );
+    const maxWait = isPWA ? 30000 : 15000; // 30 segundos en PWA, 15 en web
+    const checkInterval = 500; // Verificar cada 500ms (más lento para no sobrecargar)
     let elapsed = 0;
 
     while (elapsed < maxWait) {
       // Verificar OneSignalDeferred (método recomendado)
       if (typeof window !== 'undefined' && window.OneSignalDeferred) {
-        return true;
+        // Si OneSignalDeferred está disponible, esperar un momento más
+        // para que el SDK se inicialice desde OneSignalDeferred
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verificar si OneSignal está disponible ahora
+        if (typeof OneSignal !== 'undefined' && OneSignal.init) {
+          return true;
+        }
+        
+        // Si OneSignalDeferred tiene elementos, esperar más
+        if (window.OneSignalDeferred.length > 0) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
 
       // Verificar OneSignal directamente
