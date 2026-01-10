@@ -1,8 +1,21 @@
-// Importar NotificationService
+// Service Worker Híbrido: Combina nuestro Service Worker con el de OneSignal
+// Esto permite que ambas funcionalidades trabajen juntas sin conflictos
+
+// 1. Importar NotificationService (para notificaciones locales programadas)
 try {
   importScripts('notification-service.js');
 } catch (e) {
   console.error('Error al importar notification-service.js:', e);
+}
+
+// 2. Importar Service Worker de OneSignal (para notificaciones push cuando la app está cerrada)
+// CRÍTICO: Esto debe estar ANTES de nuestros event listeners para que OneSignal pueda manejar push
+try {
+  importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+  console.log('✅ Service Worker de OneSignal importado correctamente');
+} catch (e) {
+  console.log('⚠️ No se pudo importar el Service Worker de OneSignal:', e);
+  console.log('💡 Las notificaciones push cuando la app está cerrada pueden no funcionar');
 }
 
 // Nombre del caché con versión

@@ -192,15 +192,15 @@
       });
 
       window.addEventListener('load', () => {
-        // Detectar ruta base dinámicamente
+        // Registrar nuestro Service Worker híbrido (que incluye el de OneSignal)
+        // Este Service Worker combina ambas funcionalidades
         const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '.';
         const swPath = basePath === '.' ? './sw.js' : `${basePath}/sw.js`;
         navigator.serviceWorker.register(swPath)
           .then(async registration => {
+            console.log('✅ Service Worker híbrido registrado (incluye OneSignal)');
             // Solicitar permisos de notificación después del registro
             await requestNotificationPermission();
-            
-            // OneSignal se inicializa automáticamente más abajo
             
             // Despertar el service worker para verificar notificaciones pendientes
             if (registration.active) {
@@ -208,7 +208,7 @@
             }
           })
           .catch(error => {
-            // console.log('Error al registrar ServiceWorker:', error);
+            console.log('Error al registrar ServiceWorker:', error);
           });
       });
     }

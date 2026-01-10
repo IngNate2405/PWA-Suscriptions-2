@@ -58,18 +58,19 @@
   </style>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+      window.addEventListener('load', async () => {
         // Verificar si estamos en un protocolo soportado
         if (window.location.protocol === 'file:' || window.location.protocol === 'null') {
           console.log('⚠️ Abriendo desde sistema de archivos - Service Worker no disponible');
           console.log('Para usar notificaciones, abre la app desde un servidor web (http/https)');
         } else {
-          // Detectar ruta base dinámicamente
+          // Registrar nuestro Service Worker híbrido (que incluye el de OneSignal)
+          // Este Service Worker combina ambas funcionalidades
           const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '.';
           const swPath = basePath === '.' ? './sw.js' : `${basePath}/sw.js`;
           navigator.serviceWorker.register(swPath)
             .then(registration => {
-              console.log('ServiceWorker registrado:', registration);
+              console.log('✅ Service Worker híbrido registrado (incluye OneSignal):', registration);
             })
             .catch(error => {
               console.log('Error al registrar ServiceWorker:', error);
