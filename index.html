@@ -22,8 +22,8 @@
   <script src="onesignal-config.js"></script>
   <script src="version.js"></script>
   
-  <!-- OneSignal SDK - Usar método recomendado con OneSignalDeferred -->
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <!-- OneSignal SDK - Sin defer para que funcione correctamente en PWA -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
   </script>
@@ -191,7 +191,7 @@
         }
       });
 
-      window.addEventListener('load', () => {
+      window.addEventListener('load', async () => {
         // Registrar nuestro Service Worker híbrido (que incluye el de OneSignal)
         // Este Service Worker combina ambas funcionalidades
         const basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '.';
@@ -210,6 +210,29 @@
           .catch(error => {
             console.log('Error al registrar ServiceWorker:', error);
           });
+        
+        // Inicializar OneSignal también en index.html para que funcione en PWA
+        // En PWA, esperar más tiempo para que OneSignal SDK se cargue
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                     window.navigator.standalone || 
+                     document.referrer.includes('android-app://');
+        const waitTime = isPWA ? 5000 : 3000;
+        
+        setTimeout(async () => {
+          if (typeof oneSignalService !== 'undefined' && 
+              typeof ONESIGNAL_CONFIG !== 'undefined' && 
+              ONESIGNAL_CONFIG.appId && 
+              ONESIGNAL_CONFIG.appId !== 'TU_ONESIGNAL_APP_ID') {
+            try {
+              if (!oneSignalService.initialized) {
+                await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+                console.log('✅ OneSignal inicializado en index.html');
+              }
+            } catch (error) {
+              console.log('OneSignal ya inicializado o error:', error);
+            }
+          }
+        }, waitTime);
       });
     }
 
