@@ -166,8 +166,7 @@
           document.getElementById('notificationStatus').className = 'text-green-400';
           showNotification('Permisos concedidos', 'Las notificaciones están ahora activas');
           
-          // Programar notificaciones después de obtener permisos
-          await scheduleNotifications();
+          // Notificaciones locales eliminadas - solo usamos OneSignal REST API
         } else if (permission === 'denied') {
           localStorage.setItem('notificationPermission', 'denied');
           document.getElementById('notificationStatus').textContent = 'Denegadas';

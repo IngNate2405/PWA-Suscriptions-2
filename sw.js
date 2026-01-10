@@ -1,14 +1,7 @@
-// Service Worker Híbrido: Combina nuestro Service Worker con el de OneSignal
-// Esto permite que ambas funcionalidades trabajen juntas sin conflictos
+// Service Worker: Solo para OneSignal y caché
+// Las notificaciones cuando la app está cerrada se manejan con OneSignal REST API
 
-// 1. Importar NotificationService (para notificaciones locales programadas)
-try {
-  importScripts('notification-service.js');
-} catch (e) {
-  console.error('Error al importar notification-service.js:', e);
-}
-
-// 2. Importar Service Worker de OneSignal (para notificaciones push cuando la app está cerrada)
+// Importar Service Worker de OneSignal (para notificaciones push cuando la app está cerrada)
 // CRÍTICO: Esto debe estar ANTES de nuestros event listeners para que OneSignal pueda manejar push
 try {
   importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
@@ -37,7 +30,6 @@ const urlsToCache = [
   'archivo-datos.html',
   'manifest.json',
   'sw.js',
-  'notification-service.js',
   'icons/icon-72x72.png',
   'icons/icon-96x96.png',
   'icons/icon-128x128.png',
@@ -48,12 +40,7 @@ const urlsToCache = [
   'icons/icon-512x512.png'
 ];
 
-// Inicializar NotificationService si está disponible
-let notificationService = null;
-if (typeof NotificationService !== 'undefined') {
-  notificationService = new NotificationService();
-  notificationService.initDB().catch(err => console.error('Error al inicializar DB:', err));
-}
+// Notificaciones locales eliminadas - solo usamos OneSignal REST API para notificaciones externas
 
 self.addEventListener('install', event => {
   // Forzar actualización inmediata
@@ -102,67 +89,8 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Manejo de notificaciones push desde OneSignal
-// OneSignal maneja automáticamente las notificaciones push
-// Este listener es para notificaciones locales o personalizadas
-self.addEventListener('push', event => {
-  // OneSignal maneja sus propias notificaciones automáticamente
-  // Este código solo se ejecuta si OneSignal no está activo
-  let notificationData = {
-    title: 'Recordatorio de Pago',
-    body: 'Tienes una suscripción por pagar',
-    icon: 'icons/icon-192x192.png'
-  };
-  
-  if (event.data) {
-    try {
-      const data = event.data.json();
-      notificationData = {
-        title: data.title || notificationData.title,
-        body: data.body || notificationData.body,
-        icon: data.icon || notificationData.icon,
-        badge: data.badge || 'icons/icon-96x96.png',
-        tag: data.tag || 'subscription-reminder',
-        image: data.image,
-        data: data.data || {}
-      };
-    } catch (e) {
-      try {
-        notificationData.body = event.data.text() || notificationData.body;
-      } catch (textError) {
-        console.error('Error parseando datos push:', e, textError);
-      }
-    }
-  }
-  
-  const options = {
-    body: notificationData.body,
-    icon: notificationData.icon,
-    badge: 'icons/icon-192x192.png',
-    vibrate: [100, 50, 100],
-    tag: 'payment-reminder',
-    data: {
-      ...notificationData.data,
-      dateOfArrival: Date.now()
-    },
-    actions: [
-      {
-        action: 'view',
-        title: 'Ver detalles',
-        icon: 'icons/icon-192x192.png'
-      },
-      {
-        action: 'close',
-        title: 'Cerrar',
-        icon: 'icons/icon-192x192.png'
-      }
-    ]
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(notificationData.title, options)
-  );
-});
+// OneSignal maneja automáticamente todas las notificaciones push
+// No necesitamos un listener de 'push' personalizado
 
 // Manejo de clics en notificaciones (mejorado basado en ejemplo PWA)
 self.addEventListener('notificationclick', event => {
@@ -197,32 +125,8 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-// Función legacy para programar notificaciones (mantener por compatibilidad)
-// Ahora usa NotificationService si está disponible
-async function scheduleNotifications(subscriptionsFromClient = []) {
-  if (notificationService) {
-    try {
-      await notificationService.saveSubscriptions(subscriptionsFromClient);
-      const count = await notificationService.scheduleNotifications(subscriptionsFromClient);
-      console.log(`✅ ${count} notificaciones programadas`);
-      // Registrar Background Sync
-      try {
-        await self.registration.sync.register('check-notifications');
-      } catch (e) {
-        console.log('Background Sync no disponible:', e);
-      }
-      return count;
-    } catch (error) {
-      console.error('Error al programar notificaciones:', error);
-      return 0;
-    }
-  } else {
-    // Fallback a método legacy si NotificationService no está disponible
-    return scheduleNotificationsLegacy(subscriptionsFromClient);
-  }
-}
-
-// Función legacy para programar notificaciones (mantener por compatibilidad)
+// Notificaciones locales eliminadas - solo usamos OneSignal REST API
+// Función legacy eliminada (ya no se usa)
 async function scheduleNotificationsLegacy(subscriptionsFromClient = []) {
   try {
     const subscriptions = Array.isArray(subscriptionsFromClient) ? subscriptionsFromClient : [];
@@ -332,30 +236,8 @@ function formatDate(dateString) {
   return `${day}/${month}/${year}`;
 }
 
-// Verificar notificaciones periódicamente (cada minuto cuando el service worker está activo)
-let notificationCheckInterval = null;
-
-function startPeriodicNotificationCheck() {
-  if (notificationCheckInterval) {
-    clearInterval(notificationCheckInterval);
-  }
-  
-  // Verificar inmediatamente
-  if (notificationService) {
-    notificationService.checkAndSendNotifications().catch(err => {
-      console.error('Error en verificación periódica:', err);
-    });
-  }
-  
-  // Verificar cada 30 segundos para mejor precisión
-  notificationCheckInterval = setInterval(() => {
-    if (notificationService) {
-      notificationService.checkAndSendNotifications().catch(err => {
-        console.error('Error en verificación periódica:', err);
-      });
-    }
-  }, 30000); // 30 segundos para mejor precisión
-}
+// Verificación periódica de notificaciones locales eliminada
+// Solo usamos OneSignal REST API para notificaciones cuando la app está cerrada
 
 // Limpiar cachés antiguos cuando se activa el service worker
 self.addEventListener('activate', event => {
@@ -374,56 +256,15 @@ self.addEventListener('activate', event => {
         );
       }),
       // Tomar control inmediatamente de todas las páginas
-      self.clients.claim(),
-      // Verificar notificaciones pendientes e iniciar verificación periódica
-      (async () => {
-        if (notificationService) {
-          try {
-            await notificationService.checkAndSendNotifications();
-            // Registrar Background Sync
-            try {
-              await self.registration.sync.register('check-notifications');
-            } catch (e) {
-              console.log('Background Sync no disponible:', e);
-            }
-            // Iniciar verificación periódica
-            startPeriodicNotificationCheck();
-          } catch (err) {
-            console.error('Error al verificar notificaciones:', err);
-          }
-        }
-      })()
+      self.clients.claim()
     ])
   );
 });
 
-// Escuchar mensajes del cliente para reprogramar notificaciones
+// Escuchar mensajes del cliente
 self.addEventListener('message', async event => {
-  if (event.data && event.data.type === 'SCHEDULE_NOTIFICATIONS') {
-    const subscriptions = event.data.subscriptions || [];
-    if (notificationService) {
-      try {
-        // Guardar suscripciones en IndexedDB
-        await notificationService.saveSubscriptions(subscriptions);
-        // Programar notificaciones
-        const count = await notificationService.scheduleNotifications(subscriptions);
-        console.log(`✅ ${count} notificaciones programadas`);
-        // Registrar Background Sync para verificación periódica
-        try {
-          await self.registration.sync.register('check-notifications');
-        } catch (e) {
-          console.log('Background Sync no disponible:', e);
-        }
-      } catch (error) {
-        console.error('Error al programar notificaciones:', error);
-        // Fallback a método legacy
-        scheduleNotificationsLegacy(subscriptions);
-      }
-    } else {
-      // Fallback a método legacy si NotificationService no está disponible
-      scheduleNotificationsLegacy(subscriptions);
-    }
-  } else if (event.data && event.data.type === 'TEST_NOTIFICATION') {
+  // Notificaciones locales eliminadas - solo usamos OneSignal REST API
+  if (event.data && event.data.type === 'TEST_NOTIFICATION') {
     self.registration.showNotification(event.data.data.title, {
       body: event.data.data.body,
       icon: 'icons/icon-192x192.png',
@@ -445,106 +286,14 @@ self.addEventListener('message', async event => {
   }
 });
 
-// Función para programar notificaciones usando Background Sync API
-async function scheduleNotificationsWithBackgroundSync() {
-  if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.sync.register('check-notifications');
-    } catch (error) {
-    }
-  }
-}
-
-// Escuchar eventos de sync para verificar notificaciones (Background Sync)
-// Basado en: https://github.com/gokulkrishh/demo-progressive-web-app
-self.addEventListener('sync', event => {
-  if (event.tag === 'check-notifications') {
-    event.waitUntil(
-      (async () => {
-        if (notificationService) {
-          try {
-            const count = await notificationService.checkAndSendNotifications();
-            console.log(`✅ Verificadas ${count} notificaciones (Background Sync)`);
-            // Reprogramar para la próxima verificación
-            try {
-              await self.registration.sync.register('check-notifications');
-            } catch (e) {
-              console.log('No se pudo reprogramar Background Sync:', e);
-            }
-          } catch (err) {
-            console.error('Error en Background Sync:', err);
-          }
-        } else {
-          console.log('NotificationService no disponible para Background Sync');
-        }
-      })()
-    );
-  }
-});
-
-// También escuchar cuando el service worker se activa (cuando el navegador se abre)
-self.addEventListener('message', async event => {
-  // Si recibimos un mensaje de "wake up", verificar notificaciones
-  if (event.data && event.data.type === 'WAKE_UP_CHECK') {
-    if (notificationService) {
-      try {
-        const count = await notificationService.checkAndSendNotifications();
-        console.log(`✅ Verificadas ${count} notificaciones (wake up)`);
-      } catch (err) {
-        console.error('Error en wake up check:', err);
-      }
-    }
-  }
-});
-
-// NOTA: notificationCheckInterval y startPeriodicNotificationCheck ya están declarados arriba (línea 323)
-// Esta sección duplicada ha sido eliminada para evitar errores de sintaxis
-
-// Iniciar verificación periódica cuando el service worker se activa
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    Promise.all([
-      // Limpiar todos los cachés antiguos
-      caches.keys().then(cacheNames => {
-        return Promise.all(
-          cacheNames.map(cacheName => {
-            // Eliminar todos los cachés que no sean el actual
-            if (!cacheName.startsWith('subs-app-v') || cacheName !== CACHE_NAME) {
-              console.log('Eliminando caché antiguo:', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      }),
-      // Tomar control inmediatamente
-      self.clients.claim(),
-      // Verificar notificaciones pendientes
-      (async () => {
-        if (notificationService) {
-          try {
-            await notificationService.checkAndSendNotifications();
-            // Registrar Background Sync
-            try {
-              await self.registration.sync.register('check-notifications');
-            } catch (e) {
-              console.log('Background Sync no disponible:', e);
-            }
-            // Iniciar verificación periódica
-            startPeriodicNotificationCheck();
-          } catch (err) {
-            console.error('Error al verificar notificaciones:', err);
-          }
-        }
-      })()
-    ])
-  );
-});
+// Background Sync y verificación periódica eliminados
+// Solo usamos OneSignal REST API para notificaciones cuando la app está cerrada
 
 
-// Función legacy eliminada - ahora usa NotificationService con IndexedDB
+// Funciones de notificaciones locales eliminadas
+// Solo usamos OneSignal REST API
 
-// Función para recargar notificaciones desde localStorage
+// Función legacy eliminada (ya no se usa)
 async function reloadNotifications() {
   try {
     const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');

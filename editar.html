@@ -23,7 +23,6 @@
   <script src="onesignal-config-local.js" onerror="console.log('onesignal-config-local.js no encontrado (esto es normal)')"></script>
   <script src="onesignal-service.js"></script>
   <script src="onesignal-rest-api.js"></script>
-  <script src="notification-service.js"></script>
   <script src="version.js"></script>
   
   <!-- OneSignal SDK -->
@@ -768,39 +767,18 @@
         console.warn('⚠️ oneSignalService no disponible');
       }
 
-      // También programar localmente (fallback)
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready
-          .then(registration => {
-            if (registration.active) {
-              const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
-              registration.active.postMessage({
-                type: 'SCHEDULE_NOTIFICATIONS',
-                subscriptions
-              });
-              console.log('✅ Notificaciones reprogramadas localmente');
-              
-              // También intentar programar en OneSignal si está disponible
-              if (typeof oneSignalRESTService !== 'undefined' && ONESIGNAL_CONFIG?.restApiKey) {
-                setTimeout(async () => {
-                  try {
-                    const count = await oneSignalRESTService.scheduleAllPendingNotifications();
-                    if (count > 0) {
-                      console.log(`✅ ${count} notificaciones programadas en OneSignal para cuando la app esté cerrada`);
-                    }
-                  } catch (error) {
-                    console.log('No se pudieron programar notificaciones en OneSignal:', error);
-                  }
-                }, 2000);
-              }
-            } else {
-              console.log('⚠️ Service Worker no está activo aún');
+      // Programar notificaciones en OneSignal REST API (solo cuando la app está cerrada)
+      if (typeof oneSignalRESTService !== 'undefined' && ONESIGNAL_CONFIG?.restApiKey) {
+        setTimeout(async () => {
+          try {
+            const count = await oneSignalRESTService.scheduleAllPendingNotifications();
+            if (count > 0) {
+              console.log(`✅ ${count} notificaciones programadas en OneSignal para cuando la app esté cerrada`);
             }
-          })
-          .catch(error => {
-            console.error('Error al comunicarse con Service Worker:', error);
-            // No mostrar error al usuario, solo log
-          });
+          } catch (error) {
+            console.log('No se pudieron programar notificaciones en OneSignal:', error);
+          }
+        }, 2000);
       }
 
       // Continuar con el guardado inmediatamente (no esperar al Service Worker)

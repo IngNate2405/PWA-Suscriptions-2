@@ -204,10 +204,7 @@
             // Solicitar permisos de notificación después del registro
             await requestNotificationPermission();
             
-            // Despertar el service worker para verificar notificaciones pendientes
-            if (registration.active) {
-              registration.active.postMessage({ type: 'WAKE_UP_CHECK' });
-            }
+            // Service Worker registrado correctamente
           })
           .catch(error => {
             console.log('Error al registrar ServiceWorker:', error);
