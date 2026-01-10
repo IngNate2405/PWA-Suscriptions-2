@@ -22,7 +22,7 @@ class OneSignalRESTService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.restApiKey}`
+          'Authorization': `Basic ${this.restApiKey}`
         },
         body: JSON.stringify({
           app_id: this.appId,
@@ -65,7 +65,7 @@ class OneSignalRESTService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.restApiKey}`
+          'Authorization': `Basic ${this.restApiKey}`
         },
         body: JSON.stringify({
           app_id: this.appId,
