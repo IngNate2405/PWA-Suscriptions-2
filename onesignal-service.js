@@ -45,14 +45,15 @@ class OneSignalService {
     }
 
     try {
-      // Solicitar permisos
-      const permission = await OneSignal.Notifications.requestPermission();
+      // Verificar permisos actuales
+      let permission = await OneSignal.Notifications.permissionNative;
+      
+      // Si no están concedidos, solicitarlos
+      if (permission !== 'granted') {
+        permission = await OneSignal.Notifications.requestPermission();
+      }
       
       if (permission === 'granted') {
-        // Suscribirse
-        await OneSignal.Notifications.setDefaultTitle('Recordatorio de Suscripción');
-        await OneSignal.Notifications.setDefaultIcon('/icons/icon-192x192.png');
-        
         this.subscribed = true;
         console.log('✅ Suscrito a OneSignal correctamente');
         return true;
