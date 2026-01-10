@@ -863,6 +863,19 @@
     document.addEventListener('DOMContentLoaded', () => {
       console.log('DOM cargado, verificando estado de notificaciones...');
       
+      // Detectar iOS y mostrar instrucciones si es necesario
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                         window.navigator.standalone;
+      
+      if (isIOS && !isStandalone) {
+        const iosInstructions = document.getElementById('ios-instructions');
+        if (iosInstructions) {
+          iosInstructions.classList.remove('hidden');
+        }
+      }
+      
       // Cargar versión
       cargarVersion();
       
