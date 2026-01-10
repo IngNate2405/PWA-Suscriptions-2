@@ -4,7 +4,7 @@
 
 const ONESIGNAL_CONFIG = {
   appId: 'c9a462f2-6b41-40f2-80c3-d173c255c469', // Reemplaza con tu App ID
-  // Safari Web ID (opcional, solo si usas Safari)
-  safariWebId: null
+  // Safari Web ID (obtenido del dashboard de OneSignal)
+  safariWebId: 'web.onesignal.auto.00e855ed-5f66-45b8-ad03-54b1e142944e'
 };
 

@@ -5,19 +5,21 @@ class OneSignalService {
   constructor() {
     this.initialized = false;
     this.subscribed = false;
+    this.safariWebId = null;
   }
 
-  // Esperar a que OneSignal SDK esté cargado
+  // Esperar a que OneSignal SDK esté cargado usando OneSignalDeferred
   async waitForOneSignal() {
-    // Verificar si ya está disponible (múltiples formas de verificar)
-    if (typeof OneSignal !== 'undefined') {
-      // Verificar si tiene métodos básicos
-      if (OneSignal.init || OneSignal.SDK_VERSION || window.OneSignal) {
-        return true;
-      }
+    // Verificar si OneSignalDeferred está disponible (método recomendado por OneSignal)
+    if (typeof window !== 'undefined' && window.OneSignalDeferred) {
+      return true;
     }
 
-    // También verificar window.OneSignal (a veces se carga ahí)
+    // Verificar si OneSignal ya está disponible directamente
+    if (typeof OneSignal !== 'undefined' && OneSignal.init) {
+      return true;
+    }
+
     if (typeof window !== 'undefined' && window.OneSignal) {
       return true;
     }
@@ -28,8 +30,13 @@ class OneSignalService {
     let elapsed = 0;
 
     while (elapsed < maxWait) {
-      // Verificar múltiples formas
-      if (typeof OneSignal !== 'undefined' && (OneSignal.init || OneSignal.SDK_VERSION)) {
+      // Verificar OneSignalDeferred (método recomendado)
+      if (typeof window !== 'undefined' && window.OneSignalDeferred) {
+        return true;
+      }
+
+      // Verificar OneSignal directamente
+      if (typeof OneSignal !== 'undefined' && OneSignal.init) {
         return true;
       }
       
@@ -49,7 +56,11 @@ class OneSignalService {
       console.error('❌ No se encontró el script de OneSignal en el DOM. Verifica que esté incluido en el HTML.');
     } else {
       console.log('✅ Script de OneSignal encontrado en el DOM:', scripts[0].src);
-      console.log('⚠️ Pero OneSignal aún no está disponible. Puede ser un problema de carga o versión.');
+      console.log('⚠️ Pero OneSignal aún no está disponible.');
+      console.log('💡 Posibles causas:');
+      console.log('   1. Bloqueador de anuncios está bloqueando OneSignal');
+      console.log('   2. Error de red al cargar el script');
+      console.log('   3. El script se está cargando muy lento');
     }
 
     return false;
