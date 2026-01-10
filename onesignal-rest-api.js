@@ -6,7 +6,9 @@ class OneSignalRESTService {
     // Obtener estas credenciales desde el dashboard de OneSignal
     // Settings > Keys & IDs > REST API Key
     this.appId = ONESIGNAL_CONFIG?.appId || 'c9a462f2-6b41-40f2-80c3-d173c255c469';
-    this.restApiKey = ONESIGNAL_CONFIG?.restApiKey || null; // Debes configurar esto
+    // El REST API Key se carga desde onesignal-config-local.js (no se sube a GitHub)
+    // Si no existe, intentar leer desde ONESIGNAL_CONFIG (para desarrollo)
+    this.restApiKey = ONESIGNAL_CONFIG?.restApiKey || null;
     this.apiUrl = 'https://onesignal.com/api/v1/notifications';
   }
 
