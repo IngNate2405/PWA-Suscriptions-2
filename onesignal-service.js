@@ -69,16 +69,49 @@ class OneSignalService {
 
   // Verificar si está suscrito
   async isSubscribed() {
-    if (!this.initialized) {
+    if (!this.initialized || typeof OneSignal === 'undefined') {
       return false;
     }
 
     try {
+      // Verificar permisos
       const permission = await OneSignal.Notifications.permissionNative;
-      return permission === 'granted';
+      if (permission !== 'granted') {
+        return false;
+      }
+      
+      // Verificar si hay un player ID (indica que está suscrito)
+      const userId = await OneSignal.User.PushSubscription.id;
+      return userId !== null && userId !== undefined;
     } catch (error) {
       console.error('Error verificando suscripción:', error);
-      return false;
+      // Si falla, verificar al menos los permisos
+      try {
+        const permission = await OneSignal.Notifications.permissionNative;
+        return permission === 'granted';
+      } catch (e) {
+        return false;
+      }
+    }
+  }
+  
+  // Obtener información del usuario
+  async getUserInfo() {
+    if (!this.initialized || typeof OneSignal === 'undefined') {
+      return null;
+    }
+
+    try {
+      const userId = await OneSignal.User.PushSubscription.id;
+      const permission = await OneSignal.Notifications.permissionNative;
+      return {
+        userId: userId,
+        permission: permission,
+        subscribed: permission === 'granted' && userId !== null
+      };
+    } catch (error) {
+      console.error('Error obteniendo info del usuario:', error);
+      return null;
     }
   }
 

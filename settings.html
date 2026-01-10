@@ -711,12 +711,27 @@
         if (typeof OneSignal !== 'undefined' && oneSignalService && ONESIGNAL_CONFIG && ONESIGNAL_CONFIG.appId && ONESIGNAL_CONFIG.appId !== 'TU_ONESIGNAL_APP_ID') {
           try {
             await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
-            await checkOneSignalStatus();
+            // Verificar estado después de inicializar
+            setTimeout(() => {
+              checkOneSignalStatus();
+            }, 500);
           } catch (error) {
             console.error('Error inicializando OneSignal:', error);
+            const statusDiv = document.getElementById('onesignal-status');
+            if (statusDiv) {
+              statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message}</div>`;
+            }
           }
         } else {
-          updatePushNotificationsSection();
+          // Si OneSignal no está configurado, mostrar mensaje
+          const statusDiv = document.getElementById('onesignal-status');
+          if (statusDiv) {
+            if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
+              statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Configura tu App ID en onesignal-config.js</div>';
+            } else {
+              statusDiv.innerHTML = '<div class="text-blue-400">⏳ Cargando OneSignal...</div>';
+            }
+          }
         }
       }, 2000);
       
