@@ -485,30 +485,8 @@ self.addEventListener('message', async event => {
   }
 });
 
-// Verificar notificaciones periódicamente (cada minuto cuando el service worker está activo)
-let notificationCheckInterval = null;
-
-function startPeriodicNotificationCheck() {
-  if (notificationCheckInterval) {
-    clearInterval(notificationCheckInterval);
-  }
-  
-  // Verificar inmediatamente
-  if (notificationService) {
-    notificationService.checkAndSendNotifications().catch(err => {
-      console.error('Error en verificación periódica:', err);
-    });
-  }
-  
-  // Verificar cada minuto
-  notificationCheckInterval = setInterval(() => {
-    if (notificationService) {
-      notificationService.checkAndSendNotifications().catch(err => {
-        console.error('Error en verificación periódica:', err);
-      });
-    }
-  }, 60000); // 60 segundos
-}
+// NOTA: notificationCheckInterval y startPeriodicNotificationCheck ya están declarados arriba (línea 323)
+// Esta sección duplicada ha sido eliminada para evitar errores de sintaxis
 
 // Iniciar verificación periódica cuando el service worker se activa
 self.addEventListener('activate', event => {

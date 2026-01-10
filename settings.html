@@ -732,7 +732,7 @@
       try {
         // Asegurar que OneSignal esté inicializado
         if (!oneSignalService.initialized) {
-          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
           if (!initialized) {
             statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal</div>';
             return;
@@ -807,7 +807,7 @@
         
         // Asegurar que OneSignal esté inicializado
         if (!oneSignalService.initialized) {
-          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
           if (!initialized) {
             if (statusDiv) {
               statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal</div>';
@@ -881,7 +881,7 @@
             statusDiv.innerHTML = '<div class="text-blue-400">⏳ Inicializando OneSignal...</div>';
           }
 
-          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
           
           if (initialized) {
             // Verificar estado después de inicializar
