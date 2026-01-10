@@ -2,6 +2,7 @@
   "name": "functions",
   "description": "Cloud Functions for Push Notifications",
   "scripts": {
+    "lint": "echo 'Lint skipped'",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
