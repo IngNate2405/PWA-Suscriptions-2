@@ -262,25 +262,8 @@
       }
     }
 
-    // Función para programar notificaciones
-    async function scheduleNotifications() {
-      if ('serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-          if (registration.active) {
-            const subscriptions = JSON.parse(localStorage.getItem('subscriptions') || '[]');
-            registration.active.postMessage({
-              type: 'SCHEDULE_NOTIFICATIONS',
-              subscriptions
-            });
-          } else {
-            // console.log('Service Worker no está activo');
-          }
-        } catch (error) {
-          // console.error('Error al programar notificaciones:', error);
-        }
-      }
-    }
+    // Notificaciones locales eliminadas - solo usamos OneSignal REST API
+    // Función scheduleNotifications eliminada
 
     // Función para enviar notificación de prueba
     function sendTestNotification() {
