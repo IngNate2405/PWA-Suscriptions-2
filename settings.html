@@ -856,32 +856,49 @@
       
       // Inicializar OneSignal después de un momento
       setTimeout(async () => {
-        if (typeof OneSignal !== 'undefined' && oneSignalService && ONESIGNAL_CONFIG && ONESIGNAL_CONFIG.appId && ONESIGNAL_CONFIG.appId !== 'TU_ONESIGNAL_APP_ID') {
-          try {
-            await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+        if (!oneSignalService) {
+          const statusDiv = document.getElementById('onesignal-status');
+          if (statusDiv) {
+            statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal Service no disponible</div>';
+          }
+          return;
+        }
+
+        if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
+          const statusDiv = document.getElementById('onesignal-status');
+          if (statusDiv) {
+            statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Configura tu App ID en onesignal-config.js</div>';
+          }
+          return;
+        }
+
+        try {
+          const statusDiv = document.getElementById('onesignal-status');
+          if (statusDiv) {
+            statusDiv.innerHTML = '<div class="text-blue-400">⏳ Inicializando OneSignal...</div>';
+          }
+
+          const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+          
+          if (initialized) {
             // Verificar estado después de inicializar
             setTimeout(() => {
               checkOneSignalStatus();
-            }, 500);
-          } catch (error) {
-            console.error('Error inicializando OneSignal:', error);
+            }, 1000);
+          } else {
             const statusDiv = document.getElementById('onesignal-status');
             if (statusDiv) {
-              statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message}</div>`;
+              statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal. Revisa la consola para más detalles.</div>';
             }
           }
-        } else {
-          // Si OneSignal no está configurado, mostrar mensaje
+        } catch (error) {
+          console.error('Error inicializando OneSignal:', error);
           const statusDiv = document.getElementById('onesignal-status');
           if (statusDiv) {
-            if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
-              statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Configura tu App ID en onesignal-config.js</div>';
-            } else {
-              statusDiv.innerHTML = '<div class="text-blue-400">⏳ Cargando OneSignal...</div>';
-            }
+            statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message || 'Error desconocido'}</div>`;
           }
         }
-      }, 2000);
+      }, 3000); // Aumentar tiempo de espera para que el SDK se cargue
       
       // Sincronizar estado cuando la página vuelve a estar visible
       document.addEventListener('visibilitychange', () => {
