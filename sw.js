@@ -89,17 +89,18 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Manejo de notificaciones push desde Firebase Cloud Functions
-// Basado en: https://github.com/mutebg/pwa-weather y https://github.com/gokulkrishh/demo-progressive-web-app
+// Manejo de notificaciones push desde OneSignal
+// OneSignal maneja automáticamente las notificaciones push
+// Este listener es para notificaciones locales o personalizadas
 self.addEventListener('push', event => {
+  // OneSignal maneja sus propias notificaciones automáticamente
+  // Este código solo se ejecuta si OneSignal no está activo
   let notificationData = {
     title: 'Recordatorio de Pago',
     body: 'Tienes una suscripción por pagar',
     icon: 'icons/icon-192x192.png'
   };
   
-  // Parsear datos JSON del servidor (Firebase Cloud Functions)
-  // Similar a pwa-weather: maneja datos JSON del servidor
   if (event.data) {
     try {
       const data = event.data.json();
@@ -110,12 +111,9 @@ self.addEventListener('push', event => {
         badge: data.badge || 'icons/icon-96x96.png',
         tag: data.tag || 'subscription-reminder',
         image: data.image,
-        data: data.data || {},
-        requireInteraction: data.requireInteraction || false,
-        vibrate: data.vibrate || [200, 100, 200]
+        data: data.data || {}
       };
     } catch (e) {
-      // Si no es JSON, intentar como texto
       try {
         notificationData.body = event.data.text() || notificationData.body;
       } catch (textError) {
@@ -128,10 +126,8 @@ self.addEventListener('push', event => {
     body: notificationData.body,
     icon: notificationData.icon,
     badge: 'icons/icon-192x192.png',
-    image: notificationData.image,
     vibrate: [100, 50, 100],
-    tag: 'payment-reminder', // Evitar duplicados
-    requireInteraction: false,
+    tag: 'payment-reminder',
     data: {
       ...notificationData.data,
       dateOfArrival: Date.now()

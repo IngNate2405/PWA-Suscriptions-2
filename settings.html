@@ -927,10 +927,19 @@
         });
       }
       
-      // Actualizar sección de Push Notifications después de un momento
-      setTimeout(() => {
-        updatePushNotificationsSection();
-      }, 1000);
+      // Inicializar OneSignal después de un momento
+      setTimeout(async () => {
+        if (typeof OneSignal !== 'undefined' && oneSignalService && ONESIGNAL_CONFIG && ONESIGNAL_CONFIG.appId && ONESIGNAL_CONFIG.appId !== 'TU_ONESIGNAL_APP_ID') {
+          try {
+            await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+            await checkOneSignalStatus();
+          } catch (error) {
+            console.error('Error inicializando OneSignal:', error);
+          }
+        } else {
+          updatePushNotificationsSection();
+        }
+      }, 2000);
       
       // Sincronizar estado cuando la página vuelve a estar visible
       document.addEventListener('visibilitychange', () => {
@@ -1099,23 +1108,23 @@
         
         <!-- Información sobre Notificaciones -->
         <div class="border-t border-gray-700 pt-4 mt-4">
-          <h3 class="font-semibold mb-3">Notificaciones Locales</h3>
+          <h3 class="font-semibold mb-3">Push Notifications (OneSignal)</h3>
           
           <div id="push-status" class="p-3 bg-[#2a2736] rounded-lg text-sm">
-            <div class="text-green-400 mb-2">✅ Sistema de Notificaciones Locales Activo</div>
-            <div class="text-xs text-gray-400 mb-2">
-              Las notificaciones funcionan cuando:
+            <div id="onesignal-status" class="text-yellow-400 mb-2">⏳ Verificando estado...</div>
+            <div class="mt-3 space-y-2">
+              <button onclick="subscribeToOneSignal()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm w-full">
+                Suscribirse a Notificaciones Push
+              </button>
+              <button onclick="checkOneSignalStatus()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm w-full">
+                Verificar Estado
+              </button>
             </div>
-            <ul class="text-xs text-gray-400 list-disc list-inside space-y-1 mb-2">
-              <li>La app está abierta</li>
-              <li>La app está en segundo plano</li>
-              <li>El navegador está abierto (aunque la pestaña esté en segundo plano)</li>
-            </ul>
-            <div class="text-xs text-yellow-400 mt-2">
-              ⚠️ No funcionan cuando el navegador está completamente cerrado
+            <div class="text-xs text-gray-400 mt-3">
+              💡 OneSignal es 100% gratuito hasta 10,000 suscriptores
             </div>
-            <div class="text-xs text-gray-500 mt-2">
-              💡 Este sistema es 100% gratuito y no requiere plan de pago
+            <div class="text-xs text-gray-500 mt-1">
+              ✅ Funciona incluso cuando el navegador está cerrado
             </div>
           </div>
         </div>
