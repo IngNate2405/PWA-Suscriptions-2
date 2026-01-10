@@ -775,12 +775,31 @@
     async function subscribeToOneSignal() {
       const statusDiv = document.getElementById('onesignal-status');
       
+      // Verificar si OneSignal SDK está cargado, si no, esperar más tiempo
       if (typeof OneSignal === 'undefined') {
         if (statusDiv) {
-          statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal SDK no cargado. Recarga la página.</div>';
+          statusDiv.innerHTML = '<div class="text-yellow-400">⏳ Esperando a que OneSignal SDK se cargue...</div>';
         }
-        showNotification('❌ Error', 'OneSignal SDK no está cargado. Recarga la página.', 'error');
-        return;
+        showNotification('⏳ Esperando...', 'OneSignal SDK se está cargando, por favor espera...', 'info');
+        
+        // Esperar hasta 30 segundos en PWA
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                     window.navigator.standalone || 
+                     document.referrer.includes('android-app://');
+        const maxWait = isPWA ? 30000 : 15000;
+        const startTime = Date.now();
+        
+        while (typeof OneSignal === 'undefined' && (Date.now() - startTime) < maxWait) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        if (typeof OneSignal === 'undefined') {
+          if (statusDiv) {
+            statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal SDK no se cargó. Recarga la página o verifica tu conexión.</div>';
+          }
+          showNotification('❌ Error', 'OneSignal SDK no se cargó. Recarga la página.', 'error');
+          return;
+        }
       }
 
       if (!oneSignalService) {

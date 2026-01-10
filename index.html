@@ -216,7 +216,7 @@
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                      window.navigator.standalone || 
                      document.referrer.includes('android-app://');
-        const waitTime = isPWA ? 5000 : 3000;
+        const waitTime = isPWA ? 10000 : 5000; // Más tiempo en PWA (10 segundos)
         
         setTimeout(async () => {
           if (typeof oneSignalService !== 'undefined' && 
@@ -224,9 +224,23 @@
               ONESIGNAL_CONFIG.appId && 
               ONESIGNAL_CONFIG.appId !== 'TU_ONESIGNAL_APP_ID') {
             try {
-              if (!oneSignalService.initialized) {
+              // Esperar a que OneSignal SDK esté cargado antes de inicializar
+              if (typeof OneSignal === 'undefined') {
+                console.log('⏳ Esperando a que OneSignal SDK se cargue...');
+                let attempts = 0;
+                const maxAttempts = isPWA ? 20 : 10; // Más intentos en PWA
+                
+                while (typeof OneSignal === 'undefined' && attempts < maxAttempts) {
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  attempts++;
+                }
+              }
+              
+              if (typeof OneSignal !== 'undefined' && !oneSignalService.initialized) {
                 await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
                 console.log('✅ OneSignal inicializado en index.html');
+              } else if (typeof OneSignal === 'undefined') {
+                console.warn('⚠️ OneSignal SDK no se cargó después de esperar');
               }
             } catch (error) {
               console.log('OneSignal ya inicializado o error:', error);
