@@ -776,6 +776,20 @@
                 subscriptions
               });
               console.log('✅ Notificaciones reprogramadas localmente');
+              
+              // También intentar programar en OneSignal si está disponible
+              if (typeof oneSignalRESTService !== 'undefined' && ONESIGNAL_CONFIG?.restApiKey) {
+                setTimeout(async () => {
+                  try {
+                    const count = await oneSignalRESTService.scheduleAllPendingNotifications();
+                    if (count > 0) {
+                      console.log(`✅ ${count} notificaciones programadas en OneSignal para cuando la app esté cerrada`);
+                    }
+                  } catch (error) {
+                    console.log('No se pudieron programar notificaciones en OneSignal:', error);
+                  }
+                }, 2000);
+              }
             } else {
               console.log('⚠️ Service Worker no está activo aún');
             }
