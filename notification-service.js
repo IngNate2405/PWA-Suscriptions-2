@@ -109,7 +109,7 @@ class NotificationService {
       }
     }
     
-    // Guardar notificaciones programadas
+    // Guardar notificaciones programadas en IndexedDB (para notificaciones locales cuando app está abierta)
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(['scheduledNotifications'], 'readwrite');
       const store = transaction.objectStore('scheduledNotifications');
@@ -127,7 +127,17 @@ class NotificationService {
       });
       
       Promise.all(promises)
-        .then(() => resolve(scheduled.length))
+        .then(() => {
+          // También guardar en localStorage para que un backend pueda leerlas y enviarlas vía OneSignal
+          // cuando la app está cerrada
+          const scheduledForOneSignal = scheduled.map(notif => ({
+            ...notif,
+            title: `Recordatorio: ${notif.subscriptionName}`,
+            body: `Tu suscripción "${notif.subscriptionName}" vence pronto`
+          }));
+          localStorage.setItem('onesignalScheduled', JSON.stringify(scheduledForOneSignal));
+          resolve(scheduled.length);
+        })
         .catch(reject);
     });
   }
