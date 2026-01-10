@@ -8,6 +8,6 @@ const ONESIGNAL_CONFIG = {
   safariWebId: 'web.onesignal.auto.00e855ed-5f66-45b8-ad03-54b1e142944e',
   // REST API Key (obtenido del dashboard: Settings > Keys & IDs > REST API Key)
   // IMPORTANTE: Este es un secreto, no lo compartas públicamente
-  restApiKey: 'os_v2_app_zgsgf4tlifapfagd2fz4evoenhbv3auvl7iui4nqjlbbvj7asmfhu6gca2kdzc53c7avk2b6zrvamfvw5huv6ufibfk7h57cllibi2a' // Configura esto para enviar notificaciones cuando la app está cerrada
+  restApiKey: null // Configura esto localmente - NO subir a GitHub
 };
 

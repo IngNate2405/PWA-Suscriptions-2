@@ -1,0 +1,12 @@
+// Configuración LOCAL de OneSignal (NO subir a GitHub)
+// Copia este archivo como 'onesignal-config-local.js' y agrega tu REST API Key
+
+// Este archivo está en .gitignore y NO se subirá a GitHub
+
+if (typeof ONESIGNAL_CONFIG === 'undefined') {
+  var ONESIGNAL_CONFIG = {};
+}
+
+// Sobrescribir solo el REST API Key localmente
+ONESIGNAL_CONFIG.restApiKey = 'TU_REST_API_KEY_AQUI'; // Pega tu REST API Key aquí
+

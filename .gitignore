@@ -33,6 +33,7 @@ build/
 *.backup
 *~
 vapid-keys-backup.txt
+onesignal-config-local.js
 
 # Firebase config con credenciales reales
 # NOTA: Para GitHub Pages, este archivo DEBE estar en el repositorio
