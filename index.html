@@ -20,11 +20,12 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-service.js"></script>
   <script src="onesignal-config.js"></script>
-  <script src="onesignal-service.js"></script>
   <script src="version.js"></script>
   
-  <!-- OneSignal SDK -->
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <!-- OneSignal SDK - Cargar ANTES de onesignal-service.js -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"></script>
+  
+  <script src="onesignal-service.js"></script>
   <style>
     html, body {
       overflow-y: auto !important;

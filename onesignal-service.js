@@ -9,22 +9,47 @@ class OneSignalService {
 
   // Esperar a que OneSignal SDK esté cargado
   async waitForOneSignal() {
-    // Si ya está disponible, retornar inmediatamente
-    if (typeof OneSignal !== 'undefined' && OneSignal.SDK_VERSION) {
+    // Verificar si ya está disponible (múltiples formas de verificar)
+    if (typeof OneSignal !== 'undefined') {
+      // Verificar si tiene métodos básicos
+      if (OneSignal.init || OneSignal.SDK_VERSION || window.OneSignal) {
+        return true;
+      }
+    }
+
+    // También verificar window.OneSignal (a veces se carga ahí)
+    if (typeof window !== 'undefined' && window.OneSignal) {
       return true;
     }
 
-    // Esperar hasta 10 segundos a que OneSignal se cargue
-    const maxWait = 10000; // 10 segundos
-    const checkInterval = 100; // Verificar cada 100ms
+    // Esperar hasta 15 segundos a que OneSignal se cargue
+    const maxWait = 15000; // 15 segundos
+    const checkInterval = 200; // Verificar cada 200ms
     let elapsed = 0;
 
     while (elapsed < maxWait) {
-      if (typeof OneSignal !== 'undefined' && OneSignal.SDK_VERSION) {
+      // Verificar múltiples formas
+      if (typeof OneSignal !== 'undefined' && (OneSignal.init || OneSignal.SDK_VERSION)) {
         return true;
       }
+      
+      if (typeof window !== 'undefined' && window.OneSignal) {
+        return true;
+      }
+
       await new Promise(resolve => setTimeout(resolve, checkInterval));
       elapsed += checkInterval;
+    }
+
+    console.error('OneSignal SDK no disponible después de esperar. Verificando script...');
+    
+    // Verificar si el script está en el DOM
+    const scripts = document.querySelectorAll('script[src*="onesignal"]');
+    if (scripts.length === 0) {
+      console.error('❌ No se encontró el script de OneSignal en el DOM. Verifica que esté incluido en el HTML.');
+    } else {
+      console.log('✅ Script de OneSignal encontrado en el DOM:', scripts[0].src);
+      console.log('⚠️ Pero OneSignal aún no está disponible. Puede ser un problema de carga o versión.');
     }
 
     return false;
@@ -119,25 +144,31 @@ class OneSignalService {
 
   // Verificar si está suscrito
   async isSubscribed() {
-    if (!this.initialized || typeof OneSignal === 'undefined') {
+    if (!this.initialized) {
+      return false;
+    }
+
+    const OneSignalInstance = window.OneSignal || OneSignal;
+    
+    if (!OneSignalInstance) {
       return false;
     }
 
     try {
       // Verificar permisos
-      const permission = await OneSignal.Notifications.permissionNative;
+      const permission = await OneSignalInstance.Notifications.permissionNative;
       if (permission !== 'granted') {
         return false;
       }
       
       // Verificar si hay un player ID (indica que está suscrito)
-      const userId = await OneSignal.User.PushSubscription.id;
+      const userId = await OneSignalInstance.User.PushSubscription.id;
       return userId !== null && userId !== undefined;
     } catch (error) {
       console.error('Error verificando suscripción:', error);
       // Si falla, verificar al menos los permisos
       try {
-        const permission = await OneSignal.Notifications.permissionNative;
+        const permission = await OneSignalInstance.Notifications.permissionNative;
         return permission === 'granted';
       } catch (e) {
         return false;
@@ -147,13 +178,19 @@ class OneSignalService {
   
   // Obtener información del usuario
   async getUserInfo() {
-    if (!this.initialized || typeof OneSignal === 'undefined') {
+    if (!this.initialized) {
+      return null;
+    }
+
+    const OneSignalInstance = window.OneSignal || OneSignal;
+    
+    if (!OneSignalInstance) {
       return null;
     }
 
     try {
-      const userId = await OneSignal.User.PushSubscription.id;
-      const permission = await OneSignal.Notifications.permissionNative;
+      const userId = await OneSignalInstance.User.PushSubscription.id;
+      const permission = await OneSignalInstance.Notifications.permissionNative;
       return {
         userId: userId,
         permission: permission,
