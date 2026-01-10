@@ -4,7 +4,19 @@
 
 El archivo `onesignal-config-local.js` es solo para desarrollo local. Para producción, tienes varias opciones:
 
-## Opción 1: Crear el archivo directamente en el servidor (Recomendado)
+## Opción 1: Usar GitHub Actions (Recomendado para GitHub Pages) ✅
+
+**He configurado GitHub Actions para crear el archivo automáticamente.**
+
+1. **Agrega tu REST API Key como GitHub Secret:**
+   - Ve a tu repositorio > **Settings** > **Secrets and variables** > **Actions**
+   - Crea un nuevo secret llamado: `ONESIGNAL_REST_API_KEY`
+   - Pega tu REST API Key
+   - El workflow creará el archivo automáticamente en cada deploy
+
+2. **Ver instrucciones detalladas en:** `CONFIGURAR-GITHUB-PAGES.md`
+
+## Opción 2: Crear el archivo manualmente (Alternativa)
 
 ### Si usas GitHub Pages:
 

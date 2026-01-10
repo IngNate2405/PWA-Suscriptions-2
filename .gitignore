@@ -33,7 +33,9 @@ build/
 *.backup
 *~
 vapid-keys-backup.txt
-onesignal-config-local.js
+# onesignal-config-local.js se genera automáticamente en GitHub Pages
+# No agregarlo aquí para que se pueda crear durante el deploy
+# onesignal-config-local.js
 
 # Firebase config con credenciales reales
 # NOTA: Para GitHub Pages, este archivo DEBE estar en el repositorio
