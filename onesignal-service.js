@@ -7,32 +7,82 @@ class OneSignalService {
     this.subscribed = false;
   }
 
+  // Esperar a que OneSignal SDK esté cargado
+  async waitForOneSignal() {
+    // Si ya está disponible, retornar inmediatamente
+    if (typeof OneSignal !== 'undefined' && OneSignal.SDK_VERSION) {
+      return true;
+    }
+
+    // Esperar hasta 10 segundos a que OneSignal se cargue
+    const maxWait = 10000; // 10 segundos
+    const checkInterval = 100; // Verificar cada 100ms
+    let elapsed = 0;
+
+    while (elapsed < maxWait) {
+      if (typeof OneSignal !== 'undefined' && OneSignal.SDK_VERSION) {
+        return true;
+      }
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+      elapsed += checkInterval;
+    }
+
+    return false;
+  }
+
   // Inicializar OneSignal
   async initialize(appId) {
     if (this.initialized) {
       return true;
     }
 
+    // Esperar a que OneSignal SDK esté cargado
+    const sdkLoaded = await this.waitForOneSignal();
+    if (!sdkLoaded) {
+      console.error('❌ OneSignal SDK no se cargó después de 10 segundos. Verifica que el script esté incluido correctamente.');
+      return false;
+    }
+
     if (typeof OneSignal === 'undefined') {
-      console.error('❌ OneSignal SDK no está cargado. Asegúrate de incluir el script de OneSignal.');
+      console.error('❌ OneSignal SDK no está disponible.');
+      return false;
+    }
+
+    // Validar App ID
+    if (!appId || appId === 'TU_ONESIGNAL_APP_ID' || appId.trim() === '') {
+      console.error('❌ App ID de OneSignal no configurado. Configura tu App ID en onesignal-config.js');
       return false;
     }
 
     try {
+      // Verificar si OneSignal ya está inicializado
+      if (OneSignal.SDK_VERSION) {
+        console.log('OneSignal SDK versión:', OneSignal.SDK_VERSION);
+      }
+
+      // Inicializar OneSignal usando el método correcto para v16
       await OneSignal.init({
         appId: appId,
-        safari_web_id: appId, // Para Safari
+        safari_web_id: ONESIGNAL_CONFIG.safariWebId || appId, // Para Safari
         notifyButton: {
           enable: false, // No mostrar botón automático
         },
         allowLocalhostAsSecureOrigin: true, // Para desarrollo local
       });
 
+      // Esperar un momento para asegurar que la inicialización se complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       this.initialized = true;
       console.log('✅ OneSignal inicializado correctamente');
       return true;
     } catch (error) {
       console.error('❌ Error al inicializar OneSignal:', error);
+      console.error('Detalles del error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       return false;
     }
   }
