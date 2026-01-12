@@ -1,15 +1,6 @@
-// Service Worker: Solo para OneSignal y caché
-// Las notificaciones cuando la app está cerrada se manejan con OneSignal REST API
-
-// Importar Service Worker de OneSignal (para notificaciones push cuando la app está cerrada)
-// CRÍTICO: Esto debe estar ANTES de nuestros event listeners para que OneSignal pueda manejar push
-try {
-  importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
-  console.log('✅ Service Worker de OneSignal importado correctamente');
-} catch (e) {
-  console.log('⚠️ No se pudo importar el Service Worker de OneSignal:', e);
-  console.log('💡 Las notificaciones push cuando la app está cerrada pueden no funcionar');
-}
+// Service Worker: Solo para caché
+// OneSignal usará su propio Service Worker (OneSignalSDKWorker.js) para notificaciones push
+// Esto evita conflictos y problemas con importScripts desde CDN
 
 // Nombre del caché con versión
 const CACHE_NAME = 'subs-app-v3';

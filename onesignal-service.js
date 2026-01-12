@@ -177,13 +177,10 @@ class OneSignalService {
           initOptions.safari_web_id = ONESIGNAL_CONFIG.safariWebId;
         }
         
-        // Especificar nuestro Service Worker personalizado que ya importa OneSignalSDK.sw.js
-        // Esto evita conflictos entre múltiples Service Workers
-        // Nuestro sw.js ya importa OneSignalSDK.sw.js, así que OneSignal puede usarlo
-        initOptions.serviceWorkerPath = './sw.js';
-        initOptions.serviceWorkerParam = {
-          scope: './'
-        };
+        // No especificar serviceWorkerPath - dejar que OneSignal use su propio Service Worker
+        // OneSignal buscará OneSignalSDKWorker.js en la raíz automáticamente
+        // Nuestro sw.js manejará el caché, OneSignalSDKWorker.js manejará las notificaciones
+        // Esto evita problemas con importScripts desde CDN en Service Workers personalizados
         
         await OneSignal.init(initOptions);
         console.log('✅ OneSignal inicializado correctamente');
