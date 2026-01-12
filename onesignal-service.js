@@ -257,24 +257,55 @@ class OneSignalService {
     }
 
     try {
+      console.log('🔔 Iniciando proceso de suscripción a OneSignal...');
+      
       // Verificar permisos actuales
       let permission = await OneSignal.Notifications.permissionNative;
+      console.log('📋 Permiso actual:', permission);
       
       // Si no están concedidos, solicitarlos
       if (permission !== 'granted') {
+        console.log('📢 Solicitando permisos de notificación...');
         permission = await OneSignal.Notifications.requestPermission();
+        console.log('📋 Permiso después de solicitar:', permission);
       }
       
       if (permission === 'granted') {
-        this.subscribed = true;
-        console.log('✅ Suscrito a OneSignal correctamente');
-        return true;
+        // Esperar un momento para que OneSignal procese la suscripción
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verificar que realmente se haya registrado el Player ID
+        try {
+          const playerId = await OneSignal.User.PushSubscription.id;
+          if (playerId) {
+            console.log('✅ Player ID registrado:', playerId.substring(0, 8) + '...');
+            console.log('✅ Suscrito a OneSignal correctamente');
+            this.subscribed = true;
+            
+            // Verificar que el usuario aparezca en OneSignal
+            console.log('💡 El usuario debería aparecer en el dashboard de OneSignal en unos segundos');
+            console.log('💡 Ve a OneSignal Dashboard → Audience → Subscribers para verificar');
+            
+            return true;
+          } else {
+            console.warn('⚠️ Permisos concedidos pero no se obtuvo Player ID');
+            console.warn('💡 Esto puede tomar unos segundos. Intenta verificar el estado en unos momentos.');
+            this.subscribed = true; // Marcar como suscrito de todas formas
+            return true;
+          }
+        } catch (e) {
+          console.warn('⚠️ Error obteniendo Player ID después de suscribirse:', e);
+          console.warn('💡 Los permisos están concedidos, pero puede tomar unos segundos para que OneSignal registre la suscripción');
+          this.subscribed = true;
+          return true;
+        }
       } else {
-        console.warn('⚠️ Permisos de notificación denegados');
+        console.warn('⚠️ Permisos de notificación denegados:', permission);
         return false;
       }
     } catch (error) {
       console.error('❌ Error al suscribirse a OneSignal:', error);
+      console.error('Detalles:', error.message, error.stack);
       return false;
     }
   }
