@@ -236,8 +236,23 @@
               }
               
               if (typeof OneSignal !== 'undefined' && !oneSignalService.initialized) {
-                await oneSignalService.initialize(ONESIGNAL_CONFIG.appId);
+                // Pasar también safariWebId para iOS/PWA
+                await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
                 console.log('✅ OneSignal inicializado en index.html');
+                
+                // En PWA, verificar suscripción después de inicializar
+                if (isPWA) {
+                  setTimeout(async () => {
+                    try {
+                      const userInfo = await oneSignalService.getUserInfo();
+                      if (userInfo && !userInfo.subscribed) {
+                        console.log('💡 En PWA, el usuario debe suscribirse manualmente en Configuración → Notificaciones');
+                      }
+                    } catch (e) {
+                      console.log('No se pudo verificar suscripción:', e);
+                    }
+                  }, 2000);
+                }
               } else if (typeof OneSignal === 'undefined') {
                 console.warn('⚠️ OneSignal SDK no se cargó después de esperar');
               }
