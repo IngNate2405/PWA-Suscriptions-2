@@ -46,4 +46,5 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        # Workflow configurado para ejecutarse automáticamente en cada push a main
 
