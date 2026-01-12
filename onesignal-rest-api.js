@@ -108,21 +108,30 @@ class OneSignalRESTService {
 
       const result = await response.json();
       
-      if (response.ok) {
-        console.log('✅ Notificación programada enviada a OneSignal');
-        console.log('📋 Respuesta completa:', JSON.stringify(result, null, 2));
-        console.log('📅 Fecha programada:', sendAfterDate);
-        console.log('👤 Player ID:', playerId.substring(0, 8) + '...');
-        
+      // Verificar si la respuesta es exitosa
+      if (response.ok && response.status >= 200 && response.status < 300) {
         // Verificar que la respuesta tenga un ID (indica que se programó correctamente)
         if (result.id) {
-          console.log('✅ ID de notificación OneSignal:', result.id);
+          console.log('✅ Notificación programada enviada a OneSignal');
+          console.log('📋 ID de notificación OneSignal:', result.id);
+          console.log('📅 Fecha programada:', sendAfterDate);
+          console.log('👤 Player ID:', playerId.substring(0, 8) + '...');
           console.log('💡 La notificación se enviará en:', sendAfterDate);
+          console.log('📋 Respuesta completa:', JSON.stringify(result, null, 2));
+          return true;
         } else {
-          console.warn('⚠️ La respuesta no tiene ID de notificación');
+          // Respuesta OK pero sin ID - puede ser un error
+          console.error('❌ OneSignal respondió OK pero sin ID de notificación');
+          console.error('📋 Respuesta completa:', JSON.stringify(result, null, 2));
+          console.error('⚠️ Esto puede indicar que la notificación no se programó correctamente');
+          
+          // Verificar si hay errores en la respuesta
+          if (result.errors && result.errors.length > 0) {
+            console.error('❌ Errores en la respuesta:', result.errors);
+          }
+          
+          return false;
         }
-        
-        return true;
       } else {
         console.error('❌ Error al enviar notificación a OneSignal');
         console.error('📋 Respuesta de error:', JSON.stringify(result, null, 2));
