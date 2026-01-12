@@ -2,6 +2,8 @@
 
 Aplicación web para gestionar suscripciones con notificaciones push y sincronización en la nube.
 
+<!-- Test commit para verificar workflow automático -->
+
 ## Características
 
 - ✅ Gestión de suscripciones personales y compartidas
