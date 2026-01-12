@@ -695,7 +695,11 @@
     }
 
     // Función para verificar estado de OneSignal
-    async function checkOneSignalStatus() {
+    // Flag para evitar múltiples verificaciones simultáneas
+    let isCheckingOneSignal = false;
+    let lastOneSignalStatus = null;
+
+    async function checkOneSignalStatus(showNotifications = false) {
       const statusDiv = document.getElementById('onesignal-status');
       
       if (!statusDiv) {
@@ -703,8 +707,18 @@
         return;
       }
 
-      // Mostrar estado de carga
-      statusDiv.innerHTML = '<div class="text-blue-400">⏳ Verificando...</div>';
+      // Evitar múltiples verificaciones simultáneas
+      if (isCheckingOneSignal) {
+        console.log('⏳ Verificación de OneSignal ya en progreso, omitiendo...');
+        return;
+      }
+
+      isCheckingOneSignal = true;
+
+      // Solo mostrar "Verificando..." si es la primera vez o si se solicita explícitamente
+      if (showNotifications || !lastOneSignalStatus) {
+        statusDiv.innerHTML = '<div class="text-blue-400">⏳ Verificando...</div>';
+      }
 
       // Verificar que OneSignal esté disponible
       if (typeof OneSignal === 'undefined') {
@@ -712,13 +726,19 @@
           <div class="text-red-400 mb-2">❌ OneSignal SDK no cargado</div>
           <div class="text-xs text-gray-400">Recarga la página</div>
         `;
-        showNotification('❌ Error', 'OneSignal SDK no está cargado. Recarga la página.', 'error');
+        if (showNotifications) {
+          showNotification('❌ Error', 'OneSignal SDK no está cargado. Recarga la página.', 'error');
+        }
+        isCheckingOneSignal = false;
         return;
       }
 
       if (!oneSignalService) {
         statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal Service no disponible</div>';
-        showNotification('❌ Error', 'OneSignal Service no disponible', 'error');
+        if (showNotifications) {
+          showNotification('❌ Error', 'OneSignal Service no disponible', 'error');
+        }
+        isCheckingOneSignal = false;
         return;
       }
 
@@ -727,48 +747,70 @@
           <div class="text-yellow-400 mb-2">⚠️ OneSignal no configurado</div>
           <div class="text-xs text-gray-400">Configura tu App ID en onesignal-config.js</div>
         `;
-        showNotification('⚠️ Advertencia', 'Configura tu App ID de OneSignal en onesignal-config.js', 'warning');
+        if (showNotifications) {
+          showNotification('⚠️ Advertencia', 'Configura tu App ID de OneSignal en onesignal-config.js', 'warning');
+        }
+        isCheckingOneSignal = false;
         return;
       }
 
       try {
-        // Asegurar que OneSignal esté inicializado
+        // Solo inicializar si no está ya inicializado
         if (!oneSignalService.initialized) {
+          console.log('🔧 Inicializando OneSignal...');
           const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
           if (!initialized) {
             statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal</div>';
+            isCheckingOneSignal = false;
             return;
           }
+        } else {
+          console.log('✅ OneSignal ya está inicializado, solo verificando estado...');
         }
 
         // Obtener información del usuario
         const userInfo = await oneSignalService.getUserInfo();
+        const currentStatus = userInfo && userInfo.subscribed ? 'subscribed' : 
+                             (userInfo && userInfo.permission === 'denied' ? 'denied' : 'not_subscribed');
+        
+        // Solo actualizar UI y mostrar notificaciones si el estado cambió o si se solicita explícitamente
+        const statusChanged = lastOneSignalStatus !== currentStatus;
         
         if (userInfo && userInfo.subscribed) {
           statusDiv.innerHTML = `
             <div class="text-green-400 mb-2">✅ Suscrito a OneSignal</div>
             <div class="text-xs text-gray-400">Las notificaciones funcionarán incluso con el navegador cerrado</div>
           `;
-          showNotification('✅ Verificado', 'Estás suscrito a OneSignal. Las notificaciones funcionarán con el navegador cerrado.', 'success');
+          if (showNotifications && statusChanged) {
+            showNotification('✅ Verificado', 'Estás suscrito a OneSignal. Las notificaciones funcionarán con el navegador cerrado.', 'success');
+          }
         } else if (userInfo && userInfo.permission === 'denied') {
           statusDiv.innerHTML = `
             <div class="text-red-400 mb-2">❌ Permisos denegados</div>
             <div class="text-xs text-gray-400">Habilita las notificaciones en la configuración del navegador</div>
           `;
-          showNotification('❌ Permisos denegados', 'Habilita las notificaciones en la configuración del navegador', 'error');
+          if (showNotifications && statusChanged) {
+            showNotification('❌ Permisos denegados', 'Habilita las notificaciones en la configuración del navegador', 'error');
+          }
         } else {
           statusDiv.innerHTML = `
             <div class="text-yellow-400 mb-2">⚠️ No suscrito</div>
             <div class="text-xs text-gray-400">Haz clic en "Suscribirse" para activar las notificaciones</div>
           `;
         }
+
+        lastOneSignalStatus = currentStatus;
       } catch (error) {
         console.error('Error verificando OneSignal:', error);
         statusDiv.innerHTML = `
           <div class="text-red-400 mb-2">❌ Error: ${error.message || 'Error desconocido'}</div>
           <div class="text-xs text-gray-400 mt-1">Revisa la consola para más detalles</div>
         `;
-        showNotification('❌ Error', `Error al verificar: ${error.message || 'Error desconocido'}`, 'error');
+        if (showNotifications) {
+          showNotification('❌ Error', `Error al verificar: ${error.message || 'Error desconocido'}`, 'error');
+        }
+      } finally {
+        isCheckingOneSignal = false;
       }
     }
 
@@ -842,9 +884,9 @@
         
         if (subscribed) {
           showNotification('✅ Éxito', 'Suscrito a OneSignal correctamente. Las notificaciones funcionarán incluso con el navegador cerrado.', 'success');
-          // Actualizar estado después de un momento
+          // Actualizar estado después de un momento (mostrar notificaciones porque es acción del usuario)
           setTimeout(() => {
-            checkOneSignalStatus();
+            checkOneSignalStatus(true);
           }, 1000);
         } else {
           if (statusDiv) {
@@ -880,8 +922,10 @@
       // Cargar versión
       cargarVersion();
       
-      // Verificar estado inmediatamente
+      // Verificar estado inmediatamente (sin mostrar notificaciones)
       syncNotificationStatus();
+      // Verificar OneSignal sin mostrar notificaciones la primera vez
+      checkOneSignalStatus(false);
       updateFirebaseUI();
 
       // Escuchar cambios de autenticación
@@ -924,7 +968,7 @@
           // Verificar de nuevo antes de inicializar (por si se inicializó en otro lugar)
           if (isOneSignalAlreadyInitialized()) {
             console.log('✅ OneSignal ya está inicializado, verificando estado...');
-            checkOneSignalStatus();
+            checkOneSignalStatus(false); // No mostrar notificaciones
             return;
           }
 
@@ -969,9 +1013,9 @@
             const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
             
             if (initialized) {
-              // Verificar estado después de inicializar (más tiempo en PWA)
+              // Verificar estado después de inicializar (más tiempo en PWA) - sin notificaciones
               setTimeout(() => {
-                checkOneSignalStatus();
+                checkOneSignalStatus(false);
               }, isPWA ? 2000 : 1000);
             } else {
               const statusDiv = document.getElementById('onesignal-status');
@@ -988,18 +1032,20 @@
           }
         }, waitTime);
       } else {
-        // Si ya está inicializado, solo verificar el estado
+        // Si ya está inicializado, solo verificar el estado - sin notificaciones
         console.log('✅ OneSignal ya está inicializado, verificando estado...');
         setTimeout(() => {
-          checkOneSignalStatus();
+          checkOneSignalStatus(false);
         }, 500);
       }
       
-      // Sincronizar estado cuando la página vuelve a estar visible
+      // Sincronizar estado cuando la página vuelve a estar visible (sin notificaciones)
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
           console.log('Página visible, sincronizando estado...');
           syncNotificationStatus();
+          // Verificar OneSignal sin mostrar notificaciones
+          checkOneSignalStatus(false);
         }
       });
       
@@ -1170,7 +1216,7 @@
               <button onclick="subscribeToOneSignal()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-sm w-full">
                 Suscribirse a Notificaciones Push
               </button>
-              <button onclick="checkOneSignalStatus()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm w-full">
+              <button onclick="checkOneSignalStatus(true)" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm w-full">
                 Verificar Estado
               </button>
             </div>
