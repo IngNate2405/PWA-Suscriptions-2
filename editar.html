@@ -768,18 +768,36 @@
       }
 
       // Programar notificaciones en OneSignal REST API (solo cuando la app está cerrada)
-      if (typeof oneSignalRESTService !== 'undefined' && ONESIGNAL_CONFIG?.restApiKey) {
-        setTimeout(async () => {
-          try {
-            const count = await oneSignalRESTService.scheduleAllPendingNotifications();
-            if (count > 0) {
-              console.log(`✅ ${count} notificaciones programadas en OneSignal para cuando la app esté cerrada`);
-            }
-          } catch (error) {
-            console.log('No se pudieron programar notificaciones en OneSignal:', error);
+      // Esperar un poco más para asegurar que OneSignal esté inicializado y el restApiKey esté cargado
+      setTimeout(async () => {
+        try {
+          // Verificar que el servicio esté disponible
+          if (typeof oneSignalRESTService === 'undefined') {
+            console.warn('⚠️ oneSignalRESTService no está disponible');
+            return;
           }
-        }, 2000);
-      }
+
+          // Verificar que el REST API Key esté configurado
+          const restApiKey = ONESIGNAL_CONFIG?.restApiKey || oneSignalRESTService.restApiKey;
+          if (!restApiKey) {
+            console.warn('⚠️ REST API Key no configurado. Las notificaciones cuando la app está cerrada no funcionarán.');
+            console.warn('💡 Configura ONESIGNAL_REST_API_KEY en GitHub Secrets para que funcione en producción.');
+            return;
+          }
+
+          console.log('📬 Programando notificaciones con OneSignal REST API...');
+          const count = await oneSignalRESTService.scheduleAllPendingNotifications();
+          if (count > 0) {
+            console.log(`✅ ${count} notificaciones programadas en OneSignal para cuando la app esté cerrada`);
+            showNotification('✅ Notificaciones programadas', `${count} notificaciones se enviarán automáticamente`, 'success');
+          } else {
+            console.log('ℹ️ No se programaron notificaciones (puede ser que ya estén programadas o no haya notificaciones futuras)');
+          }
+        } catch (error) {
+          console.error('❌ Error al programar notificaciones en OneSignal:', error);
+          console.error('Detalles:', error.message, error.stack);
+        }
+      }, 3000); // Aumentado a 3 segundos para dar más tiempo
 
       // Continuar con el guardado inmediatamente (no esperar al Service Worker)
       alert(isNew ? 'Suscripción creada' : 'Suscripción actualizada');

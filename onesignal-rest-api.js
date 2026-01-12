@@ -19,25 +19,52 @@ class OneSignalRESTService {
       return false;
     }
 
+    if (!playerId) {
+      console.error('❌ Player ID no proporcionado');
+      return false;
+    }
+
+    // Asegurar que la fecha esté en formato ISO 8601 correcto
+    let sendAfterDate = notificationData.notificationDate;
+    if (typeof sendAfterDate === 'string') {
+      // Convertir a Date y luego a ISO string para asegurar formato correcto
+      const date = new Date(sendAfterDate);
+      if (!isNaN(date.getTime())) {
+        sendAfterDate = date.toISOString();
+      } else {
+        console.error('❌ Fecha inválida:', sendAfterDate);
+        return false;
+      }
+    }
+
     try {
+      const payload = {
+        app_id: this.appId,
+        include_player_ids: [playerId], // Enviar a un usuario específico
+        headings: { en: notificationData.title || 'Recordatorio de Suscripción' },
+        contents: { en: notificationData.body || 'Tu suscripción vence pronto' },
+        send_after: sendAfterDate, // Programar para la hora exacta (formato ISO 8601)
+        data: {
+          subscriptionId: notificationData.subscriptionId,
+          subscriptionName: notificationData.subscriptionName,
+          nextPayment: notificationData.nextPayment
+        }
+      };
+
+      console.log('📤 Enviando a OneSignal:', {
+        app_id: this.appId,
+        player_id: playerId.substring(0, 8) + '...',
+        send_after: sendAfterDate,
+        title: payload.headings.en
+      });
+
       const response = await fetch(this.apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.restApiKey}`
         },
-        body: JSON.stringify({
-          app_id: this.appId,
-          include_player_ids: [playerId], // Enviar a un usuario específico
-          headings: { en: notificationData.title || 'Recordatorio de Suscripción' },
-          contents: { en: notificationData.body || 'Tu suscripción vence pronto' },
-          send_after: notificationData.notificationDate, // Programar para la hora exacta
-          data: {
-            subscriptionId: notificationData.subscriptionId,
-            subscriptionName: notificationData.subscriptionName,
-            nextPayment: notificationData.nextPayment
-          }
-        })
+        body: JSON.stringify(payload)
       });
 
       const result = await response.json();
@@ -47,6 +74,7 @@ class OneSignalRESTService {
         return true;
       } else {
         console.error('❌ Error al enviar notificación:', result);
+        console.error('📋 Detalles del error:', JSON.stringify(result, null, 2));
         return false;
       }
     } catch (error) {
@@ -99,15 +127,33 @@ class OneSignalRESTService {
 
   // Programar todas las notificaciones pendientes
   async scheduleAllPendingNotifications() {
+    console.log('📬 Iniciando programación de notificaciones con OneSignal REST API...');
+    
+    // Verificar que el REST API Key esté disponible
+    if (!this.restApiKey) {
+      console.error('❌ REST API Key no configurado. Verifica que esté en GitHub Secrets o en onesignal-config-local.js');
+      return 0;
+    }
+    console.log('✅ REST API Key encontrado');
+
     // Leer notificaciones programadas desde localStorage
     const scheduled = JSON.parse(localStorage.getItem('onesignalScheduled') || '[]');
+    console.log(`📋 Notificaciones en localStorage: ${scheduled.length}`);
+    
     const now = new Date();
     
     // Filtrar notificaciones que deben enviarse ahora o en el futuro
     const toSend = scheduled.filter(notif => {
+      if (!notif.notificationDate) return false;
       const notifDate = new Date(notif.notificationDate);
-      return notifDate > now; // Solo las futuras
+      const isValid = notifDate > now && !isNaN(notifDate.getTime());
+      if (!isValid) {
+        console.log(`⏭️ Notificación omitida (fecha inválida o pasada): ${notif.notificationDate}`);
+      }
+      return isValid;
     });
+
+    console.log(`📤 Notificaciones a enviar: ${toSend.length}`);
 
     if (toSend.length === 0) {
       console.log('ℹ️ No hay notificaciones programadas para enviar');
@@ -117,29 +163,59 @@ class OneSignalRESTService {
     // Obtener el Player ID del usuario actual de OneSignal
     let playerId = null;
     try {
-      if (typeof OneSignal !== 'undefined' && OneSignal.User) {
-        const subscription = await OneSignal.User.PushSubscription.id;
-        playerId = subscription;
+      if (typeof OneSignal !== 'undefined') {
+        // Intentar diferentes formas de obtener el Player ID según la versión de OneSignal
+        if (OneSignal.User && OneSignal.User.PushSubscription) {
+          playerId = await OneSignal.User.PushSubscription.id;
+        } else if (OneSignal.getUserId) {
+          // Método alternativo para versiones anteriores
+          playerId = await OneSignal.getUserId();
+        } else if (OneSignal.isPushNotificationsEnabled && await OneSignal.isPushNotificationsEnabled()) {
+          // Si está habilitado, intentar obtener el ID de otra forma
+          const subscription = await OneSignal.getSubscription();
+          if (subscription && subscription.id) {
+            playerId = subscription.id;
+          }
+        }
+        
+        if (playerId) {
+          console.log(`✅ Player ID obtenido: ${playerId.substring(0, 8)}...`);
+        } else {
+          console.warn('⚠️ No se pudo obtener Player ID');
+        }
+      } else {
+        console.warn('⚠️ OneSignal SDK no está disponible');
       }
     } catch (e) {
-      console.log('No se pudo obtener Player ID:', e);
+      console.error('❌ Error al obtener Player ID:', e);
     }
 
     let sentCount = 0;
     
     for (const notif of toSend) {
+      console.log(`📨 Programando notificación para: ${notif.subscriptionName} - ${notif.notificationDate}`);
+      
       if (playerId) {
         // Enviar a usuario específico
         const sent = await this.sendScheduledNotification(notif, playerId);
-        if (sent) sentCount++;
+        if (sent) {
+          sentCount++;
+          console.log(`✅ Notificación programada exitosamente`);
+        } else {
+          console.error(`❌ Error al programar notificación para ${notif.subscriptionName}`);
+        }
       } else {
         // Si no hay Player ID, enviar a todos (para pruebas)
         console.warn('⚠️ No hay Player ID, enviando a todos los suscriptores');
         const sent = await this.sendToAll(notif);
-        if (sent) sentCount++;
+        if (sent) {
+          sentCount++;
+          console.log(`✅ Notificación programada para todos`);
+        }
       }
     }
 
+    console.log(`✅ Total de notificaciones programadas: ${sentCount}/${toSend.length}`);
     return sentCount;
   }
 }
