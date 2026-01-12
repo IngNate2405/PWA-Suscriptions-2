@@ -42,16 +42,38 @@ class OneSignalRESTService {
     }
 
     // Asegurar que la fecha esté en formato ISO 8601 correcto
+    // OneSignal requiere el formato: "YYYY-MM-DD HH:MM:SS GMT" o ISO 8601
     let sendAfterDate = notificationData.notificationDate;
     if (typeof sendAfterDate === 'string') {
       // Convertir a Date y luego a ISO string para asegurar formato correcto
       const date = new Date(sendAfterDate);
       if (!isNaN(date.getTime())) {
+        // OneSignal acepta ISO 8601, que es lo que toISOString() produce
         sendAfterDate = date.toISOString();
+        console.log('📅 Fecha convertida:', {
+          original: notificationData.notificationDate,
+          iso: sendAfterDate,
+          local: date.toLocaleString('es-ES', { timeZone: 'America/Guatemala' })
+        });
       } else {
         console.error('❌ Fecha inválida:', sendAfterDate);
         return false;
       }
+    } else if (sendAfterDate instanceof Date) {
+      sendAfterDate = sendAfterDate.toISOString();
+    } else {
+      console.error('❌ Tipo de fecha no válido:', typeof sendAfterDate);
+      return false;
+    }
+    
+    // Verificar que la fecha no esté en el pasado (OneSignal puede rechazarla)
+    const notificationDate = new Date(sendAfterDate);
+    const now = new Date();
+    if (notificationDate < now) {
+      console.warn('⚠️ La fecha está en el pasado. OneSignal puede rechazar notificaciones pasadas.');
+      console.warn('   Fecha notificación:', notificationDate.toISOString());
+      console.warn('   Fecha actual:', now.toISOString());
+      console.warn('   Diferencia:', Math.round((now - notificationDate) / 1000), 'segundos');
     }
 
     try {
@@ -87,11 +109,34 @@ class OneSignalRESTService {
       const result = await response.json();
       
       if (response.ok) {
-        console.log('✅ Notificación programada enviada a OneSignal:', result);
+        console.log('✅ Notificación programada enviada a OneSignal');
+        console.log('📋 Respuesta completa:', JSON.stringify(result, null, 2));
+        console.log('📅 Fecha programada:', sendAfterDate);
+        console.log('👤 Player ID:', playerId.substring(0, 8) + '...');
+        
+        // Verificar que la respuesta tenga un ID (indica que se programó correctamente)
+        if (result.id) {
+          console.log('✅ ID de notificación OneSignal:', result.id);
+          console.log('💡 La notificación se enviará en:', sendAfterDate);
+        } else {
+          console.warn('⚠️ La respuesta no tiene ID de notificación');
+        }
+        
         return true;
       } else {
-        console.error('❌ Error al enviar notificación:', result);
-        console.error('📋 Detalles del error:', JSON.stringify(result, null, 2));
+        console.error('❌ Error al enviar notificación a OneSignal');
+        console.error('📋 Respuesta de error:', JSON.stringify(result, null, 2));
+        console.error('📤 Payload enviado:', JSON.stringify(payload, null, 2));
+        console.error('🔑 Status HTTP:', response.status);
+        
+        // Mostrar mensajes de error específicos
+        if (result.errors) {
+          console.error('❌ Errores de OneSignal:');
+          result.errors.forEach((error, index) => {
+            console.error(`   ${index + 1}. ${error}`);
+          });
+        }
+        
         return false;
       }
     } catch (error) {
@@ -209,31 +254,67 @@ class OneSignalRESTService {
     // Obtener el Player ID del usuario actual de OneSignal
     let playerId = null;
     try {
-      if (typeof OneSignal !== 'undefined') {
-        // Intentar diferentes formas de obtener el Player ID según la versión de OneSignal
+      if (typeof OneSignal === 'undefined') {
+        console.warn('⚠️ OneSignal SDK no está disponible');
+      } else {
+        console.log('🔍 Intentando obtener Player ID...');
+        
+        // Método 1: OneSignal v16 (más reciente)
         if (OneSignal.User && OneSignal.User.PushSubscription) {
-          playerId = await OneSignal.User.PushSubscription.id;
-        } else if (OneSignal.getUserId) {
-          // Método alternativo para versiones anteriores
-          playerId = await OneSignal.getUserId();
-        } else if (OneSignal.isPushNotificationsEnabled && await OneSignal.isPushNotificationsEnabled()) {
-          // Si está habilitado, intentar obtener el ID de otra forma
-          const subscription = await OneSignal.getSubscription();
-          if (subscription && subscription.id) {
-            playerId = subscription.id;
+          try {
+            playerId = await OneSignal.User.PushSubscription.id;
+            console.log('✅ Player ID obtenido con OneSignal.User.PushSubscription.id');
+          } catch (e) {
+            console.log('⚠️ Error con OneSignal.User.PushSubscription.id:', e.message);
+          }
+        }
+        
+        // Método 2: Alternativo para versiones anteriores
+        if (!playerId && OneSignal.getUserId) {
+          try {
+            playerId = await OneSignal.getUserId();
+            console.log('✅ Player ID obtenido con OneSignal.getUserId()');
+          } catch (e) {
+            console.log('⚠️ Error con OneSignal.getUserId():', e.message);
+          }
+        }
+        
+        // Método 3: Verificar si hay suscripción activa
+        if (!playerId && OneSignal.isPushNotificationsEnabled) {
+          try {
+            const isEnabled = await OneSignal.isPushNotificationsEnabled();
+            if (isEnabled) {
+              console.log('✅ Push notifications están habilitadas');
+              // Intentar obtener de otra forma
+              if (OneSignal.getSubscription) {
+                const subscription = await OneSignal.getSubscription();
+                if (subscription && subscription.id) {
+                  playerId = subscription.id;
+                  console.log('✅ Player ID obtenido con OneSignal.getSubscription()');
+                }
+              }
+            } else {
+              console.warn('⚠️ Push notifications no están habilitadas');
+            }
+          } catch (e) {
+            console.log('⚠️ Error verificando push notifications:', e.message);
           }
         }
         
         if (playerId) {
-          console.log(`✅ Player ID obtenido: ${playerId.substring(0, 8)}...`);
+          console.log(`✅ Player ID obtenido: ${playerId.substring(0, 8)}... (longitud: ${playerId.length})`);
+          // Validar formato del Player ID (debe ser un UUID)
+          if (playerId.length < 30) {
+            console.warn('⚠️ Player ID parece tener un formato inusual');
+          }
         } else {
-          console.warn('⚠️ No se pudo obtener Player ID');
+          console.error('❌ No se pudo obtener Player ID con ningún método');
+          console.error('💡 Asegúrate de estar suscrito a OneSignal en la página de configuración');
         }
-      } else {
-        console.warn('⚠️ OneSignal SDK no está disponible');
       }
     } catch (e) {
       console.error('❌ Error al obtener Player ID:', e);
+      console.error('Stack:', e.stack);
     }
 
     let sentCount = 0;
