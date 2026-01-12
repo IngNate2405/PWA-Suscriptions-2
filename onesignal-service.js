@@ -271,32 +271,54 @@ class OneSignalService {
       }
       
       if (permission === 'granted') {
-        // Esperar un momento para que OneSignal procese la suscripción
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('✅ Permisos concedidos, esperando a que OneSignal registre al usuario...');
         
-        // Verificar que realmente se haya registrado el Player ID
-        try {
-          const playerId = await OneSignal.User.PushSubscription.id;
-          if (playerId) {
-            console.log('✅ Player ID registrado:', playerId.substring(0, 8) + '...');
-            console.log('✅ Suscrito a OneSignal correctamente');
-            this.subscribed = true;
-            
-            // Verificar que el usuario aparezca en OneSignal
-            console.log('💡 El usuario debería aparecer en el dashboard de OneSignal en unos segundos');
-            console.log('💡 Ve a OneSignal Dashboard → Audience → Subscribers para verificar');
-            
-            return true;
-          } else {
-            console.warn('⚠️ Permisos concedidos pero no se obtuvo Player ID');
-            console.warn('💡 Esto puede tomar unos segundos. Intenta verificar el estado en unos momentos.');
-            this.subscribed = true; // Marcar como suscrito de todas formas
-            return true;
+        // Esperar más tiempo para que OneSignal registre al usuario en su servidor
+        // OneSignal necesita tiempo para crear el registro del usuario después de conceder permisos
+        let playerId = null;
+        let attempts = 0;
+        const maxAttempts = 10; // Intentar hasta 10 veces (10 segundos)
+        
+        while (!playerId && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo entre intentos
+          attempts++;
+          
+          try {
+            playerId = await OneSignal.User.PushSubscription.id;
+            if (playerId) {
+              console.log(`✅ Player ID obtenido después de ${attempts} segundos:`, playerId.substring(0, 8) + '...');
+              break;
+            }
+          } catch (e) {
+            console.log(`⏳ Intento ${attempts}/${maxAttempts}: Esperando Player ID...`);
           }
-        } catch (e) {
-          console.warn('⚠️ Error obteniendo Player ID después de suscribirse:', e);
-          console.warn('💡 Los permisos están concedidos, pero puede tomar unos segundos para que OneSignal registre la suscripción');
+        }
+        
+        if (playerId) {
+          console.log('✅ Player ID registrado:', playerId.substring(0, 8) + '...');
+          console.log('✅ Suscrito a OneSignal correctamente');
+          console.log('💡 El usuario debería aparecer en el dashboard de OneSignal en unos segundos');
+          console.log('💡 Ve a OneSignal Dashboard → Audience → Subscribers para verificar');
           this.subscribed = true;
+          
+          // Verificar también el estado de la suscripción
+          try {
+            const isOptedIn = await OneSignal.User.PushSubscription.optedIn;
+            console.log('📋 Estado de suscripción (optedIn):', isOptedIn);
+          } catch (e) {
+            console.log('⚠️ No se pudo verificar optedIn:', e.message);
+          }
+          
+          return true;
+        } else {
+          console.warn('⚠️ Permisos concedidos pero no se obtuvo Player ID después de', maxAttempts, 'intentos');
+          console.warn('💡 Esto puede indicar un problema con la conexión o la configuración de OneSignal');
+          console.warn('💡 Verifica:');
+          console.warn('   1. Que el App ID sea correcto');
+          console.warn('   2. Que el sitio esté servido por HTTPS');
+          console.warn('   3. Que no haya bloqueadores de anuncios activos');
+          console.warn('   4. Que el Service Worker de OneSignal esté funcionando');
+          this.subscribed = true; // Marcar como suscrito de todas formas
           return true;
         }
       } else {
