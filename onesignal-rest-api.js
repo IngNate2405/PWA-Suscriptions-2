@@ -10,6 +10,23 @@ class OneSignalRESTService {
     // Si no existe, intentar leer desde ONESIGNAL_CONFIG (para desarrollo)
     this.restApiKey = ONESIGNAL_CONFIG?.restApiKey || null;
     this.apiUrl = 'https://onesignal.com/api/v1/notifications';
+    
+    // Log para diagnóstico
+    if (this.restApiKey) {
+      console.log('✅ OneSignal REST API Key cargado:', this.restApiKey.substring(0, 8) + '...');
+    } else {
+      console.warn('⚠️ OneSignal REST API Key no encontrado. Verifica que esté en GitHub Secrets o onesignal-config-local.js');
+    }
+  }
+  
+  // Método para actualizar el REST API Key (por si se carga después)
+  updateRestApiKey() {
+    const newKey = ONESIGNAL_CONFIG?.restApiKey || null;
+    if (newKey && newKey !== this.restApiKey) {
+      this.restApiKey = newKey;
+      console.log('✅ OneSignal REST API Key actualizado:', this.restApiKey.substring(0, 8) + '...');
+    }
+    return this.restApiKey;
   }
 
   // Enviar notificación programada a un usuario específico
@@ -129,12 +146,20 @@ class OneSignalRESTService {
   async scheduleAllPendingNotifications() {
     console.log('📬 Iniciando programación de notificaciones con OneSignal REST API...');
     
+    // Intentar actualizar el REST API Key por si se cargó después del constructor
+    this.updateRestApiKey();
+    
     // Verificar que el REST API Key esté disponible
     if (!this.restApiKey) {
       console.error('❌ REST API Key no configurado. Verifica que esté en GitHub Secrets o en onesignal-config-local.js');
+      console.error('💡 Para verificar:');
+      console.error('   1. Ve a GitHub → Settings → Secrets and variables → Actions');
+      console.error('   2. Verifica que exista ONESIGNAL_REST_API_KEY');
+      console.error('   3. Espera a que el workflow de deployment termine');
+      console.error('   4. Recarga la página');
       return 0;
     }
-    console.log('✅ REST API Key encontrado');
+    console.log('✅ REST API Key encontrado:', this.restApiKey.substring(0, 8) + '...');
 
     // Leer notificaciones programadas desde localStorage
     const scheduled = JSON.parse(localStorage.getItem('onesignalScheduled') || '[]');
@@ -142,14 +167,35 @@ class OneSignalRESTService {
     
     const now = new Date();
     
-    // Filtrar notificaciones que deben enviarse ahora o en el futuro
+    // Filtrar notificaciones que deben enviarse:
+    // 1. Que no hayan sido enviadas ya (sent !== true)
+    // 2. Que la fecha sea válida
+    // 3. Que la fecha esté en el pasado o muy cerca (hasta 1 hora en el futuro para permitir programación)
     const toSend = scheduled.filter(notif => {
-      if (!notif.notificationDate) return false;
-      const notifDate = new Date(notif.notificationDate);
-      const isValid = notifDate > now && !isNaN(notifDate.getTime());
-      if (!isValid) {
-        console.log(`⏭️ Notificación omitida (fecha inválida o pasada): ${notif.notificationDate}`);
+      // Omitir si ya fue enviada
+      if (notif.sent === true) {
+        return false;
       }
+      
+      if (!notif.notificationDate) {
+        console.log(`⏭️ Notificación omitida (sin fecha): ${notif.id || 'sin ID'}`);
+        return false;
+      }
+      
+      const notifDate = new Date(notif.notificationDate);
+      if (isNaN(notifDate.getTime())) {
+        console.log(`⏭️ Notificación omitida (fecha inválida): ${notif.notificationDate}`);
+        return false;
+      }
+      
+      // Permitir enviar si la fecha ya pasó o está muy cerca (hasta 1 hora en el futuro)
+      const timeDiff = notifDate.getTime() - now.getTime();
+      const isValid = timeDiff <= 3600000; // 1 hora en el futuro máximo
+      
+      if (!isValid) {
+        console.log(`⏭️ Notificación omitida (muy lejana): ${notif.notificationDate} (${Math.round(timeDiff / 60000)} minutos)`);
+      }
+      
       return isValid;
     });
 
@@ -191,13 +237,16 @@ class OneSignalRESTService {
     }
 
     let sentCount = 0;
+    const updatedScheduled = [...scheduled]; // Copia para actualizar
     
     for (const notif of toSend) {
       console.log(`📨 Programando notificación para: ${notif.subscriptionName} - ${notif.notificationDate}`);
       
+      let sent = false;
+      
       if (playerId) {
         // Enviar a usuario específico
-        const sent = await this.sendScheduledNotification(notif, playerId);
+        sent = await this.sendScheduledNotification(notif, playerId);
         if (sent) {
           sentCount++;
           console.log(`✅ Notificación programada exitosamente`);
@@ -207,13 +256,41 @@ class OneSignalRESTService {
       } else {
         // Si no hay Player ID, enviar a todos (para pruebas)
         console.warn('⚠️ No hay Player ID, enviando a todos los suscriptores');
-        const sent = await this.sendToAll(notif);
+        sent = await this.sendToAll(notif);
         if (sent) {
           sentCount++;
           console.log(`✅ Notificación programada para todos`);
         }
       }
+      
+      // Marcar como enviada en la copia
+      if (sent) {
+        const index = updatedScheduled.findIndex(n => n.id === notif.id);
+        if (index !== -1) {
+          updatedScheduled[index].sent = true;
+          updatedScheduled[index].sentAt = new Date().toISOString();
+        }
+      }
     }
+    
+    // Actualizar localStorage con las notificaciones marcadas como enviadas
+    // Mantener las enviadas por un tiempo (30 días) para referencia, luego limpiar
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const cleanedScheduled = updatedScheduled.filter(notif => {
+      // Mantener si no ha sido enviada
+      if (!notif.sent) return true;
+      // Mantener si fue enviada hace menos de 30 días
+      if (notif.sentAt) {
+        const sentDate = new Date(notif.sentAt);
+        return sentDate > thirtyDaysAgo;
+      }
+      return true;
+    });
+    
+    localStorage.setItem('onesignalScheduled', JSON.stringify(cleanedScheduled));
+    console.log(`💾 localStorage actualizado: ${cleanedScheduled.length} notificaciones (${cleanedScheduled.filter(n => !n.sent).length} pendientes)`);
 
     console.log(`✅ Total de notificaciones programadas: ${sentCount}/${toSend.length}`);
     return sentCount;

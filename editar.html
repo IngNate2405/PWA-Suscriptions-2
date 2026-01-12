@@ -791,7 +791,18 @@
             console.log(`✅ ${count} notificaciones programadas en OneSignal para cuando la app esté cerrada`);
             showNotification('✅ Notificaciones programadas', `${count} notificaciones se enviarán automáticamente`, 'success');
           } else {
-            console.log('ℹ️ No se programaron notificaciones (puede ser que ya estén programadas o no haya notificaciones futuras)');
+            // Verificar si hay notificaciones pero no se pudieron enviar
+            const scheduled = JSON.parse(localStorage.getItem('onesignalScheduled') || '[]');
+            const pending = scheduled.filter(n => !n.sent);
+            if (pending.length > 0) {
+              console.log(`ℹ️ Hay ${pending.length} notificaciones pendientes pero no se pudieron programar ahora`);
+              console.log('💡 Esto puede ser porque:');
+              console.log('   - El Player ID no está disponible aún');
+              console.log('   - Las notificaciones están muy lejanas en el futuro (>1 hora)');
+              console.log('   - Hubo un error al enviar a OneSignal');
+            } else {
+              console.log('ℹ️ No hay notificaciones pendientes para programar');
+            }
           }
         } catch (error) {
           console.error('❌ Error al programar notificaciones en OneSignal:', error);

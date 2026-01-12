@@ -368,28 +368,54 @@ class OneSignalService {
     let scheduledCount = 0;
     const now = new Date();
 
+    // Leer notificaciones existentes
+    const scheduled = JSON.parse(localStorage.getItem('onesignalScheduled') || '[]');
+    
+    // Limpiar notificaciones antiguas de esta suscripción que no han sido enviadas
+    // (para evitar acumulación cuando se edita la suscripción)
+    const cleanedScheduled = scheduled.filter(n => {
+      // Mantener si no es de esta suscripción
+      if (n.subscriptionId !== subscription.id) return true;
+      // Mantener si ya fue enviada
+      if (n.sent === true) return true;
+      // Eliminar las no enviadas de esta suscripción (se recalcularán abajo)
+      return false;
+    });
+
     for (const notification of subscription.notifications) {
       const notificationDate = this.calculateNotificationDate(nextPayment, notification);
       
-      if (notificationDate && notificationDate > now) {
+      if (notificationDate) {
+        // Crear un ID único para esta notificación (basado en suscripción, tipo y fecha)
+        const notificationId = `${subscription.id}_${notification}_${notificationDate.toISOString()}`;
+        
         const notificationData = {
+          id: notificationId, // ID único para evitar duplicados
           subscriptionId: subscription.id,
           subscriptionName: subscription.name,
           title: `Recordatorio: ${subscription.name}`,
           body: `Tu suscripción "${subscription.name}" vence pronto`,
           icon: subscription.icon || '/icons/icon-192x192.png',
           notificationDate: notificationDate.toISOString(),
-          userId: isFirebaseAvailable() && auth && auth.currentUser ? auth.currentUser.uid : null
+          notificationType: notification, // Guardar el tipo de notificación
+          nextPayment: subscription.nextPayment, // Guardar la fecha de próximo pago
+          userId: isFirebaseAvailable() && auth && auth.currentUser ? auth.currentUser.uid : null,
+          sent: false, // Flag para saber si ya se envió
+          sentAt: null // Fecha en que se envió
         };
 
-        // Guardar en localStorage para procesar después
-        const scheduled = JSON.parse(localStorage.getItem('onesignalScheduled') || '[]');
-        scheduled.push(notificationData);
-        localStorage.setItem('onesignalScheduled', JSON.stringify(scheduled));
-        
-        scheduledCount++;
+        // Verificar si ya existe esta notificación (evitar duplicados)
+        const exists = cleanedScheduled.some(n => n.id === notificationId);
+        if (!exists) {
+          cleanedScheduled.push(notificationData);
+          scheduledCount++;
+        }
       }
     }
+    
+    // Guardar las notificaciones actualizadas
+    localStorage.setItem('onesignalScheduled', JSON.stringify(cleanedScheduled));
+    console.log(`💾 Notificaciones actualizadas para "${subscription.name}": ${scheduledCount} nuevas, ${cleanedScheduled.length} totales`);
 
     return scheduledCount;
   }
