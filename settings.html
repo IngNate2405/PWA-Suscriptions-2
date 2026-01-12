@@ -720,17 +720,44 @@
         statusDiv.innerHTML = '<div class="text-blue-400">⏳ Verificando...</div>';
       }
 
-      // Verificar que OneSignal esté disponible
+      // Esperar a que OneSignal SDK esté disponible (especialmente importante al navegar entre páginas)
       if (typeof OneSignal === 'undefined') {
-        statusDiv.innerHTML = `
-          <div class="text-red-400 mb-2">❌ OneSignal SDK no cargado</div>
-          <div class="text-xs text-gray-400">Recarga la página</div>
-        `;
-        if (showNotifications) {
-          showNotification('❌ Error', 'OneSignal SDK no está cargado. Recarga la página.', 'error');
+        // En PWA, el SDK puede tardar más en cargarse
+        const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                     window.navigator.standalone || 
+                     document.referrer.includes('android-app://');
+        const maxWait = isPWA ? 10000 : 5000; // 10 segundos en PWA, 5 en web normal
+        const startTime = Date.now();
+        
+        // Mostrar mensaje de espera
+        if (showNotifications || !lastOneSignalStatus) {
+          statusDiv.innerHTML = '<div class="text-blue-400">⏳ Esperando a que OneSignal SDK se cargue...</div>';
         }
-        isCheckingOneSignal = false;
-        return;
+        
+        // Esperar a que el SDK se cargue
+        while (typeof OneSignal === 'undefined' && (Date.now() - startTime) < maxWait) {
+          await new Promise(resolve => setTimeout(resolve, 200)); // Esperar 200ms entre verificaciones
+        }
+        
+        // Si después de esperar aún no está disponible, mostrar error
+        if (typeof OneSignal === 'undefined') {
+          statusDiv.innerHTML = `
+            <div class="text-yellow-400 mb-2">⏳ OneSignal SDK cargando...</div>
+            <div class="text-xs text-gray-400">Si el problema persiste, recarga la página</div>
+          `;
+          // No mostrar notificación de error automáticamente, solo si se solicita explícitamente
+          if (showNotifications) {
+            showNotification('⏳ Esperando...', 'OneSignal SDK se está cargando, por favor espera...', 'info');
+          }
+          isCheckingOneSignal = false;
+          // Intentar de nuevo después de un momento
+          setTimeout(() => {
+            if (typeof OneSignal !== 'undefined') {
+              checkOneSignalStatus(showNotifications);
+            }
+          }, 2000);
+          return;
+        }
       }
 
       if (!oneSignalService) {
@@ -925,7 +952,10 @@
       // Verificar estado inmediatamente (sin mostrar notificaciones)
       syncNotificationStatus();
       // Verificar OneSignal sin mostrar notificaciones la primera vez
-      checkOneSignalStatus(false);
+      // Esperar un poco para que el SDK tenga tiempo de cargarse (especialmente al navegar entre páginas)
+      setTimeout(() => {
+        checkOneSignalStatus(false);
+      }, 1000);
       updateFirebaseUI();
 
       // Escuchar cambios de autenticación
