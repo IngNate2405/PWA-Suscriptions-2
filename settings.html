@@ -31,6 +31,7 @@
   </script>
   
   <script src="onesignal-service.js"></script>
+  <script src="onesignal-session.js"></script>
   
   <style>
     body, html {
@@ -707,6 +708,23 @@
         return;
       }
 
+      // Usar sesión global si está disponible (más rápido)
+      if (typeof window.oneSignalSession !== 'undefined' && window.oneSignalSession.isInitialized()) {
+        // Verificar estado usando sesión global (con caché)
+        const status = await window.oneSignalSession.checkStatus(!showNotifications);
+        if (status) {
+          updateOneSignalUI(status);
+          // Si se solicita mostrar notificaciones, verificar en segundo plano
+          if (showNotifications) {
+            // Verificar estado completo en segundo plano
+            setTimeout(async () => {
+              await checkOneSignalStatusFull(showNotifications);
+            }, 100);
+          }
+          return;
+        }
+      }
+
       // Evitar múltiples verificaciones simultáneas
       if (isCheckingOneSignal) {
         console.log('⏳ Verificación de OneSignal ya en progreso, omitiendo...');
@@ -714,6 +732,13 @@
       }
 
       isCheckingOneSignal = true;
+      
+      // Continuar con verificación completa
+      await checkOneSignalStatusFull(showNotifications);
+    }
+
+    async function checkOneSignalStatusFull(showNotifications = false) {
+      const statusDiv = document.getElementById('onesignal-status');
 
       // Solo mostrar "Verificando..." si es la primera vez o si se solicita explícitamente
       if (showNotifications || !lastOneSignalStatus) {
@@ -838,6 +863,18 @@
         }
       } finally {
         isCheckingOneSignal = false;
+        // Actualizar sesión global con el estado obtenido
+        if (typeof window.oneSignalSession !== 'undefined') {
+          const userInfo = await oneSignalService.getUserInfo();
+          if (userInfo && userInfo.subscribed) {
+            window.oneSignalSession.status = 'subscribed';
+          } else if (userInfo && userInfo.permission === 'denied') {
+            window.oneSignalSession.status = 'denied';
+          } else {
+            window.oneSignalSession.status = 'not_subscribed';
+          }
+          window.oneSignalSession.lastCheck = Date.now();
+        }
       }
     }
 
@@ -951,11 +988,24 @@
       
       // Verificar estado inmediatamente (sin mostrar notificaciones)
       syncNotificationStatus();
-      // Verificar OneSignal sin mostrar notificaciones la primera vez
-      // Esperar un poco para que el SDK tenga tiempo de cargarse (especialmente al navegar entre páginas)
-      setTimeout(() => {
-        checkOneSignalStatus(false);
-      }, 1000);
+      // Verificar OneSignal usando sesión global (más rápido)
+      // Si ya está inicializado, usar caché; si no, inicializar
+      if (typeof window.oneSignalSession !== 'undefined' && window.oneSignalSession.isInitialized()) {
+        // Usar estado en caché para mostrar inmediatamente
+        const cachedStatus = window.oneSignalSession.getCachedStatus();
+        if (cachedStatus) {
+          updateOneSignalUI(cachedStatus);
+        }
+        // Verificar en segundo plano (sin bloquear)
+        setTimeout(() => {
+          checkOneSignalStatus(false);
+        }, 100);
+      } else {
+        // Esperar un poco para que el SDK tenga tiempo de cargarse
+        setTimeout(() => {
+          checkOneSignalStatus(false);
+        }, 500);
+      }
       updateFirebaseUI();
 
       // Escuchar cambios de autenticación
@@ -986,87 +1036,139 @@
         return false;
       };
 
-      // Solo inicializar si no está ya inicializado
-      if (!isOneSignalAlreadyInitialized()) {
-        // En PWA, esperar más tiempo para que OneSignalDeferred se cargue
+      // Usar sesión global para evitar re-inicializaciones
+      if (typeof window.oneSignalSession === 'undefined') {
+        console.warn('⚠️ oneSignalSession no disponible, cargando...');
+        // Esperar un momento y verificar de nuevo
+        setTimeout(() => {
+          if (typeof window.oneSignalSession !== 'undefined') {
+            initializeOneSignalWithSession();
+          } else {
+            // Fallback a método anterior
+            initializeOneSignalLegacy();
+          }
+        }, 500);
+      } else {
+        initializeOneSignalWithSession();
+      }
+
+      async function initializeOneSignalWithSession() {
+        // Verificar si ya está inicializado en la sesión
+        if (window.oneSignalSession.isInitialized()) {
+          console.log('✅ OneSignal ya está inicializado en sesión global, verificando estado...');
+          // Verificar estado usando caché (rápido)
+          const cachedStatus = window.oneSignalSession.getCachedStatus();
+          if (cachedStatus) {
+            updateOneSignalUI(cachedStatus);
+          }
+          // Verificar estado en segundo plano (sin bloquear)
+          setTimeout(() => {
+            checkOneSignalStatus(false);
+          }, 100);
+          return;
+        }
+
+        // Verificar configuración
+        if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
+          const statusDiv = document.getElementById('onesignal-status');
+          if (statusDiv) {
+            statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Configura tu App ID en onesignal-config.js</div>';
+          }
+          return;
+        }
+
+        // Inicializar usando sesión global (solo una vez)
+        try {
+          const statusDiv = document.getElementById('onesignal-status');
+          if (statusDiv) {
+            statusDiv.innerHTML = '<div class="text-blue-400">⏳ Inicializando OneSignal...</div>';
+          }
+
+          const initialized = await window.oneSignalSession.initializeOnce(
+            ONESIGNAL_CONFIG.appId, 
+            ONESIGNAL_CONFIG.safariWebId
+          );
+          
+          if (initialized) {
+            // Verificar estado después de inicializar - sin notificaciones
+            setTimeout(() => {
+              checkOneSignalStatus(false);
+            }, 500);
+          } else {
+            const statusDiv = document.getElementById('onesignal-status');
+            if (statusDiv) {
+              statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal. Revisa la consola para más detalles.</div>';
+            }
+          }
+        } catch (error) {
+          console.error('Error inicializando OneSignal:', error);
+          const statusDiv = document.getElementById('onesignal-status');
+          if (statusDiv) {
+            statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message || 'Error desconocido'}</div>`;
+          }
+        }
+      }
+
+      function initializeOneSignalLegacy() {
+        // Método anterior como fallback
+        if (isOneSignalAlreadyInitialized()) {
+          console.log('✅ OneSignal ya está inicializado, verificando estado...');
+          setTimeout(() => {
+            checkOneSignalStatus(false);
+          }, 500);
+          return;
+        }
+
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                      window.navigator.standalone || 
                      document.referrer.includes('android-app://');
-        const waitTime = isPWA ? 5000 : 3000; // Más tiempo en PWA
+        const waitTime = isPWA ? 5000 : 3000;
         
         setTimeout(async () => {
-          // Verificar de nuevo antes de inicializar (por si se inicializó en otro lugar)
           if (isOneSignalAlreadyInitialized()) {
-            console.log('✅ OneSignal ya está inicializado, verificando estado...');
-            checkOneSignalStatus(false); // No mostrar notificaciones
+            checkOneSignalStatus(false);
             return;
           }
 
-          if (!oneSignalService) {
-            const statusDiv = document.getElementById('onesignal-status');
-            if (statusDiv) {
-              statusDiv.innerHTML = '<div class="text-red-400">❌ OneSignal Service no disponible</div>';
-            }
-            return;
-          }
-
-          if (!ONESIGNAL_CONFIG || !ONESIGNAL_CONFIG.appId || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
-            const statusDiv = document.getElementById('onesignal-status');
-            if (statusDiv) {
-              statusDiv.innerHTML = '<div class="text-yellow-400">⚠️ Configura tu App ID en onesignal-config.js</div>';
-            }
+          if (!oneSignalService || !ONESIGNAL_CONFIG || ONESIGNAL_CONFIG.appId === 'TU_ONESIGNAL_APP_ID') {
             return;
           }
 
           try {
-            const statusDiv = document.getElementById('onesignal-status');
-            if (statusDiv) {
-              statusDiv.innerHTML = '<div class="text-blue-400">⏳ Inicializando OneSignal...</div>';
-            }
-
-            // Verificar si OneSignalDeferred está disponible, si no, esperar más
-            if (typeof window.OneSignalDeferred === 'undefined') {
-              console.log('⏳ OneSignalDeferred no disponible aún, esperando...');
-              let attempts = 0;
-              const maxAttempts = 10;
-              
-              while (typeof window.OneSignalDeferred === 'undefined' && attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                attempts++;
-              }
-              
-              if (typeof window.OneSignalDeferred === 'undefined') {
-                console.warn('⚠️ OneSignalDeferred aún no disponible después de esperar');
-              }
-            }
-
-            const initialized = await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
-            
-            if (initialized) {
-              // Verificar estado después de inicializar (más tiempo en PWA) - sin notificaciones
-              setTimeout(() => {
-                checkOneSignalStatus(false);
-              }, isPWA ? 2000 : 1000);
-            } else {
-              const statusDiv = document.getElementById('onesignal-status');
-              if (statusDiv) {
-                statusDiv.innerHTML = '<div class="text-red-400">❌ Error al inicializar OneSignal. Revisa la consola para más detalles.</div>';
-              }
-            }
+            await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
+            setTimeout(() => {
+              checkOneSignalStatus(false);
+            }, 1000);
           } catch (error) {
             console.error('Error inicializando OneSignal:', error);
-            const statusDiv = document.getElementById('onesignal-status');
-            if (statusDiv) {
-              statusDiv.innerHTML = `<div class="text-red-400">❌ Error: ${error.message || 'Error desconocido'}</div>`;
-            }
           }
         }, waitTime);
-      } else {
-        // Si ya está inicializado, solo verificar el estado - sin notificaciones
-        console.log('✅ OneSignal ya está inicializado, verificando estado...');
-        setTimeout(() => {
-          checkOneSignalStatus(false);
-        }, 500);
+      }
+
+      function updateOneSignalUI(status) {
+        const statusDiv = document.getElementById('onesignal-status');
+        if (!statusDiv) return;
+
+        switch(status) {
+          case 'subscribed':
+            statusDiv.innerHTML = `
+              <div class="text-green-400 mb-2">✅ Suscrito a OneSignal</div>
+              <div class="text-xs text-gray-400">Las notificaciones funcionarán incluso con el navegador cerrado</div>
+            `;
+            break;
+          case 'denied':
+            statusDiv.innerHTML = `
+              <div class="text-red-400 mb-2">❌ Permisos denegados</div>
+              <div class="text-xs text-gray-400">Habilita las notificaciones en la configuración del navegador</div>
+            `;
+            break;
+          case 'not_subscribed':
+            statusDiv.innerHTML = `
+              <div class="text-yellow-400 mb-2">⚠️ No suscrito</div>
+              <div class="text-xs text-gray-400">Haz clic en "Suscribirse" para activar las notificaciones</div>
+            `;
+            break;
+        }
       }
       
       // Sincronizar estado cuando la página vuelve a estar visible (sin notificaciones)
@@ -1074,8 +1176,13 @@
         if (!document.hidden) {
           console.log('Página visible, sincronizando estado...');
           syncNotificationStatus();
-          // Verificar OneSignal sin mostrar notificaciones
-          checkOneSignalStatus(false);
+          // Verificar OneSignal usando sesión global (más rápido, usa caché)
+          if (typeof window.oneSignalSession !== 'undefined' && window.oneSignalSession.isInitialized()) {
+            // Verificar estado en segundo plano (sin bloquear UI)
+            setTimeout(() => {
+              checkOneSignalStatus(false);
+            }, 100);
+          }
         }
       });
       
@@ -1524,14 +1631,26 @@
   </nav>
   
   <script>
-    // Función de navegación mejorada
+    // Función de navegación optimizada (sin bloqueos)
     function navigateTo(page) {
+      // Prevenir múltiples clics
+      if (window.navigating) {
+        return;
+      }
+      window.navigating = true;
+      
+      // Navegar inmediatamente sin esperar
       try {
-        window.location.href = page;
+        // Usar replace para evitar acumulación en el historial
+        window.location.replace(page);
       } catch (e) {
         console.error('Error al navegar:', e);
         // Fallback
-        window.location.assign(page);
+        try {
+          window.location.href = page;
+        } catch (e2) {
+          window.location.assign(page);
+        }
       }
     }
   </script>

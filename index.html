@@ -31,6 +31,7 @@
   </script>
   
   <script src="onesignal-service.js"></script>
+  <script src="onesignal-session.js"></script>
   <style>
     html, body {
       overflow-y: auto !important;
@@ -210,7 +211,7 @@
             console.log('Error al registrar ServiceWorker:', error);
           });
         
-        // Inicializar OneSignal también en index.html para que funcione en PWA
+        // Inicializar OneSignal usando sesión global (solo una vez)
         // En PWA, esperar más tiempo para que OneSignal SDK se cargue
         const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                      window.navigator.standalone || 
@@ -223,6 +224,12 @@
               ONESIGNAL_CONFIG.appId && 
               ONESIGNAL_CONFIG.appId !== 'TU_ONESIGNAL_APP_ID') {
             try {
+              // Verificar si ya está inicializado en la sesión global
+              if (typeof window.oneSignalSession !== 'undefined' && window.oneSignalSession.isInitialized()) {
+                console.log('✅ OneSignal ya está inicializado en sesión global');
+                return;
+              }
+
               // Esperar a que OneSignal SDK esté cargado antes de inicializar
               if (typeof OneSignal === 'undefined') {
                 console.log('⏳ Esperando a que OneSignal SDK se cargue...');
@@ -235,23 +242,37 @@
                 }
               }
               
-              if (typeof OneSignal !== 'undefined' && !oneSignalService.initialized) {
-                // Pasar también safariWebId para iOS/PWA
-                await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
-                console.log('✅ OneSignal inicializado en index.html');
-                
-                // En PWA, verificar suscripción después de inicializar
-                if (isPWA) {
-                  setTimeout(async () => {
-                    try {
-                      const userInfo = await oneSignalService.getUserInfo();
-                      if (userInfo && !userInfo.subscribed) {
-                        console.log('💡 En PWA, el usuario debe suscribirse manualmente en Configuración → Notificaciones');
-                      }
-                    } catch (e) {
-                      console.log('No se pudo verificar suscripción:', e);
+              if (typeof OneSignal !== 'undefined') {
+                // Usar sesión global para inicializar (solo una vez)
+                if (typeof window.oneSignalSession !== 'undefined') {
+                  const initialized = await window.oneSignalSession.initializeOnce(
+                    ONESIGNAL_CONFIG.appId, 
+                    ONESIGNAL_CONFIG.safariWebId
+                  );
+                  
+                  if (initialized) {
+                    console.log('✅ OneSignal inicializado en index.html (sesión global)');
+                    
+                    // En PWA, verificar suscripción después de inicializar
+                    if (isPWA) {
+                      setTimeout(async () => {
+                        try {
+                          const userInfo = await oneSignalService.getUserInfo();
+                          if (userInfo && !userInfo.subscribed) {
+                            console.log('💡 En PWA, el usuario debe suscribirse manualmente en Configuración → Notificaciones');
+                          }
+                        } catch (e) {
+                          console.log('No se pudo verificar suscripción:', e);
+                        }
+                      }, 2000);
                     }
-                  }, 2000);
+                  }
+                } else {
+                  // Fallback si no hay sesión global
+                  if (!oneSignalService.initialized) {
+                    await oneSignalService.initialize(ONESIGNAL_CONFIG.appId, ONESIGNAL_CONFIG.safariWebId);
+                    console.log('✅ OneSignal inicializado en index.html (fallback)');
+                  }
                 }
               } else if (typeof OneSignal === 'undefined') {
                 console.warn('⚠️ OneSignal SDK no se cargó después de esperar');
@@ -293,9 +314,21 @@
       }
     }
 
-    // Función para manejar la navegación
+    // Función de navegación optimizada (sin bloqueos)
     function navigateTo(page) {
-      window.location.href = page;
+      // Prevenir múltiples clics
+      if (window.navigating) {
+        return;
+      }
+      window.navigating = true;
+      
+      // Navegar inmediatamente sin esperar
+      try {
+        window.location.href = page;
+      } catch (e) {
+        console.error('Error al navegar:', e);
+        window.location.assign(page);
+      }
     }
 
     // Función para manejar el clic en una suscripción
