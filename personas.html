@@ -311,6 +311,12 @@
         const tituloMensaje = mensajeEnviado ? 'Mensaje enviado' : 'Mensaje no enviado';
         const iconoMensaje = `<span title="${tituloMensaje}" class="ml-1 ${colorMensaje}"><i class="fas fa-envelope"></i></span>`;
 
+        // Agregar icono de comprobante (verde si tiene comprobantes, gris si no)
+        const tieneComprobantes = persona.comprobantes && Array.isArray(persona.comprobantes) && persona.comprobantes.length > 0;
+        const colorComprobante = tieneComprobantes ? 'text-purple-400' : 'text-gray-500';
+        const tituloComprobante = tieneComprobantes ? `Tiene ${persona.comprobantes.length} comprobante${persona.comprobantes.length !== 1 ? 's' : ''}` : 'Sin comprobantes';
+        const iconoComprobante = `<span title="${tituloComprobante}" class="ml-1 ${colorComprobante}"><i class="fas fa-file-invoice"></i></span>`;
+
         const personaElement = document.createElement('div');
         personaElement.className = 'bg-[#1B1930] rounded-xl p-4 cursor-pointer hover:bg-[#2a2736] transition-colors';
         personaElement.onclick = () => editarPersona(persona.id);
@@ -322,7 +328,7 @@
               </div>
               <div>
                 <h3 class="text-lg font-semibold">${persona.nombre}</h3>
-                <p class="text-gray-400 text-sm">${persona.plataformas.length} plataforma${persona.plataformas.length !== 1 ? 's' : ''}${iconoPago}${iconoTarjeta}${iconoMensaje}</p>
+                <p class="text-gray-400 text-sm">${persona.plataformas.length} plataforma${persona.plataformas.length !== 1 ? 's' : ''}${iconoPago}${iconoTarjeta}${iconoMensaje}${iconoComprobante}</p>
               </div>
             </div>
             <div class="text-right">
