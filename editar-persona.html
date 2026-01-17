@@ -1207,13 +1207,25 @@
       // Obtener descripción de comprobantes
       const descripcionComprobantes = document.getElementById('descripcion-comprobantes').value;
 
+      // Obtener persona existente para preservar fechaCreacion
+      let fechaCreacion = new Date().toISOString();
+      if (personaId) {
+        const personasExistentes = JSON.parse(localStorage.getItem('personas') || '[]');
+        const personaExistente = personasExistentes.find(p => p.id === parseInt(personaId));
+        if (personaExistente && personaExistente.fechaCreacion) {
+          fechaCreacion = personaExistente.fechaCreacion;
+        }
+      }
+
       const persona = {
         id: personaId ? parseInt(personaId) : Date.now(),
         nombre,
         plataformas,
         comprobantes,
         descripcionComprobantes,
-        fechaCreacion: new Date().toISOString()
+        fechaCreacion: fechaCreacion,
+        lastModified: new Date().toISOString(), // Timestamp de última modificación
+        lastModifiedBy: 'local' // Identificador del dispositivo
       };
 
       // Obtener personas existentes
